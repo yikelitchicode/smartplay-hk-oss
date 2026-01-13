@@ -1,0 +1,17 @@
+{
+  "search_placeholder": "Search venues...",
+  "available_venues": "Available Venues",
+  "date": "Date",
+  "location": "Location",
+  "all_districts": "All Districts",
+  "price_type": "Price Type",
+  "paid": "Paid",
+  "free": "Free",
+  "facility": "Facility",
+  "select_facility": "Select Facility",
+  "confirm_booking": "Confirm Booking",
+  "booking_confirmed": "Booking Confirmed!",
+  "booking_confirmed_msg": "Your session has been reserved.",
+  "no_venues": "No venues available for this filter.",
+  "no_venues_hint": "Try changing filters or select \"All Facilities\" to see more."
+}

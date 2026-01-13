@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Todo {
+  id        Int      @id @default(autoincrement())
+  title     String
+  createdAt DateTime @default(now())
+}
+
+// ============================================
+// Crawler Models
+// ============================================
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum TimePeriod {
+  MORNING
+  AFTERNOON
+  EVENING
+}
+
+model CrawlJob {
+  id           String    @id @default(cuid())
+  status       JobStatus @default(PENDING)
+  distCode     String
+  faCode       String
+  playDate     String
+  startedAt    DateTime  @default(now())
+  completedAt  DateTime?
+  errorMessage String?
+
+  results      CrawlResult[]
+  sessions     Session[]
+
+  @@index([status, startedAt])
+  @@index([playDate])
+}
+
+model CrawlResult {
+  id           String   @id @default(cuid())
+  crawlJobId   String
+  crawlJob     CrawlJob @relation(fields: [crawlJobId], references: [id], onDelete: Cascade)
+
+  venueCount   Int
+  sessionCount Int
+  rawData      Json
+
+  createdAt    DateTime @default(now())
+
+  @@index([crawlJobId])
+}
+
+model Facility {
+  id           Int          @id
+  name         String
+  imageUrl     String
+  districtCode String
+  districtName String
+  lastCrawlAt  DateTime     @default(now())
+
+  sessions     Session[]
+
+  @@index([districtCode])
+  @@index([lastCrawlAt])
+}
+
+model Session {
+  id                  String     @id
+  crawlJobId          String
+  crawlJob            CrawlJob   @relation(fields: [crawlJobId], references: [id], onDelete: Cascade)
+
+  venueId             Int
+  venue               Facility   @relation(fields: [venueId], references: [id])
+
+  facilityTypeId      Int
+  facilityTypeName    String
+  facilityTypeNameEn  String
+  facilityCode        String
+  facilityVRId        Int
+
+  date                DateTime
+  startTime           String
+  endTime             String
+  timePeriod          TimePeriod
+
+  available           Boolean
+  isPeakHour          Boolean
+  isOpen              Boolean
+
+  createdAt           DateTime   @default(now())
+
+  @@unique([venueId, facilityTypeId, date, startTime])
+  @@index([crawlJobId])
+  @@index([date])
+  @@index([available])
+  @@index([venueId, date])
+}

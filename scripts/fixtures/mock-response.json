@@ -1,0 +1,71 @@
+{
+  "code": "0",
+  "message": "Success",
+  "timestamp": 1736774400,
+  "data": {
+    "morning": {
+      "distList": [
+        {
+          "distCode": "CW",
+          "distName": "Central and Western",
+          "sessionCount": 2,
+          "venueList": [
+            {
+              "venueId": 101,
+              "venueName": "Hong Kong Park Tennis Court",
+              "venueImageUrl": "https://example.com/image.jpg",
+              "sessionCount": 2,
+              "fatList": [
+                {
+                  "fatId": 501,
+                  "fatName": "Tennis Court",
+                  "enFatName": "Tennis Court",
+                  "faCode": "TENC",
+                  "faGroupCode": "TEN",
+                  "fvrId": 1,
+                  "openFlag": true,
+                  "fitness": false,
+                  "sessionList": [
+                    {
+                      "ssnStartTime": "07:00",
+                      "ssnEndTime": "08:00",
+                      "ssnStartDate": "2025-01-15",
+                      "available": true,
+                      "peakHour": false,
+                      "sfadFlag": false,
+                      "sessionCount": 1
+                    },
+                    {
+                      "ssnStartTime": "08:00",
+                      "ssnEndTime": "09:00",
+                      "ssnStartDate": "2025-01-15",
+                      "available": false,
+                      "peakHour": false,
+                      "sfadFlag": false,
+                      "sessionCount": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "venueCount": 1
+    },
+    "afternoon": {
+      "distList": [],
+      "venueCount": 0
+    },
+    "evening": {
+      "distList": [],
+      "venueCount": 0
+    },
+    "venueCountList": [
+      {
+        "playDate": "2025-01-15",
+        "count": 1
+      }
+    ]
+  }
+}

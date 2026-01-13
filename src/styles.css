@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+@theme {
+  /* -- Color Palette -- */
+  --color-pacific-blue-50: #e8fbfd;
+  --color-pacific-blue-100: #d0f7fb;
+  --color-pacific-blue-200: #a1f0f7;
+  --color-pacific-blue-300: #72e8f3;
+  --color-pacific-blue-400: #43e0ef;
+  --color-pacific-blue-500: #14d9eb;
+  --color-pacific-blue-600: #10adbc;
+  --color-pacific-blue-700: #0c828d;
+  --color-pacific-blue-800: #08575e;
+  --color-pacific-blue-900: #042b2f;
+  --color-pacific-blue-950: #031e21;
+
+  --color-icy-blue-50: #e7f6fd;
+  --color-icy-blue-100: #cfecfc;
+  --color-icy-blue-200: #a0d9f8;
+  --color-icy-blue-300: #70c6f5;
+  --color-icy-blue-400: #40b4f2;
+  --color-icy-blue-500: #11a1ee;
+  --color-icy-blue-600: #0d81bf;
+  --color-icy-blue-700: #0a608f;
+  --color-icy-blue-800: #07405f;
+  --color-icy-blue-900: #032030;
+  --color-icy-blue-950: #021721;
+
+  --color-porcelain-50: #f6f4ee;
+  --color-porcelain-100: #eee8dd;
+  --color-porcelain-200: #ddd2bb;
+  --color-porcelain-300: #ccbb99;
+  --color-porcelain-400: #bba477;
+  --color-porcelain-500: #aa8e55;
+  --color-porcelain-600: #887144;
+  --color-porcelain-700: #665533;
+  --color-porcelain-800: #443922;
+  --color-porcelain-900: #221c11;
+  --color-porcelain-950: #18140c;
+
+  --color-vanilla-custard-50: #fbf7ea;
+  --color-vanilla-custard-100: #f7f0d4;
+  --color-vanilla-custard-200: #eee1aa;
+  --color-vanilla-custard-300: #e6d17f;
+  --color-vanilla-custard-400: #ddc255;
+  --color-vanilla-custard-500: #d5b32a;
+  --color-vanilla-custard-600: #aa8f22;
+  --color-vanilla-custard-700: #806b19;
+  --color-vanilla-custard-800: #554811;
+  --color-vanilla-custard-900: #2b2408;
+  --color-vanilla-custard-950: #1e1906;
+
+  --color-tangerine-dream-50: #feefe7;
+  --color-tangerine-dream-100: #fcdfcf;
+  --color-tangerine-dream-200: #f9be9f;
+  --color-tangerine-dream-300: #f79e6e;
+  --color-tangerine-dream-400: #f47e3e;
+  --color-tangerine-dream-500: #f15d0e;
+  --color-tangerine-dream-600: #c14b0b;
+  --color-tangerine-dream-700: #913808;
+  --color-tangerine-dream-800: #602506;
+  --color-tangerine-dream-900: #301303;
+  --color-tangerine-dream-950: #220d02;
+
+  /* -- Semantic Aliases -- */
+  
+  /* Primary: Pacific Blue (Teal/Cyan base) - Premium & Fresh */
+  --color-primary: var(--color-pacific-blue-600);
+  --color-primary-foreground: #ffffff;
+  --color-primary-hover: var(--color-pacific-blue-700);
+
+  /* Secondary: Porcelain (Warm Neutral) - Elegant Contrast */
+  --color-secondary: var(--color-porcelain-600);
+  --color-secondary-foreground: #ffffff;
+  --color-secondary-hover: var(--color-porcelain-700);
+
+  /* Info: Icy Blue (Clear Blue) */
+  --color-info: var(--color-icy-blue-500);
+  --color-info-foreground: #ffffff;
+
+  /* Success: Pacific Blue (Teal) - Closest match to 'Green' in palette */
+  --color-success: var(--color-pacific-blue-500);
+  --color-success-foreground: #ffffff;
+
+  /* Warning: Vanilla Custard (Yellow/Gold) */
+  --color-warning: var(--color-vanilla-custard-500);
+  --color-warning-foreground: var(--color-vanilla-custard-950);
+
+  /* Destructive: Tangerine Dream (Orange/Red) */
+  --color-destructive: var(--color-tangerine-dream-600);
+  --color-destructive-foreground: #ffffff;
+
+  /* -- Base Semantic Colors -- */
+  
+  /* Background: Porcelain 50 (Very light warm gray) */
+  --color-background: var(--color-porcelain-50);
+  
+  /* Foreground: Pacific Blue 950 (Deep Teal/Black) */
+  --color-foreground: var(--color-pacific-blue-950);
+
+  /* Card: White (Clean containment) */
+  --color-card: #ffffff;
+  --color-card-foreground: var(--color-pacific-blue-950);
+
+  /* Popover: White */
+  --color-popover: #ffffff;
+  --color-popover-foreground: var(--color-pacific-blue-950);
+
+  /* Muted: Porcelain 100/700 (Warm neutral mid-tones) */
+  --color-muted: var(--color-porcelain-100);
+  --color-muted-foreground: var(--color-porcelain-700);
+
+  /* Accent: Pacific Blue 100 (Light fresh teal) */
+  --color-accent: var(--color-pacific-blue-100);
+  --color-accent-foreground: var(--color-pacific-blue-900);
+
+  /* Border: Porcelain 200 (Subtle warm gray) */
+  --color-border: var(--color-porcelain-200);
+
+  /* Input: Porcelain 200 */
+  --color-input: var(--color-porcelain-200);
+
+  /* Ring: Pacific Blue 400 */
+  --color-ring: var(--color-pacific-blue-400);
+}
+
+body {
+  @apply m-0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+}
