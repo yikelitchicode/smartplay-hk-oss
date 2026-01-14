@@ -49,14 +49,16 @@ const VenueCard: React.FC<VenueCardProps> = ({ venue, onSessionClick }) => {
 											<button
 												key={session.id}
 												type="button"
-												disabled={!session.available}
+												disabled={!session.available || session.isPassed}
 												onClick={() => onSessionClick(session)}
 												className={`
                           relative group flex flex-col items-center justify-center p-2 rounded-lg text-sm font-medium border transition-all
                           ${
-														session.available
-															? "bg-white border-pacific-blue-200 text-primary-700 hover:bg-primary hover:text-white hover:border-primary shadow-sm"
-															: "bg-porcelain-50 border-porcelain-100 text-porcelain-300 cursor-not-allowed"
+														session.isPassed
+															? "bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed grayscale"
+															: session.available
+																? "bg-white border-pacific-blue-200 text-primary-700 hover:bg-primary hover:text-white hover:border-primary shadow-sm"
+																: "bg-porcelain-50 border-porcelain-100 text-porcelain-300 cursor-not-allowed"
 													}
                         `}
 											>
@@ -71,7 +73,20 @@ const VenueCard: React.FC<VenueCardProps> = ({ venue, onSessionClick }) => {
 												)}
 												{!session.available && (
 													<span className="absolute inset-0 flex items-center justify-center bg-porcelain-50/50 rounded-lg">
-														<span className="sr-only">Booked</span>
+														{session.isPassed ? (
+															<span className="text-[9px] uppercase tracking-tighter font-bold text-gray-400 bg-gray-100/80 px-1 rounded shadow-sm border border-gray-200">
+																Passed
+															</span>
+														) : (
+															<span className="sr-only">Booked</span>
+														)}
+													</span>
+												)}
+												{session.available && session.isPassed && (
+													<span className="absolute inset-0 flex items-center justify-center bg-gray-50/50 rounded-lg">
+														<span className="text-[9px] uppercase tracking-tighter font-bold text-gray-400 bg-gray-100/80 px-1 rounded shadow-sm border border-gray-200">
+															Passed
+														</span>
 													</span>
 												)}
 											</button>

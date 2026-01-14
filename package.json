@@ -16,6 +16,7 @@
     "db:migrate": "dotenv -e .env.local -- prisma migrate dev",
     "db:studio": "dotenv -e .env.local -- prisma studio",
     "db:seed": "dotenv -e .env.local -- prisma db seed",
+    "db:reset": "dotenv -e .env.local -- prisma db push --force-reset",
     "test:crawler": "tsx scripts/test-crawler.ts"
   },
   "dependencies": {

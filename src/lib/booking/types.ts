@@ -7,6 +7,7 @@ export interface NormalizedSession {
 	endTime: string;
 	date: string;
 	available: boolean;
+	isPassed: boolean;
 	peakHour: boolean;
 	facilityName: string;
 	facilityId: number;
@@ -14,12 +15,13 @@ export interface NormalizedSession {
 
 export interface NormalizedFacility {
 	name: string;
+	code: string;
 	sessions: NormalizedSession[];
 	priceType: PriceType;
 }
 
 export interface NormalizedVenue {
-	id: number;
+	id: string;
 	name: string;
 	districtCode: string;
 	districtName: string;
@@ -34,5 +36,5 @@ export type TimeFilter = "all" | "morning" | "afternoon" | "evening";
 
 export interface FacilityGroup {
 	label: string;
-	options: string[];
+	options: { label: string; value: string }[];
 }

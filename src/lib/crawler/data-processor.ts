@@ -40,12 +40,20 @@ export class CrawlerDataProcessor {
 			}
 
 			// Process districts
+			if (!periodData.distList || !Array.isArray(periodData.distList)) continue;
 			for (const district of periodData.distList) {
 				// Process venues
+				if (!district.venueList || !Array.isArray(district.venueList)) continue;
 				for (const venue of district.venueList) {
 					// Process facility types
+					if (!venue.fatList || !Array.isArray(venue.fatList)) continue;
 					for (const facilityType of venue.fatList) {
 						// Process sessions
+						if (
+							!facilityType.sessionList ||
+							!Array.isArray(facilityType.sessionList)
+						)
+							continue;
 						for (const session of facilityType.sessionList) {
 							processedData.push({
 								crawlJobId,
@@ -56,7 +64,7 @@ export class CrawlerDataProcessor {
 								districtName: district.distName,
 
 								// Venue
-								venueId: venue.venueId,
+								venueId: String(venue.venueId),
 								venueName: venue.venueName,
 								venueImageUrl: venue.venueImageUrl,
 
@@ -66,7 +74,7 @@ export class CrawlerDataProcessor {
 								facilityTypeNameEn: facilityType.enFatName,
 								facilityCode: facilityType.faCode,
 								facilityGroupCode: facilityType.faGroupCode,
-								facilityVRId: facilityType.fvrId,
+								facilityVRId: String(facilityType.fvrId),
 
 								// Session
 								sessionStartDate: session.ssnStartDate,
@@ -97,7 +105,7 @@ export class CrawlerDataProcessor {
 		facilities: FacilityInsert[];
 		sessions: SessionInsert[];
 	} {
-		const facilitiesMap = new Map<number, FacilityInsert>();
+		const facilitiesMap = new Map<string, FacilityInsert>();
 		const sessions: SessionInsert[] = [];
 
 		// Group unique facilities and create sessions
@@ -194,7 +202,7 @@ export class CrawlerDataProcessor {
 		districtBreakdown: Record<string, number>;
 		periodBreakdown: Record<string, number>;
 	} {
-		const uniqueVenues = new Set<number>();
+		const uniqueVenues = new Set<string>();
 		let availableSessions = 0;
 		const districtBreakdown: Record<string, number> = {};
 

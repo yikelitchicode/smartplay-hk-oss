@@ -85,9 +85,7 @@ export class CrawlerDatabaseService {
 		await prisma.$transaction(
 			async (tx) => {
 				// 1. Upsert Facilities
-				// We do this one by one or we could use createMany with skipDuplicates if we didn't need to update lastCrawlAt
-				// Since we want to update lastCrawlAt, we'll use upsert locally or just simple loop
-				// For better performance with many facilities, we could optimize, but usually facility count is < 100 per run
+				// We assume facility count is manageable (< 20 per district)
 				for (const facility of facilities) {
 					await tx.facility.upsert({
 						where: { id: facility.id },
@@ -107,41 +105,46 @@ export class CrawlerDatabaseService {
 					});
 				}
 
-				// 2. Upsert Sessions
-				// Session ID is deterministic based on unique attributes
-				for (const session of sessions) {
-					await tx.session.upsert({
-						where: { id: session.id },
-						create: {
-							id: session.id,
-							crawlJobId: session.crawlJobId,
-							venueId: session.venueId,
-							facilityTypeId: session.facilityTypeId,
-							facilityTypeName: session.facilityTypeName,
-							facilityTypeNameEn: session.facilityTypeNameEn,
-							facilityCode: session.facilityCode,
-							facilityVRId: session.facilityVRId,
-							date: session.date,
-							startTime: session.startTime,
-							endTime: session.endTime,
-							timePeriod: session.timePeriod as TimePeriod,
-							available: session.available,
-							isPeakHour: session.isPeakHour,
-							isOpen: session.isOpen,
-							createdAt: session.createdAt,
-						},
-						update: {
-							crawlJobId: session.crawlJobId, // Update to latest job that saw this session
-							available: session.available,
-							isPeakHour: session.isPeakHour,
-							isOpen: session.isOpen,
-							// We don't update createdAt
-						},
-					});
+				// 2. Upsert Sessions in batches
+				// Sessions can be 20k+, so simple loop is too slow and hits timeout
+				const BATCH_SIZE = 50;
+				for (let i = 0; i < sessions.length; i += BATCH_SIZE) {
+					const batch = sessions.slice(i, i + BATCH_SIZE);
+					await Promise.all(
+						batch.map((session) =>
+							tx.session.upsert({
+								where: { id: session.id },
+								create: {
+									id: session.id,
+									crawlJobId: session.crawlJobId,
+									venueId: session.venueId,
+									facilityTypeId: session.facilityTypeId,
+									facilityTypeName: session.facilityTypeName,
+									facilityTypeNameEn: session.facilityTypeNameEn,
+									facilityCode: session.facilityCode,
+									facilityVRId: session.facilityVRId,
+									date: session.date,
+									startTime: session.startTime,
+									endTime: session.endTime,
+									timePeriod: session.timePeriod as TimePeriod,
+									available: session.available,
+									isPeakHour: session.isPeakHour,
+									isOpen: session.isOpen,
+									createdAt: session.createdAt,
+								},
+								update: {
+									crawlJobId: session.crawlJobId,
+									available: session.available,
+									isPeakHour: session.isPeakHour,
+									isOpen: session.isOpen,
+								},
+							}),
+						),
+					);
 				}
 			},
 			{
-				timeout: 20000, // Increase timeout for large transactions
+				timeout: 120000, // 2 minutes timeout for large datasets
 			},
 		);
 	}

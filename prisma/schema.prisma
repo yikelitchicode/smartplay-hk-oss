@@ -7,13 +7,9 @@ datasource db {
   provider = "postgresql"
 }
 
-model Todo {
-  id        Int      @id @default(autoincrement())
-  title     String
-  createdAt DateTime @default(now())
-}
 
 // ============================================
+
 // Crawler Models
 // ============================================
 
@@ -30,6 +26,31 @@ enum TimePeriod {
   EVENING
 }
 
+// Scheduled runs (for multi-day tracking)
+model ScheduledCrawlRun {
+  id              String   @id @default(cuid())
+  status          JobStatus @default(RUNNING)
+  
+  // Configuration snapshot
+  daysToProcess   String[]  // ["2025-01-14", "2025-01-15", ...]
+  totalDays       Int
+  
+  // Progress tracking
+  completedDays   String[]  @default([])
+  failedDays      Json      @default("[]")  // [{"date": "2025-01-16", "error": "...", "attempts": 2}]
+  currentDay      String?
+  
+  // Timing
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+  lastActivityAt  DateTime  @default(now())
+  
+  // Related jobs
+  crawlJobs       CrawlJob[]
+  
+  @@index([status, startedAt])
+}
+
 model CrawlJob {
   id           String    @id @default(cuid())
   status       JobStatus @default(PENDING)
@@ -43,8 +64,12 @@ model CrawlJob {
   results      CrawlResult[]
   sessions     Session[]
 
+  scheduledRunId  String?
+  scheduledRun    ScheduledCrawlRun? @relation(fields: [scheduledRunId], references: [id])
+
   @@index([status, startedAt])
   @@index([playDate])
+  @@index([scheduledRunId])
 }
 
 model CrawlResult {
@@ -61,8 +86,9 @@ model CrawlResult {
   @@index([crawlJobId])
 }
 
+
 model Facility {
-  id           Int          @id
+  id           String       @id
   name         String
   imageUrl     String
   districtCode String
@@ -80,14 +106,14 @@ model Session {
   crawlJobId          String
   crawlJob            CrawlJob   @relation(fields: [crawlJobId], references: [id], onDelete: Cascade)
 
-  venueId             Int
+  venueId             String
   venue               Facility   @relation(fields: [venueId], references: [id])
 
   facilityTypeId      Int
   facilityTypeName    String
   facilityTypeNameEn  String
   facilityCode        String
-  facilityVRId        Int
+  facilityVRId        String
 
   date                DateTime
   startTime           String

@@ -1,5 +1,5 @@
 import { Select as BaseSelect } from "@base-ui/react/select";
-import { Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import * as React from "react";
 import { ScrollArea } from "@/components/ui/ScrollArea";
 
@@ -7,6 +7,7 @@ export interface SelectOptionType {
 	value: string;
 	label: string;
 	disabled?: boolean;
+	className?: string; // Added for dynamic styling
 }
 
 export interface SelectGroupType {
@@ -25,6 +26,7 @@ export interface SelectProps {
 	disabled?: boolean;
 	required?: boolean;
 	size?: "sm" | "md" | "lg";
+	triggerClassName?: string; // Added for dynamic trigger styling
 }
 
 function isGroup(
@@ -46,6 +48,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
 			disabled = false,
 			required = false,
 			size = "md",
+			triggerClassName,
 		},
 		ref,
 	) => {
@@ -66,7 +69,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
 				)}
 				<BaseSelect.Root
 					value={value}
-					onValueChange={(val: string) => onChange(val)}
+					onValueChange={(val: string | null) => onChange(val ?? "")}
 					disabled={disabled}
 				>
 					<BaseSelect.Trigger
@@ -78,13 +81,32 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
 								: size === "lg"
 									? "h-12 px-4 text-base"
 									: "h-10 px-3 text-sm"
-						} ${error ? "border-red-500 focus-visible:outline-red-500" : ""}`}
+						} ${error ? "border-red-500" : ""} ${triggerClassName || ""}`}
 						aria-invalid={error ? "true" : "false"}
 						aria-describedby={
 							error ? errorId : helperText ? helperId : undefined
 						}
 					>
-						<BaseSelect.Value placeholder={placeholder} />
+						<BaseSelect.Value>
+							{(val: string) => {
+								if (!val) return placeholder;
+								// Find label for value
+								const findLabel = (
+									items: (SelectOptionType | SelectGroupType)[],
+								): string | undefined => {
+									for (const item of items) {
+										if (isGroup(item)) {
+											const found = findLabel(item.options);
+											if (found) return found;
+										} else if (item.value === val) {
+											return item.label;
+										}
+									}
+									return undefined;
+								};
+								return findLabel(options) || val;
+							}}
+						</BaseSelect.Value>
 						<BaseSelect.Icon className="flex text-gray-400">
 							<ChevronDown className="h-4 w-4" />
 						</BaseSelect.Icon>
@@ -109,7 +131,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
 																key={option.value}
 																value={option.value}
 																disabled={option.disabled}
-																className="grid cursor-default grid-cols-[0.75rem_1fr] items-center gap-2 py-2 pr-4 pl-2.5 text-sm leading-4 outline-none select-none data-[highlighted]:relative data-[highlighted]:z-0 data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-900 pointer-coarse:py-2.5 mx-1 rounded-md"
+																className={`grid cursor-default grid-cols-[0.75rem_1fr] items-center gap-2 py-2 pr-4 pl-2.5 text-sm leading-4 outline-none select-none data-[highlighted]:relative data-[highlighted]:z-0 data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-900 pointer-coarse:py-2.5 mx-1 rounded-md ${option.className || ""}`}
 															>
 																<BaseSelect.ItemIndicator className="col-start-1 text-primary">
 																	<Check className="size-3" />
@@ -127,7 +149,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
 													key={item.value}
 													value={item.value}
 													disabled={item.disabled}
-													className="grid cursor-default grid-cols-[0.75rem_1fr] items-center gap-2 py-2 pr-4 pl-2.5 text-sm leading-4 outline-none select-none data-[highlighted]:relative data-[highlighted]:z-0 data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-900 pointer-coarse:py-2.5 mx-1 rounded-md"
+													className={`grid cursor-default grid-cols-[0.75rem_1fr] items-center gap-2 py-2 pr-4 pl-2.5 text-sm leading-4 outline-none select-none data-[highlighted]:relative data-[highlighted]:z-0 data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-900 pointer-coarse:py-2.5 mx-1 rounded-md ${item.className || ""}`}
 												>
 													<BaseSelect.ItemIndicator className="col-start-1 text-primary">
 														<Check className="size-3" />

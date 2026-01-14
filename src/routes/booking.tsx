@@ -1,76 +1,258 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { CalendarDays, Search } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import {
 	BookingModal,
+	BookingPending,
 	DateSelector,
 	FilterBar,
 	VenueCard,
 } from "@/components/booking";
-import {
-	FacilityGroup,
-	type NormalizedSession,
-	type NormalizedVenue,
-	type PriceType,
+import type {
+	NormalizedSession,
+	NormalizedVenue,
+	PriceType,
+	RegionType,
 } from "@/lib/booking/types";
 import {
+	type AvailabilityTheme,
 	FREE_FACILITIES_GROUPS,
-	getRegion,
+	getAvailabilityColor,
 	PAID_FACILITIES_GROUPS,
 } from "@/lib/booking/utils";
-import { getAvailableDates, getBookingData } from "@/server-functions/booking";
+import {
+	getAvailableDates,
+	getBookingData,
+	getDatesAvailability,
+	getLastUpdateTime,
+} from "@/server-functions/booking";
 
 // Search Params Schema
 const searchSchema = z.object({
 	date: z.string().optional(),
+	districts: z.array(z.string()).optional(),
+	center: z.string().optional(),
+	facility: z.string().optional(),
+	priceType: z.enum(["Paid", "Free"]).optional(),
 });
 
 export const Route = createFileRoute("/booking")({
 	validateSearch: searchSchema,
-	loaderDeps: ({ search: { date } }) => ({ date }),
-	loader: async ({ deps: { date } }) => {
+	loaderDeps: ({
+		search: { date, districts, center, facility, priceType },
+	}) => ({
+		date,
+		districts,
+		center,
+		facility,
+		priceType,
+	}),
+	loader: async ({
+		deps: { date, districts, center, facility, priceType },
+	}) => {
 		// 1. Fetch Dates
 		const datesData = await getAvailableDates();
 		const availableDates = datesData.success ? datesData.data : [];
 
 		// 2. Determine Selected Date
-		// If no date in params, default to first available, or today if list empty
 		const selectedDate =
 			date || availableDates[0] || new Date().toISOString().split("T")[0];
 
-		// 3. Fetch Booking Data for Selected Date
-		// We could defer this but let's await for SSR for now
+		const currentPriceType = priceType || "Paid";
+
+		// 3. Fetch Booking Data and Date Availability in parallel
+		const [bookingData, availabilityData, lastUpdateData] = await Promise.all([
+			getBookingData({
+				data: {
+					date: selectedDate,
+					districts: districts,
+					venueId: center,
+					facilityCode: facility,
+					priceType: currentPriceType,
+				},
+			}),
+			getDatesAvailability({
+				data: {
+					districts: districts,
+					venueId: center,
+					facilityCode: facility,
+					priceType: currentPriceType,
+				},
+			}),
+			getLastUpdateTime(),
+		]);
+
 		let venues: NormalizedVenue[] = [];
-		if (selectedDate) {
-			const bookingData = await getBookingData({
-				data: { date: selectedDate },
-			});
-			if (bookingData.success) {
-				venues = bookingData.data;
-			}
+		let districtsList: { code: string; name: string; region: RegionType }[] =
+			[];
+		let centersList: {
+			id: string;
+			name: string;
+			districtName: string;
+			districtCode: string;
+		}[] = [];
+
+		if (bookingData.success) {
+			venues = bookingData.data.venues;
+			districtsList = bookingData.data.districts;
+			centersList = bookingData.data.centers;
 		}
 
 		return {
 			availableDates,
 			selectedDate,
 			venues,
+			districts: districtsList,
+			centers: centersList,
+			priceType: currentPriceType,
+			dateAvailability: availabilityData.success ? availabilityData.data : {},
+			districtStats:
+				bookingData.success &&
+				bookingData.data &&
+				"districtStats" in bookingData.data &&
+				bookingData.data.districtStats
+					? (bookingData.data.districtStats as Record<
+							string,
+							{ t: number; a: number }
+						>)
+					: {},
+			centerStats:
+				bookingData.success &&
+				bookingData.data &&
+				"centerStats" in bookingData.data &&
+				bookingData.data.centerStats
+					? (bookingData.data.centerStats as Record<
+							string,
+							{ t: number; a: number }
+						>)
+					: {},
+			lastUpdate: lastUpdateData.success ? lastUpdateData.lastUpdate : null,
 		};
 	},
 	component: BookingPage,
+	pendingComponent: BookingPending,
 });
 
 function BookingPage() {
-	const { availableDates, selectedDate, venues } = Route.useLoaderData();
+	const {
+		availableDates,
+		selectedDate,
+		venues,
+		districts,
+		centers,
+		priceType: serverPriceType,
+		dateAvailability,
+		districtStats: serverDistrictStats,
+		centerStats: serverCenterStats,
+		lastUpdate,
+	} = Route.useLoaderData();
 	const navigate = useNavigate({ from: Route.fullPath });
-	const { t } = useTranslation(["common", "booking"]);
+	const {
+		districts: searchDistricts,
+		center: searchCenter,
+		facility: searchFacility,
+	} = Route.useSearch();
+	// const { t } = useTranslation(["common", "booking"]); // Removed unused translation hook
 
 	// --- Client State ---
 	const [searchQuery, setSearchQuery] = useState("");
-	const [selectedDistrict, setSelectedDistrict] = useState("All");
-	const [selectedFacilityType, setSelectedFacilityType] = useState("All");
-	const [selectedPriceType, setSelectedPriceType] = useState<PriceType>("Paid");
+
+	// Initialize states from URL or defaults
+	const [selectedDistricts, setSelectedDistricts] = useState<string[]>(
+		searchDistricts || ["All"],
+	);
+	const [selectedCenter, setSelectedCenter] = useState<string>(
+		searchCenter || "All",
+	);
+	const [selectedFacilityCode, setSelectedFacilityCode] = useState<string>(
+		searchFacility || "All",
+	);
+
+	const selectedPriceType = serverPriceType as PriceType;
+
+	const handleSelectDistrict = (districtCode: string) => {
+		let next: string[];
+		if (districtCode === "All") {
+			next = ["All"];
+		} else {
+			const withoutAll = selectedDistricts.filter((d) => d !== "All");
+			if (withoutAll.includes(districtCode)) {
+				next = withoutAll.filter((d) => d !== districtCode);
+				if (next.length === 0) next = ["All"];
+			} else {
+				next = [...withoutAll, districtCode];
+			}
+		}
+
+		setSelectedDistricts(next);
+		navigate({
+			search: (prev) => ({
+				...prev,
+				districts: next.includes("All") ? undefined : next,
+			}),
+		});
+	};
+
+	const handleSelectCenter = (centerId: string) => {
+		setSelectedCenter(centerId);
+		navigate({
+			search: (prev) => ({
+				...prev,
+				center: centerId === "All" ? undefined : centerId,
+			}),
+		});
+	};
+
+	const handleSelectFacility = (fCode: string) => {
+		setSelectedFacilityCode(fCode);
+		navigate({
+			search: (prev) => ({
+				...prev,
+				facility: fCode === "All" ? undefined : fCode,
+			}),
+		});
+	};
+
+	const handleResetFilters = () => {
+		setSelectedDistricts(["All"]);
+		setSelectedCenter("All");
+		setSelectedFacilityCode("All");
+		setSearchQuery("");
+		navigate({
+			search: (prev) => ({
+				...prev,
+				districts: undefined,
+				center: undefined,
+				facility: undefined,
+				priceType: undefined,
+			}),
+		});
+	};
+
+	const dateStyles = useMemo(() => {
+		const styles: Record<string, AvailabilityTheme> = {};
+		Object.keys(dateAvailability).forEach((date) => {
+			styles[date] = getAvailabilityColor(
+				dateAvailability[date].t,
+				dateAvailability[date].a,
+			);
+		});
+		return styles;
+	}, [dateAvailability]);
+
+	useEffect(() => {
+		setSelectedCenter(searchCenter || "All");
+	}, [searchCenter]);
+
+	useEffect(() => {
+		setSelectedFacilityCode(searchFacility || "All");
+	}, [searchFacility]);
+
+	// Initialize selectedDistricts from searchDistricts
+	useEffect(() => {
+		setSelectedDistricts(searchDistricts || ["All"]);
+	}, [searchDistricts]);
 
 	// Modal State
 	const [bookingSession, setBookingSession] =
@@ -82,28 +264,39 @@ function BookingPage() {
 
 	// --- Derived Data ---
 
-	// 1. Available Districts (from loaded venues)
-	// Logic from draft used `venues` to build list.
-	// This means the filter bar options depend on the RETURNED venues for that day.
-	// This is good for "available filters based on result".
+	// 1. Available Districts for FilterBar (now from server)
 	const availableDistricts = useMemo(() => {
-		const distMap = new Map<
-			string,
-			{ code: string; name: string; region: any }
-		>();
-		venues.forEach((v) => {
-			if (!distMap.has(v.districtName)) {
-				distMap.set(v.districtName, {
-					code: v.districtCode,
-					name: v.districtName,
-					region: v.region,
-				});
-			}
+		return [...districts].sort((a, b) => {
+			const statA = serverDistrictStats?.[a.code] || { t: 0, a: 0 };
+			const statB = serverDistrictStats?.[b.code] || { t: 0, a: 0 };
+			if (statB.a !== statA.a) return statB.a - statA.a;
+			if (statB.t !== statA.t) return statB.t - statA.t;
+			return a.name.localeCompare(b.name);
 		});
-		return Array.from(distMap.values()).sort((a, b) =>
-			a.name.localeCompare(b.name),
-		);
-	}, [venues]);
+	}, [districts, serverDistrictStats]);
+
+	// 1.5 Available Centers for FilterBar (from server)
+	const availableCenters = useMemo(() => {
+		const filtered = selectedDistricts.includes("All")
+			? centers
+			: centers.filter((c) => {
+					// Check if center has districtCode property (from server data)
+					if ("districtCode" in c && c.districtCode) {
+						return selectedDistricts.includes(c.districtCode);
+					}
+					// Fallback to matching by district name
+					const dist = districts.find((d) => d.name === c.districtName);
+					return dist ? selectedDistricts.includes(dist.code) : false;
+				});
+
+		return [...filtered].sort((a, b) => {
+			const statA = serverCenterStats?.[a.id] || { t: 0, a: 0 };
+			const statB = serverCenterStats?.[b.id] || { t: 0, a: 0 };
+			if (statB.a !== statA.a) return statB.a - statA.a;
+			if (statB.t !== statA.t) return statB.t - statA.t;
+			return a.name.localeCompare(b.name);
+		});
+	}, [centers, selectedDistricts, districts, serverCenterStats]);
 
 	// 2. Facility Groups based on Price Type
 	const currentFacilityGroups = useMemo(() => {
@@ -116,12 +309,14 @@ function BookingPage() {
 	const filteredVenues = useMemo(() => {
 		return venues
 			.map((venue) => {
-				// District Filter
-				if (
-					selectedDistrict !== "All" &&
-					venue.districtName !== selectedDistrict
-				)
+				// 2. District Match
+				const districtMatch =
+					selectedDistricts.includes("All") ||
+					selectedDistricts.includes(venue.districtCode);
+
+				if (!districtMatch) {
 					return null;
+				}
 
 				// Search Filter
 				if (
@@ -137,15 +332,15 @@ function BookingPage() {
 				Object.keys(venue.facilities).forEach((key) => {
 					const facility = venue.facilities[key];
 
-					// Price Type Filter
-					if (facility.priceType !== selectedPriceType) return;
-
 					// Facility Type Filter
 					if (
-						selectedFacilityType !== "All" &&
-						facility.name !== selectedFacilityType
+						selectedFacilityCode !== "All" &&
+						facility.code !== selectedFacilityCode
 					)
 						return;
+
+					// Price Type Filter
+					if (facility.priceType !== selectedPriceType) return;
 
 					// Note: Venue data from server is already filtered by date
 					// But we check if sessions exist
@@ -165,10 +360,117 @@ function BookingPage() {
 			.filter((v): v is NormalizedVenue => v !== null);
 	}, [
 		venues,
-		selectedDistrict,
 		searchQuery,
-		selectedFacilityType,
+		selectedDistricts,
+		selectedFacilityCode,
 		selectedPriceType,
+	]);
+
+	// --- Availability Stats Calculation ---
+	const { districtStyles, centerStyles, facilityStyles } = useMemo(() => {
+		const districtStats: Record<string, { t: number; a: number }> = {};
+		const centerStats: Record<string, { t: number; a: number }> = {};
+		const facilityStats: Record<string, { t: number; a: number }> = {};
+
+		// Initialize with all known districts and centers to ensure every option gets a style
+		districts.forEach((d) => {
+			districtStats[d.code] = { t: 0, a: 0 };
+		});
+		centers.forEach((c) => {
+			centerStats[c.id] = { t: 0, a: 0 };
+		});
+
+		// Initialize all facilities in groups
+		currentFacilityGroups.forEach((g) => {
+			g.options.forEach((o) => {
+				facilityStats[o.value] = { t: 0, a: 0 };
+			});
+		});
+
+		// 1. District Stats: Use server-provided stats if available (independent of district filter)
+		if (serverDistrictStats && Object.keys(serverDistrictStats).length > 0) {
+			Object.entries(serverDistrictStats).forEach(([code, stat]) => {
+				districtStats[code] = stat;
+			});
+		} else {
+			// Fallback: Calculate from venues (will be 0 for filtered-out districts)
+			venues.forEach((venue) => {
+				Object.values(venue.facilities).forEach((facility) => {
+					if (facility.priceType !== selectedPriceType) return;
+					const t = facility.sessions.length;
+					const a = facility.sessions.filter(
+						(s) => s.available && !s.isPassed,
+					).length;
+
+					if (!districtStats[venue.districtCode])
+						districtStats[venue.districtCode] = { t: 0, a: 0 };
+					districtStats[venue.districtCode].t += t;
+					districtStats[venue.districtCode].a += a;
+				});
+			});
+		}
+
+		venues.forEach((venue) => {
+			Object.values(venue.facilities).forEach((facility) => {
+				// Base filter: Only Price Type
+				if (facility.priceType !== selectedPriceType) return;
+
+				const t = facility.sessions.length;
+				const a = facility.sessions.filter(
+					(s) => s.available && !s.isPassed,
+				).length;
+
+				// 2. Center Stats: Filtered by District (already happening via venues list)
+				// Venues list is filtered by district, so we only count stats for selected districts' centers.
+				// This is correct as per plan.
+
+				const isVenueInSelectedDistricts =
+					selectedDistricts.includes("All") ||
+					selectedDistricts.includes(venue.districtCode);
+
+				if (isVenueInSelectedDistricts) {
+					if (!centerStats[venue.id]) centerStats[venue.id] = { t: 0, a: 0 };
+					centerStats[venue.id].t += t;
+					centerStats[venue.id].a += a;
+				}
+
+				// 3. Facility Stats: Filtered by Center
+				const isVenueSelected =
+					isVenueInSelectedDistricts &&
+					(selectedCenter === "All" || selectedCenter === venue.id);
+
+				if (isVenueSelected) {
+					if (!facilityStats[facility.code])
+						facilityStats[facility.code] = { t: 0, a: 0 };
+					facilityStats[facility.code].t += t;
+					facilityStats[facility.code].a += a;
+				}
+			});
+		});
+
+		// Helper to map stats to style
+		const mapStyles = (stats: Record<string, { t: number; a: number }>) => {
+			const styles: Record<string, AvailabilityTheme> = {};
+			Object.keys(stats).forEach((key) => {
+				styles[key] = getAvailabilityColor(stats[key].t, stats[key].a);
+			});
+			return styles;
+		};
+
+		return {
+			districtStyles: mapStyles(districtStats),
+			centerStyles: mapStyles(centerStats),
+			facilityStyles: mapStyles(facilityStats),
+		};
+	}, [
+		venues,
+		selectedDistricts,
+		selectedCenter,
+		selectedPriceType,
+		districts,
+		centers,
+		currentFacilityGroups,
+		serverDistrictStats,
 	]);
 
 	// Reset facility type when price type changes is handled in handlePriceTypeChange now
@@ -176,13 +478,23 @@ function BookingPage() {
 	// --- Handlers ---
 
 	const handlePriceTypeChange = (type: PriceType) => {
-		setSelectedPriceType(type);
-		setSelectedFacilityType("All");
+		navigate({
+			search: (prev) => ({
+				...prev,
+				priceType: type,
+				facility: undefined, // Reset facility when price type changes
+			}),
+		});
 	};
 
 	const handleDateSelect = (newDate: string) => {
-		navigate({ search: { date: newDate }, replace: true });
-		// Reset filters on date change? Maybe keep them.
+		navigate({
+			search: (prev) => ({
+				...prev,
+				date: newDate,
+			}),
+			replace: true,
+		});
 	};
 
 	const handleSessionClick = (
@@ -201,12 +513,13 @@ function BookingPage() {
 	};
 
 	return (
-		<div className="min-h-screen bg-porcelain-50 flex flex-col font-sans">
+		<div className="min-h-screen bg-background/50 flex flex-col font-sans">
 			{/* Date Selector */}
 			<DateSelector
 				dates={availableDates}
 				selectedDate={selectedDate}
 				onSelectDate={handleDateSelect}
+				dateStyles={dateStyles}
 			/>
 
 			{/* Main Content Area */}
@@ -216,14 +529,27 @@ function BookingPage() {
 					searchQuery={searchQuery}
 					onSearchChange={setSearchQuery}
 					availableDistricts={availableDistricts}
-					selectedDistrict={selectedDistrict}
-					onSelectDistrict={setSelectedDistrict}
+					selectedDistricts={selectedDistricts}
+					onSelectDistrict={handleSelectDistrict}
+					availableCenters={availableCenters}
+					selectedCenter={selectedCenter}
+					onSelectCenter={handleSelectCenter}
 					facilityGroups={currentFacilityGroups}
-					selectedFacilityType={selectedFacilityType}
-					onSelectFacilityType={setSelectedFacilityType}
+					selectedFacilityType={selectedFacilityCode}
+					onSelectFacilityType={handleSelectFacility}
 					selectedPriceType={selectedPriceType}
 					onSelectPriceType={handlePriceTypeChange}
+					districtStyles={districtStyles}
+					centerStyles={centerStyles}
+					facilityStyles={facilityStyles}
+					onResetFilters={handleResetFilters}
 				/>
+				<style>{`
+					:root {
+						--color-primary: var(--color-pacific-blue-600);
+						--color-primary-hover: var(--color-pacific-blue-700);
+					}
+				`}</style>
 
 				{/* Results Info */}
 				<div className="flex items-center justify-between">
@@ -233,7 +559,20 @@ function BookingPage() {
 							{filteredVenues.length}
 						</span>
 					</h2>
-					<span className="text-sm text-gray-500">Date: {selectedDate}</span>
+					<div className="flex items-center gap-4 text-sm text-gray-500">
+						{lastUpdate && (
+							<span>
+								Last updated:{" "}
+								{new Date(lastUpdate).toLocaleString("en-HK", {
+									timeZone: "Asia/Hong_Kong",
+									month: "numeric",
+									day: "numeric",
+									hour: "2-digit",
+									minute: "2-digit",
+								})}
+							</span>
+						)}
+					</div>
 				</div>
 
 				{/* Venues Grid */}

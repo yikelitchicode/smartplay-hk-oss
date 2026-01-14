@@ -82,7 +82,7 @@ export interface ProcessedFacilityData {
 	districtName: string;
 
 	// Venue
-	venueId: number;
+	venueId: string;
 	venueName: string;
 	venueImageUrl: string;
 
@@ -92,7 +92,7 @@ export interface ProcessedFacilityData {
 	facilityTypeNameEn: string;
 	facilityCode: string;
 	facilityGroupCode: string;
-	facilityVRId: number;
+	facilityVRId: string;
 
 	// Session
 	sessionStartDate: string;
@@ -107,7 +107,7 @@ export interface ProcessedFacilityData {
 
 // Database insert types
 export interface FacilityInsert {
-	id: number;
+	id: string;
 	name: string;
 	imageUrl: string;
 	districtCode: string;
@@ -118,12 +118,12 @@ export interface FacilityInsert {
 export interface SessionInsert {
 	id: string;
 	crawlJobId: string;
-	venueId: number;
+	venueId: string;
 	facilityTypeId: number;
 	facilityTypeName: string;
 	facilityTypeNameEn: string;
 	facilityCode: string;
-	facilityVRId: number;
+	facilityVRId: string;
 	date: Date;
 	startTime: string;
 	endTime: string;
@@ -164,6 +164,12 @@ export interface CrawlerConfig {
 		skipDuplicates: boolean;
 		flattenStructure: boolean;
 		includeTimeSlots: boolean;
+	};
+	recovery: {
+		maxRetryAttemptsPerDay: number;
+		retryDelayBase: number;
+		enableCheckpoints: boolean;
+		staleRunThresholdMs: number;
 	};
 }
 

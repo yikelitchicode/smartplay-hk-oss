@@ -99,7 +99,7 @@ export const defaultConfig: CrawlerConfig = {
 	},
 	parameters: {
 		distCode: [...VALID_DISTRICTS], // Monitor all 18 districts by default
-		faCode: ["TENC", "NFTENC"], // Monitor both Paid and Free Tennis by default
+		faCode: [...VALID_FACILITY_TYPES], // Monitor all facility types
 		playDate: new Date().toISOString().split("T")[0], // Today's date
 	},
 	schedule: {
@@ -111,6 +111,12 @@ export const defaultConfig: CrawlerConfig = {
 		skipDuplicates: true,
 		flattenStructure: true,
 		includeTimeSlots: true,
+	},
+	recovery: {
+		maxRetryAttemptsPerDay: 3,
+		retryDelayBase: 2000,
+		enableCheckpoints: true,
+		staleRunThresholdMs: 3600000, // 1 hour
 	},
 };
 

@@ -78,8 +78,9 @@ const BookingModal: React.FC<BookingModalProps> = ({
 							size="lg"
 							className="w-full"
 							onClick={onConfirm}
+							disabled={session.isPassed}
 						>
-							Confirm Booking
+							{session.isPassed ? "Time Slot Passed" : "Confirm Booking"}
 						</Button>
 						<Button
 							variant="secondary" // or ghost? Draft used white with border. Secondary in UI button is porcelain bg.

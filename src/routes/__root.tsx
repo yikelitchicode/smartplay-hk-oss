@@ -5,6 +5,7 @@ import { I18nextProvider, useTranslation } from "react-i18next";
 import Header from "../components/Header";
 import i18n from "../lib/i18n";
 import appCss from "../styles.css?url";
+import NotFound from "../components/NotFound";
 
 export const Route = createRootRoute({
 	head: () => ({
@@ -29,6 +30,7 @@ export const Route = createRootRoute({
 	}),
 
 	shellComponent: RootDocument,
+	notFoundComponent: NotFound,
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
