@@ -1,29 +1,53 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { CalendarDays, Home, Menu } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./LanguageSwitcher";
 import type { NavigationItem } from "./ui";
 import { Button, Drawer, NavigationList } from "./ui";
 
-export default function Header() {
+export default function Header(): React.ReactNode {
 	const { t } = useTranslation("common");
 	const [isOpen, setIsOpen] = useState(false);
+	const location = useLocation();
 
-	const navigationItems: NavigationItem[] = [
-		{
-			id: "home",
-			label: t("menu"),
-			to: "/",
-			icon: <Home size={20} />,
-		},
-		{
-			id: "booking",
-			label: "Booking",
-			to: "/booking",
-			icon: <CalendarDays size={20} />,
-		},
-	];
+	// Get current page name based on route
+	const currentPageName = useMemo(() => {
+		const path = location.pathname;
+		if (path === "/") return t("nav.home");
+		if (path === "/booking") return t("nav.booking");
+		return t("nav.home"); // Default fallback
+	}, [location.pathname, t]);
+
+	const navigationItems = useMemo<NavigationItem[]>(
+		() => [
+			{
+				id: "home",
+				label: t("nav.home"),
+				to: "/",
+				icon: <Home size={20} />,
+			},
+			{
+				id: "booking",
+				label: t("nav.booking"),
+				to: "/booking",
+				icon: <CalendarDays size={20} />,
+			},
+		],
+		[t],
+	);
+
+	const handleOpenDrawer = useCallback(() => {
+		setIsOpen(true);
+	}, []);
+
+	const handleCloseDrawer = useCallback(() => {
+		setIsOpen(false);
+	}, []);
+
+	const handleItemClick = useCallback(() => {
+		setIsOpen(false);
+	}, []);
 
 	return (
 		<>
@@ -32,9 +56,11 @@ export default function Header() {
 					<Button
 						variant="ghost"
 						size="sm"
-						onClick={() => setIsOpen(true)}
+						onClick={handleOpenDrawer}
 						aria-label={t("menu")}
 						className="text-foreground hover:bg-muted"
+						aria-expanded={isOpen}
+						aria-controls="navigation-drawer"
 					>
 						<Menu size={24} />
 					</Button>
@@ -42,8 +68,10 @@ export default function Header() {
 						<Link to="/" className="text-card-foreground hover:text-primary">
 							SmartPlay HK OSS
 						</Link>
-						<span className="text-muted-foreground">|</span>
-						<span className="text-primary">Booking</span>
+						<span className="text-muted-foreground" aria-hidden="true">
+							|
+						</span>
+						<span className="text-primary">{currentPageName}</span>
 					</h1>
 				</div>
 				<LanguageSwitcher />
@@ -51,13 +79,14 @@ export default function Header() {
 
 			<Drawer
 				open={isOpen}
-				onClose={() => setIsOpen(false)}
+				onClose={handleCloseDrawer}
 				anchor="left"
 				size="lg"
+				title={t("nav.title")}
 			>
 				<NavigationList
 					items={navigationItems}
-					onItemClick={() => setIsOpen(false)}
+					onItemClick={handleItemClick}
 					className="p-4"
 				/>
 			</Drawer>

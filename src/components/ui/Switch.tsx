@@ -29,16 +29,7 @@ const sizeStyles = {
 
 export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
 	(
-		{
-			label,
-			description,
-			error,
-			size = "md",
-			disabled,
-			className = "",
-			id,
-			...props
-		},
+		{ label, description, error, size = "md", disabled, className = "", id },
 		ref,
 	) => {
 		const generatedId = React.useId();
@@ -64,7 +55,7 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
 			<div>
 				<div className="flex items-start">
 					<div className="flex items-center">
-						<BaseSwitch
+						<BaseSwitch.Root
 							ref={ref}
 							id={switchId}
 							className={`${switchStyles} ${currentSize.switch} ${backgroundColor} ${className}`.trim()}
@@ -73,13 +64,12 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
 								error ? errorId : description ? descriptionId : undefined
 							}
 							disabled={disabled}
-							{...props}
 						>
 							<span
 								aria-hidden="true"
 								className={`${thumbStyles} ${currentSize.thumb}`}
 							/>
-						</BaseSwitch>
+						</BaseSwitch.Root>
 					</div>
 					{label && (
 						<div className="ml-3">

@@ -6,6 +6,7 @@ export type { BadgeProps } from "./Badge";
 export { Badge } from "./Badge";
 export type { ButtonProps } from "./Button";
 export { Button } from "./Button";
+export * from "./Card";
 export type { CheckboxProps } from "./Checkbox";
 export { Checkbox } from "./Checkbox";
 export type { DrawerProps } from "./Drawer";
@@ -24,5 +25,6 @@ export type { SwitchProps } from "./Switch";
 export { Switch } from "./Switch";
 export type { TextareaProps } from "./Textarea";
 export { Textarea } from "./Textarea";
+// ... existing exports
 export type { TooltipProps } from "./Tooltip";
 export { Tooltip } from "./Tooltip";

@@ -1,7 +1,8 @@
-import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
+import type { JSX } from "react";
+import { useTranslation } from "react-i18next";
 
-export default function NotFound() {
+export default function NotFound(): JSX.Element {
 	const { t } = useTranslation();
 
 	return (
@@ -14,12 +15,12 @@ export default function NotFound() {
 				<p className="mb-8 text-muted-foreground">
 					{t(
 						"notFound.description",
-						"Sorry, we couldn't find the page you're looking for."
+						"Sorry, we couldn't find the page you're looking for.",
 					)}
 				</p>
 				<Link
 					to="/"
-					className="inline-block rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+					className="inline-block rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
 				>
 					{t("notFound.backToHome", "Back to Home")}
 				</Link>

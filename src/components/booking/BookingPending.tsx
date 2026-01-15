@@ -1,10 +1,16 @@
-import { Skeleton } from "@/components/ui/Skeleton";
+import type { JSX } from "react";
+import { Skeleton } from "../ui/Skeleton";
+import { VenueListSkeleton } from "./VenueListSkeleton";
 
-export function BookingPending() {
+export function BookingPending(): JSX.Element {
 	return (
-		<div className="min-h-screen bg-background/50 flex flex-col font-sans">
+		<output
+			className="min-h-screen bg-background/50 flex flex-col font-sans"
+			aria-live="polite"
+			aria-label="Loading booking information"
+		>
 			{/* Date Selector Skeleton */}
-			<div className="bg-white border-b border-gray-200">
+			<div className="bg-white border-b border-gray-200" aria-hidden="true">
 				<div className="max-w-7xl mx-auto">
 					<div className="flex items-center gap-1 p-2 overflow-hidden">
 						{Array.from({ length: 7 }, (_, i) => (
@@ -21,7 +27,10 @@ export function BookingPending() {
 			{/* Main Content Area */}
 			<main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 space-y-6">
 				{/* Filter Bar Skeleton */}
-				<div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden space-y-0 divide-y divide-gray-100">
+				<div
+					className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden space-y-0 divide-y divide-gray-100"
+					aria-hidden="true"
+				>
 					{/* Search Bar */}
 					<div className="p-5 border-b border-gray-100">
 						<div className="flex items-center gap-4">
@@ -64,44 +73,14 @@ export function BookingPending() {
 				</div>
 
 				{/* Results Info */}
-				<div className="flex items-center justify-between">
+				<div className="flex items-center justify-between" aria-hidden="true">
 					<Skeleton className="h-7 w-48" />
 					<Skeleton className="h-5 w-32" />
 				</div>
 
 				{/* Venues Grid Skeleton */}
-				<div className="grid grid-cols-1 gap-6">
-					{Array.from({ length: 3 }, (_, i) => (
-						<div
-							// biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton items, never reordered
-							key={i}
-							className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden p-6 space-y-6"
-						>
-							<div className="flex justify-between items-start">
-								<div className="space-y-2">
-									<Skeleton className="h-6 w-64" />
-									<Skeleton className="h-4 w-48" />
-								</div>
-								<Skeleton className="h-6 w-20 rounded-full" />
-							</div>
-							<div className="space-y-4">
-								<div className="space-y-2">
-									<Skeleton className="h-5 w-40" />
-									<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-										{Array.from({ length: 6 }, (_, j) => (
-											<Skeleton
-												// biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton items, never reordered
-												key={j}
-												className="h-20 w-full rounded-xl"
-											/>
-										))}
-									</div>
-								</div>
-							</div>
-						</div>
-					))}
-				</div>
+				<VenueListSkeleton />
 			</main>
-		</div>
+		</output>
 	);
 }

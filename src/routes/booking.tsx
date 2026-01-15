@@ -1,6 +1,18 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+	Await,
+	createFileRoute,
+	defer,
+	useNavigate,
+} from "@tanstack/react-router";
 import { CalendarDays } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+	Suspense,
+	useCallback,
+	useDeferredValue,
+	useMemo,
+	useState,
+} from "react";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import {
 	BookingModal,
@@ -8,25 +20,50 @@ import {
 	DateSelector,
 	FilterBar,
 	VenueCard,
+	VenueListSkeleton,
 } from "@/components/booking";
+import {
+	Pagination,
+	PaginationContent,
+	PaginationEllipsis,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from "@/components/ui/Pagination";
+import { parsePriceType } from "@/lib/booking";
+import {
+	useBookingFilters,
+	useBookingNavigation,
+	useBookingStats,
+	useVenueFilters,
+} from "@/lib/booking/hooks";
 import type {
 	NormalizedSession,
 	NormalizedVenue,
-	PriceType,
 	RegionType,
 } from "@/lib/booking/types";
 import {
 	type AvailabilityTheme,
-	FREE_FACILITIES_GROUPS,
 	getAvailabilityColor,
-	PAID_FACILITIES_GROUPS,
+	getRegion,
 } from "@/lib/booking/utils";
+import { ensureI18nInitialized } from "@/lib/i18n";
+import type {
+	ServerError,
+	ServerSuccess,
+} from "@/lib/server-utils/error-handler";
 import {
 	getAvailableDates,
 	getBookingData,
 	getDatesAvailability,
 	getLastUpdateTime,
+	getMetadata,
 } from "@/server-functions/booking";
+import type {
+	BookingDataResult,
+	MetadataResult,
+} from "@/services/booking.service";
 
 // Search Params Schema
 const searchSchema = z.object({
@@ -37,199 +74,417 @@ const searchSchema = z.object({
 	priceType: z.enum(["Paid", "Free"]).optional(),
 });
 
+/**
+ * Generate dynamic meta tags for the booking page
+ */
+function getBookingPageMeta() {
+	const baseUrl =
+		typeof window !== "undefined"
+			? `${window.location.protocol}//${window.location.host}`
+			: "https://smartplay.hk";
+	const canonical = `${baseUrl}/booking`;
+
+	return {
+		title: "LCSD Sports Facilities Availability | SmartPlay HK OSS",
+		description:
+			"Open-source availability checker for Hong Kong LCSD sports facilities. Check real-time availability for tennis, basketball, badminton courts across all Hong Kong districts. Booking must be completed on the official LCSD SmartPlay website.",
+		ogTitle: "SmartPlay HK OSS - LCSD Facilities Availability Checker",
+		ogDescription:
+			"Open-source tool to check Hong Kong LCSD sports facility availability in real-time. Find available tennis, basketball, and badminton courts. Official booking via LCSD SmartPlay website.",
+		ogImage: `${baseUrl}/og-image.jpg`,
+		twitterCard: "summary_large_image",
+		canonical,
+	};
+}
+
+/**
+ * Generate structured data (JSON-LD) for the booking page
+ */
+function getBookingPageStructuredData() {
+	const baseUrl =
+		typeof window !== "undefined"
+			? `${window.location.protocol}//${window.location.host}`
+			: "https://smartplay.hk";
+
+	return {
+		"@context": "https://schema.org",
+		"@graph": [
+			{
+				"@type": "WebApplication",
+				"@id": `${baseUrl}/booking#webapp`,
+				name: "SmartPlay HK OSS - LCSD Facilities Availability Checker",
+				description:
+					"Open-source utility for checking real-time availability of Hong Kong LCSD sports facilities. Booking must be completed on the official LCSD SmartPlay website.",
+				url: `${baseUrl}/booking`,
+				applicationCategory: "UtilitiesApplication",
+				operatingSystem: "Web",
+				offers: {
+					"@type": "Offer",
+					price: "0",
+					priceCurrency: "HKD",
+					description: "Free open-source availability checking service",
+				},
+				provider: {
+					"@type": "Organization",
+					name: "SmartPlay HK OSS",
+					url: baseUrl,
+				},
+				featureList: [
+					"Real-time availability checking",
+					"Multi-district coverage",
+					"Multiple facility types",
+					"Filtering and search",
+				],
+				about: {
+					"@type": "Thing",
+					name: "LCSD Sports Facilities",
+					description:
+						"Leisure and Cultural Services Department sports facilities in Hong Kong",
+				},
+			},
+			{
+				"@type": "BreadcrumbList",
+				itemListElement: [
+					{
+						"@type": "ListItem",
+						position: 1,
+						name: "Home",
+						item: baseUrl,
+					},
+					{
+						"@type": "ListItem",
+						position: 2,
+						name: "Facility Availability",
+						item: `${baseUrl}/booking`,
+					},
+				],
+			},
+		],
+	};
+}
+
 export const Route = createFileRoute("/booking")({
 	validateSearch: searchSchema,
-	loaderDeps: ({
-		search: { date, districts, center, facility, priceType },
-	}) => ({
+	loaderDeps: ({ search: { date } }) => ({
 		date,
-		districts,
-		center,
-		facility,
-		priceType,
 	}),
-	loader: async ({
-		deps: { date, districts, center, facility, priceType },
-	}) => {
-		// 1. Fetch Dates
-		const datesData = await getAvailableDates();
-		const availableDates = datesData.success ? datesData.data : [];
+	// Keep loader data fresh indefinitely for the same date
+	// This prevents skeleton loading when only filter params change
+	staleTime: Infinity,
+	loader: async ({ deps: { date } }) => {
+		// Ensure translations are loaded before rendering
+		await ensureI18nInitialized();
 
-		// 2. Determine Selected Date
-		const selectedDate =
-			date || availableDates[0] || new Date().toISOString().split("T")[0];
+		const defaultDate = new Date().toISOString().split("T")[0];
 
-		const currentPriceType = priceType || "Paid";
-
-		// 3. Fetch Booking Data and Date Availability in parallel
-		const [bookingData, availabilityData, lastUpdateData] = await Promise.all([
-			getBookingData({
-				data: {
-					date: selectedDate,
-					districts: districts,
-					venueId: center,
-					facilityCode: facility,
-					priceType: currentPriceType,
-				},
-			}),
-			getDatesAvailability({
-				data: {
-					districts: districts,
-					venueId: center,
-					facilityCode: facility,
-					priceType: currentPriceType,
-				},
-			}),
-			getLastUpdateTime(),
-		]);
-
-		let venues: NormalizedVenue[] = [];
-		let districtsList: { code: string; name: string; region: RegionType }[] =
-			[];
-		let centersList: {
-			id: string;
-			name: string;
-			districtName: string;
-			districtCode: string;
-		}[] = [];
-
-		if (bookingData.success) {
-			venues = bookingData.data.venues;
-			districtsList = bookingData.data.districts;
-			centersList = bookingData.data.centers;
-		}
-
+		// Defer everything to show skeleton immediately
 		return {
-			availableDates,
-			selectedDate,
-			venues,
-			districts: districtsList,
-			centers: centersList,
-			priceType: currentPriceType,
-			dateAvailability: availabilityData.success ? availabilityData.data : {},
-			districtStats:
-				bookingData.success &&
-				bookingData.data &&
-				"districtStats" in bookingData.data &&
-				bookingData.data.districtStats
-					? (bookingData.data.districtStats as Record<
-							string,
-							{ t: number; a: number }
-						>)
-					: {},
-			centerStats:
-				bookingData.success &&
-				bookingData.data &&
-				"centerStats" in bookingData.data &&
-				bookingData.data.centerStats
-					? (bookingData.data.centerStats as Record<
-							string,
-							{ t: number; a: number }
-						>)
-					: {},
-			lastUpdate: lastUpdateData.success ? lastUpdateData.lastUpdate : null,
+			date,
+			priceType: "Paid" as const, // Default for initial load, client state takes over
+			deferredData: defer(
+				Promise.all([
+					getAvailableDates(),
+					getBookingData({
+						data: {
+							date: date || defaultDate,
+						},
+					}),
+					getDatesAvailability({
+						data: {},
+					}),
+					getLastUpdateTime(),
+					getMetadata(),
+				]).then(
+					([
+						datesData,
+						bookingData,
+						availabilityData,
+						lastUpdateData,
+						metadataData,
+					]) => {
+						const availableDates =
+							datesData.success && datesData.data ? datesData.data : [];
+						const selectedDate = date || availableDates[0] || defaultDate;
+
+						return {
+							availableDates,
+							selectedDate,
+							bookingData,
+							availabilityData,
+							lastUpdateData,
+							metadataData,
+						};
+					},
+				),
+			),
 		};
 	},
 	component: BookingPage,
 	pendingComponent: BookingPending,
+	head: () => {
+		const {
+			title,
+			description,
+			ogTitle,
+			ogDescription,
+			ogImage,
+			twitterCard,
+			canonical,
+		} = getBookingPageMeta();
+
+		return {
+			meta: [
+				{ title },
+				{ name: "description", content: description },
+				{ property: "og:title", content: ogTitle },
+				{ property: "og:description", content: ogDescription },
+				{ property: "og:type", content: "website" },
+				{ property: "og:image", content: ogImage },
+				{ property: "og:url", content: canonical },
+				{ name: "twitter:card", content: twitterCard },
+				{ name: "twitter:title", content: ogTitle },
+				{ name: "twitter:description", content: ogDescription },
+				{ name: "twitter:image", content: ogImage },
+				{ name: "robots", content: "index, follow" },
+			],
+			links: [
+				{ rel: "canonical", href: canonical },
+				// English
+				{ rel: "alternate", hreflang: "en", href: `${canonical}?lng=en` },
+				// Chinese Simplified
+				{ rel: "alternate", hreflang: "zh-Hans", href: `${canonical}?lng=cn` },
+				// Chinese Traditional
+				{ rel: "alternate", hreflang: "zh-Hant", href: `${canonical}?lng=zh` },
+				// Hong Kong Chinese (default)
+				{ rel: "alternate", hreflang: "zh-HK", href: canonical },
+				// x-default for language negotiation
+				{
+					rel: "alternate",
+					hreflang: "x-default",
+					href: `${canonical}?lng=en`,
+				},
+			],
+			scripts: [
+				{
+					type: "application/ld+json",
+					innerHTML: JSON.stringify(getBookingPageStructuredData()),
+				},
+			],
+		};
+	},
 });
 
+/**
+ * Booking page component
+ *
+ * Uses extracted custom hooks for:
+ * - Filter state management (useBookingFilters)
+ * - URL navigation (useBookingNavigation)
+ * - Venue filtering (useVenueFilters)
+ * - Statistics calculation (useBookingStats)
+ */
 function BookingPage() {
-	const {
-		availableDates,
-		selectedDate,
-		venues,
-		districts,
-		centers,
-		priceType: serverPriceType,
-		dateAvailability,
-		districtStats: serverDistrictStats,
-		centerStats: serverCenterStats,
-		lastUpdate,
-	} = Route.useLoaderData();
-	const navigate = useNavigate({ from: Route.fullPath });
+	const { deferredData, priceType } = Route.useLoaderData();
+
+	return (
+		<Suspense fallback={<BookingPending />}>
+			<Await promise={deferredData}>
+				{(resolved) => (
+					<BookingPageContent {...resolved} currentPriceType={priceType} />
+				)}
+			</Await>
+		</Suspense>
+	);
+}
+
+interface Metadata extends MetadataResult {}
+
+function BookingPageContent({
+	availableDates,
+	selectedDate,
+	bookingData,
+	availabilityData,
+	lastUpdateData,
+	metadataData,
+	currentPriceType,
+}: {
+	availableDates: string[];
+	selectedDate: string;
+	bookingData: ServerError | ServerSuccess<BookingDataResult>;
+	availabilityData:
+		| ServerError
+		| ServerSuccess<Record<string, { t: number; a: number }>>;
+	lastUpdateData: ServerError | ServerSuccess<{ lastUpdate: Date | null }>;
+	metadataData: ServerError | ServerSuccess<MetadataResult>;
+	currentPriceType: "Paid" | "Free";
+}) {
+	const { t, i18n } = useTranslation(["booking", "common"]);
+
+	// Process raw data
+	const { venues, districts, centers, lastUpdate, metadata } = useMemo(() => {
+		let venues: NormalizedVenue[] = [];
+		let districtsList: {
+			code: string;
+			name: string;
+			region: RegionType;
+			nameEn?: string | null;
+			nameTc?: string | null;
+			nameSc?: string | null;
+		}[] = [];
+		let centersList: {
+			id: string;
+			name: string;
+			nameEn?: string | null;
+			nameTc?: string | null;
+			nameSc?: string | null;
+			districtName: string;
+			districtNameEn?: string | null;
+			districtNameTc?: string | null;
+			districtNameSc?: string | null;
+			districtCode: string;
+		}[] = [];
+
+		if (bookingData.success && bookingData.data) {
+			venues = bookingData.data.venues;
+			districtsList = bookingData.data.districts.map((d) => ({
+				...d,
+				region: getRegion(d.code),
+			}));
+			centersList = bookingData.data.centers.map((c) => ({
+				...c,
+				districtName: c.districtName || "",
+				districtCode: c.districtCode || "",
+			}));
+		}
+
+		return {
+			venues,
+			districts: districtsList,
+			centers: centersList,
+			lastUpdate:
+				lastUpdateData.success && lastUpdateData.data
+					? lastUpdateData.data.lastUpdate
+					: null,
+			metadata: (metadataData.success && metadataData.data
+				? metadataData.data
+				: {
+						districts: [],
+						facilityTypes: [],
+						facilityGroups: [],
+						centers: [],
+					}) as Metadata,
+		};
+	}, [bookingData, lastUpdateData, metadataData]);
+
+	const dateAvailability = useMemo(() => {
+		return availabilityData.success && availabilityData.data
+			? availabilityData.data
+			: {};
+	}, [availabilityData]);
+
 	const {
 		districts: searchDistricts,
 		center: searchCenter,
 		facility: searchFacility,
+		priceType: searchPriceType,
 	} = Route.useSearch();
-	// const { t } = useTranslation(["common", "booking"]); // Removed unused translation hook
 
-	// --- Client State ---
-	const [searchQuery, setSearchQuery] = useState("");
-
-	// Initialize states from URL or defaults
-	const [selectedDistricts, setSelectedDistricts] = useState<string[]>(
-		searchDistricts || ["All"],
-	);
-	const [selectedCenter, setSelectedCenter] = useState<string>(
-		searchCenter || "All",
-	);
-	const [selectedFacilityCode, setSelectedFacilityCode] = useState<string>(
-		searchFacility || "All",
+	// Type-safe price type parsing
+	// Type-safe price type parsing, fallback to loader provided default
+	const selectedPriceType = parsePriceType(
+		searchPriceType || currentPriceType,
+		"Paid",
 	);
 
-	const selectedPriceType = serverPriceType as PriceType;
+	// Navigation management
+	const { handlePriceTypeChange, handleDateSelect } = useBookingNavigation({
+		fullPath: Route.fullPath,
+	});
 
-	const handleSelectDistrict = (districtCode: string) => {
-		let next: string[];
-		if (districtCode === "All") {
-			next = ["All"];
-		} else {
-			const withoutAll = selectedDistricts.filter((d) => d !== "All");
-			if (withoutAll.includes(districtCode)) {
-				next = withoutAll.filter((d) => d !== districtCode);
-				if (next.length === 0) next = ["All"];
-			} else {
-				next = [...withoutAll, districtCode];
-			}
-		}
+	// Navigation hook
+	const navigate = useNavigate({ from: Route.fullPath });
 
-		setSelectedDistricts(next);
-		navigate({
-			search: (prev) => ({
-				...prev,
-				districts: next.includes("All") ? undefined : next,
-			}),
-		});
-	};
+	// Filter state management with URL sync
+	const {
+		selectedDistricts,
+		selectedCenter,
+		selectedFacilityCode,
+		searchQuery,
+		handleSelectDistrict,
+		handleSelectCenter,
+		handleSelectFacility,
+		handleResetFilters,
+		handleSearchChange, // Added this
+	} = useBookingFilters({
+		initialDistricts: searchDistricts || ["All"],
+		initialCenter: searchCenter || "All",
+		initialFacility: searchFacility || "All",
+		onNavigate: (updates) => {
+			navigate({
+				search: (prev) => ({
+					...prev,
+					...updates,
+				}),
+			});
+		},
+	});
 
-	const handleSelectCenter = (centerId: string) => {
-		setSelectedCenter(centerId);
-		navigate({
-			search: (prev) => ({
-				...prev,
-				center: centerId === "All" ? undefined : centerId,
-			}),
-		});
-	};
+	// Defer expensive filtering and stats calculation
+	const deferredSearchQuery = useDeferredValue(searchQuery);
+	const deferredDistricts = useDeferredValue(selectedDistricts);
+	const deferredCenter = useDeferredValue(selectedCenter);
+	const deferredFacility = useDeferredValue(selectedFacilityCode);
+	const deferredPriceType = useDeferredValue(selectedPriceType);
 
-	const handleSelectFacility = (fCode: string) => {
-		setSelectedFacilityCode(fCode);
-		navigate({
-			search: (prev) => ({
-				...prev,
-				facility: fCode === "All" ? undefined : fCode,
-			}),
-		});
-	};
+	// Detect if a transition is pending
+	const isFilteringPending =
+		searchQuery !== deferredSearchQuery ||
+		selectedDistricts !== deferredDistricts ||
+		selectedCenter !== deferredCenter ||
+		selectedFacilityCode !== deferredFacility ||
+		selectedPriceType !== deferredPriceType;
 
-	const handleResetFilters = () => {
-		setSelectedDistricts(["All"]);
-		setSelectedCenter("All");
-		setSelectedFacilityCode("All");
-		setSearchQuery("");
-		navigate({
-			search: (prev) => ({
-				...prev,
-				districts: undefined,
-				center: undefined,
-				facility: undefined,
-				priceType: undefined,
-			}),
-		});
-	};
+	// Pagination State
+	const [currentPage, setCurrentPage] = useState(1);
+	const ITEMS_PER_PAGE = 6;
 
+	const filteredVenues = useVenueFilters({
+		venues,
+		searchQuery: deferredSearchQuery,
+		selectedDistricts: deferredDistricts,
+		selectedCenter: deferredCenter,
+		selectedFacilityCode: deferredFacility,
+		selectedPriceType: deferredPriceType,
+	});
+
+	// Reset page when filters change
+	useMemo(() => {
+		setCurrentPage(1);
+	}, []);
+
+	const totalPages = Math.ceil(filteredVenues.length / ITEMS_PER_PAGE);
+	const paginatedVenues = filteredVenues.slice(
+		(currentPage - 1) * ITEMS_PER_PAGE,
+		currentPage * ITEMS_PER_PAGE,
+	);
+
+	const {
+		districtStyles,
+		centerStyles,
+		facilityStyles,
+		availableDistricts,
+		availableCenters,
+	} = useBookingStats({
+		venues,
+		districts,
+		centers,
+		selectedDistricts: deferredDistricts,
+		selectedCenter: deferredCenter,
+		selectedFacilityCode: deferredFacility,
+		selectedPriceType: deferredPriceType,
+	});
+
+	// Date styles for calendar
 	const dateStyles = useMemo(() => {
 		const styles: Record<string, AvailabilityTheme> = {};
 		Object.keys(dateAvailability).forEach((date) => {
@@ -241,20 +496,26 @@ function BookingPage() {
 		return styles;
 	}, [dateAvailability]);
 
-	useEffect(() => {
-		setSelectedCenter(searchCenter || "All");
-	}, [searchCenter]);
+	// Current facility groups based on price type - from database
+	const currentFacilityGroups = useMemo(() => {
+		const isFree = selectedPriceType === "Free";
+		return metadata.facilityGroups
+			.map((g) => ({
+				...g,
+				facilities: g.facilities.filter((f) => f.isFree === isFree),
+			}))
+			.filter((g) => g.facilities.length > 0)
+			.map((g) => ({
+				label: g.name + (g.nameEn ? ` (${g.nameEn})` : ""),
+				value: g.code,
+				options: g.facilities.map((f) => ({
+					label: f.name,
+					value: f.code,
+				})),
+			}));
+	}, [selectedPriceType, metadata.facilityGroups]);
 
-	useEffect(() => {
-		setSelectedFacilityCode(searchFacility || "All");
-	}, [searchFacility]);
-
-	// Initialize selectedDistricts from searchDistricts
-	useEffect(() => {
-		setSelectedDistricts(searchDistricts || ["All"]);
-	}, [searchDistricts]);
-
-	// Modal State
+	// Modal state for booking
 	const [bookingSession, setBookingSession] =
 		useState<NormalizedSession | null>(null);
 	const [bookingVenue, setBookingVenue] = useState<NormalizedVenue | null>(
@@ -262,288 +523,74 @@ function BookingPage() {
 	);
 	const [showToast, setShowToast] = useState(false);
 
-	// --- Derived Data ---
+	// Handle session click to open booking modal
+	const handleSessionClick = useCallback(
+		(venue: NormalizedVenue, session: NormalizedSession) => {
+			setBookingVenue(venue);
+			setBookingSession(session);
+		},
+		[],
+	);
 
-	// 1. Available Districts for FilterBar (now from server)
-	const availableDistricts = useMemo(() => {
-		return [...districts].sort((a, b) => {
-			const statA = serverDistrictStats?.[a.code] || { t: 0, a: 0 };
-			const statB = serverDistrictStats?.[b.code] || { t: 0, a: 0 };
-			if (statB.a !== statA.a) return statB.a - statA.a;
-			if (statB.t !== statA.t) return statB.t - statA.t;
-			return a.name.localeCompare(b.name);
-		});
-	}, [districts, serverDistrictStats]);
-
-	// 1.5 Available Centers for FilterBar (from server)
-	const availableCenters = useMemo(() => {
-		const filtered = selectedDistricts.includes("All")
-			? centers
-			: centers.filter((c) => {
-					// Check if center has districtCode property (from server data)
-					if ("districtCode" in c && c.districtCode) {
-						return selectedDistricts.includes(c.districtCode);
-					}
-					// Fallback to matching by district name
-					const dist = districts.find((d) => d.name === c.districtName);
-					return dist ? selectedDistricts.includes(dist.code) : false;
-				});
-
-		return [...filtered].sort((a, b) => {
-			const statA = serverCenterStats?.[a.id] || { t: 0, a: 0 };
-			const statB = serverCenterStats?.[b.id] || { t: 0, a: 0 };
-			if (statB.a !== statA.a) return statB.a - statA.a;
-			if (statB.t !== statA.t) return statB.t - statA.t;
-			return a.name.localeCompare(b.name);
-		});
-	}, [centers, selectedDistricts, districts, serverCenterStats]);
-
-	// 2. Facility Groups based on Price Type
-	const currentFacilityGroups = useMemo(() => {
-		return selectedPriceType === "Paid"
-			? PAID_FACILITIES_GROUPS
-			: FREE_FACILITIES_GROUPS;
-	}, [selectedPriceType]);
-
-	// 3. Filter Venues
-	const filteredVenues = useMemo(() => {
-		return venues
-			.map((venue) => {
-				// 2. District Match
-				const districtMatch =
-					selectedDistricts.includes("All") ||
-					selectedDistricts.includes(venue.districtCode);
-
-				if (!districtMatch) {
-					return null;
-				}
-
-				// Search Filter
-				if (
-					searchQuery &&
-					!venue.name.toLowerCase().includes(searchQuery.toLowerCase())
-				)
-					return null;
-
-				// Facility Filter inside Venue
-				const filteredFacilities: typeof venue.facilities = {};
-				let hasVisibleFacilities = false;
-
-				Object.keys(venue.facilities).forEach((key) => {
-					const facility = venue.facilities[key];
-
-					// Facility Type Filter
-					if (
-						selectedFacilityCode !== "All" &&
-						facility.code !== selectedFacilityCode
-					)
-						return;
-
-					// Price Type Filter
-					if (facility.priceType !== selectedPriceType) return;
-
-					// Note: Venue data from server is already filtered by date
-					// But we check if sessions exist
-					if (facility.sessions.length > 0) {
-						filteredFacilities[key] = facility;
-						hasVisibleFacilities = true;
-					}
-				});
-
-				if (!hasVisibleFacilities) return null;
-
-				return {
-					...venue,
-					facilities: filteredFacilities,
-				};
-			})
-			.filter((v): v is NormalizedVenue => v !== null);
-	}, [
-		venues,
-		searchQuery,
-		selectedDistricts,
-		selectedFacilityCode,
-		selectedPriceType,
-	]);
-
-	// --- Availability Stats Calculation ---
-	const { districtStyles, centerStyles, facilityStyles } = useMemo(() => {
-		const districtStats: Record<string, { t: number; a: number }> = {};
-		const centerStats: Record<string, { t: number; a: number }> = {};
-		const facilityStats: Record<string, { t: number; a: number }> = {};
-
-		// Initialize with all known districts and centers to ensure every option gets a style
-		districts.forEach((d) => {
-			districtStats[d.code] = { t: 0, a: 0 };
-		});
-		centers.forEach((c) => {
-			centerStats[c.id] = { t: 0, a: 0 };
-		});
-
-		// Initialize all facilities in groups
-		currentFacilityGroups.forEach((g) => {
-			g.options.forEach((o) => {
-				facilityStats[o.value] = { t: 0, a: 0 };
-			});
-		});
-
-		// 1. District Stats: Use server-provided stats if available (independent of district filter)
-		if (serverDistrictStats && Object.keys(serverDistrictStats).length > 0) {
-			Object.entries(serverDistrictStats).forEach(([code, stat]) => {
-				districtStats[code] = stat;
-			});
-		} else {
-			// Fallback: Calculate from venues (will be 0 for filtered-out districts)
-			venues.forEach((venue) => {
-				Object.values(venue.facilities).forEach((facility) => {
-					if (facility.priceType !== selectedPriceType) return;
-					const t = facility.sessions.length;
-					const a = facility.sessions.filter(
-						(s) => s.available && !s.isPassed,
-					).length;
-
-					if (!districtStats[venue.districtCode])
-						districtStats[venue.districtCode] = { t: 0, a: 0 };
-					districtStats[venue.districtCode].t += t;
-					districtStats[venue.districtCode].a += a;
-				});
-			});
-		}
-
-		venues.forEach((venue) => {
-			Object.values(venue.facilities).forEach((facility) => {
-				// Base filter: Only Price Type
-				if (facility.priceType !== selectedPriceType) return;
-
-				const t = facility.sessions.length;
-				const a = facility.sessions.filter(
-					(s) => s.available && !s.isPassed,
-				).length;
-
-				// 2. Center Stats: Filtered by District (already happening via venues list)
-				// Venues list is filtered by district, so we only count stats for selected districts' centers.
-				// This is correct as per plan.
-
-				const isVenueInSelectedDistricts =
-					selectedDistricts.includes("All") ||
-					selectedDistricts.includes(venue.districtCode);
-
-				if (isVenueInSelectedDistricts) {
-					if (!centerStats[venue.id]) centerStats[venue.id] = { t: 0, a: 0 };
-					centerStats[venue.id].t += t;
-					centerStats[venue.id].a += a;
-				}
-
-				// 3. Facility Stats: Filtered by Center
-				const isVenueSelected =
-					isVenueInSelectedDistricts &&
-					(selectedCenter === "All" || selectedCenter === venue.id);
-
-				if (isVenueSelected) {
-					if (!facilityStats[facility.code])
-						facilityStats[facility.code] = { t: 0, a: 0 };
-					facilityStats[facility.code].t += t;
-					facilityStats[facility.code].a += a;
-				}
-			});
-		});
-
-		// Helper to map stats to style
-		const mapStyles = (stats: Record<string, { t: number; a: number }>) => {
-			const styles: Record<string, AvailabilityTheme> = {};
-			Object.keys(stats).forEach((key) => {
-				styles[key] = getAvailabilityColor(stats[key].t, stats[key].a);
-			});
-			return styles;
-		};
-
-		return {
-			districtStyles: mapStyles(districtStats),
-			centerStyles: mapStyles(centerStats),
-			facilityStyles: mapStyles(facilityStats),
-		};
-	}, [
-		venues,
-		selectedDistricts,
-		selectedCenter,
-		selectedPriceType,
-		districts,
-		centers,
-		currentFacilityGroups,
-		serverDistrictStats,
-	]);
-
-	// Reset facility type when price type changes is handled in handlePriceTypeChange now
-
-	// --- Handlers ---
-
-	const handlePriceTypeChange = (type: PriceType) => {
-		navigate({
-			search: (prev) => ({
-				...prev,
-				priceType: type,
-				facility: undefined, // Reset facility when price type changes
-			}),
-		});
-	};
-
-	const handleDateSelect = (newDate: string) => {
-		navigate({
-			search: (prev) => ({
-				...prev,
-				date: newDate,
-			}),
-			replace: true,
-		});
-	};
-
-	const handleSessionClick = (
-		venue: NormalizedVenue,
-		session: NormalizedSession,
-	) => {
-		setBookingVenue(venue);
-		setBookingSession(session);
-	};
-
-	const confirmBooking = () => {
+	// Handle booking confirmation
+	const confirmBooking = useCallback(() => {
 		setBookingSession(null);
 		setBookingVenue(null);
 		setShowToast(true);
 		setTimeout(() => setShowToast(false), 3000);
-	};
+	}, []);
 
 	return (
 		<div className="min-h-screen bg-background/50 flex flex-col font-sans">
+			{/* Page Header for SEO */}
+			<header className="sr-only">
+				<h1>{t("booking:page_title", "Book Hong Kong Sports Facilities")}</h1>
+				<p>
+					{t(
+						"booking:page_description",
+						"Real-time availability for LCSD sports facilities including tennis, basketball, and badminton courts across Hong Kong",
+					)}
+				</p>
+			</header>
+
 			{/* Date Selector */}
-			<DateSelector
-				dates={availableDates}
-				selectedDate={selectedDate}
-				onSelectDate={handleDateSelect}
-				dateStyles={dateStyles}
-			/>
+			<nav aria-label="Date navigation">
+				<DateSelector
+					dates={availableDates}
+					selectedDate={selectedDate}
+					onSelectDate={handleDateSelect}
+					dateStyles={dateStyles}
+				/>
+			</nav>
 
 			{/* Main Content Area */}
-			<main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 space-y-6">
+			<main
+				className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 space-y-6"
+				aria-label="Venue listings"
+			>
 				{/* Filter Bar Component */}
-				<FilterBar
-					searchQuery={searchQuery}
-					onSearchChange={setSearchQuery}
-					availableDistricts={availableDistricts}
-					selectedDistricts={selectedDistricts}
-					onSelectDistrict={handleSelectDistrict}
-					availableCenters={availableCenters}
-					selectedCenter={selectedCenter}
-					onSelectCenter={handleSelectCenter}
-					facilityGroups={currentFacilityGroups}
-					selectedFacilityType={selectedFacilityCode}
-					onSelectFacilityType={handleSelectFacility}
-					selectedPriceType={selectedPriceType}
-					onSelectPriceType={handlePriceTypeChange}
-					districtStyles={districtStyles}
-					centerStyles={centerStyles}
-					facilityStyles={facilityStyles}
-					onResetFilters={handleResetFilters}
-				/>
+				<aside aria-label="Filter options">
+					<FilterBar
+						searchQuery={searchQuery}
+						onSearchChange={handleSearchChange}
+						availableDistricts={availableDistricts}
+						selectedDistricts={selectedDistricts}
+						onSelectDistrict={handleSelectDistrict}
+						availableCenters={availableCenters}
+						selectedCenter={selectedCenter}
+						onSelectCenter={handleSelectCenter}
+						facilityGroups={currentFacilityGroups}
+						selectedFacilityType={selectedFacilityCode}
+						onSelectFacilityType={handleSelectFacility}
+						selectedPriceType={selectedPriceType}
+						onSelectPriceType={handlePriceTypeChange}
+						districtStyles={districtStyles}
+						centerStyles={centerStyles}
+						facilityStyles={facilityStyles}
+						onResetFilters={handleResetFilters}
+						metadata={metadata}
+					/>
+				</aside>
 				<style>{`
 					:root {
 						--color-primary: var(--color-pacific-blue-600);
@@ -554,53 +601,135 @@ function BookingPage() {
 				{/* Results Info */}
 				<div className="flex items-center justify-between">
 					<h2 className="text-lg font-semibold text-gray-800">
-						Available Venues
+						{t("booking:available_venues")}
 						<span className="ml-2 text-sm font-normal text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200">
 							{filteredVenues.length}
 						</span>
 					</h2>
 					<div className="flex items-center gap-4 text-sm text-gray-500">
 						{lastUpdate && (
-							<span>
-								Last updated:{" "}
-								{new Date(lastUpdate).toLocaleString("en-HK", {
-									timeZone: "Asia/Hong_Kong",
-									month: "numeric",
-									day: "numeric",
-									hour: "2-digit",
-									minute: "2-digit",
-								})}
-							</span>
+							<time dateTime={lastUpdate.toISOString()}>
+								{t("booking:last_updated")}{" "}
+								{new Date(lastUpdate).toLocaleString(
+									i18n.language === "zh" || i18n.language === "cn"
+										? "zh-HK"
+										: "en-HK",
+									{
+										timeZone: "Asia/Hong_Kong",
+										month: "numeric",
+										day: "numeric",
+										hour: "2-digit",
+										minute: "2-digit",
+									},
+								)}
+							</time>
 						)}
 					</div>
 				</div>
 
 				{/* Venues Grid */}
 				<div className="grid grid-cols-1 gap-6">
-					{filteredVenues.length > 0 ? (
-						filteredVenues.map((venue) => (
+					{isFilteringPending ? (
+						<VenueListSkeleton />
+					) : filteredVenues.length > 0 ? (
+						paginatedVenues.map((venue) => (
 							<VenueCard
 								key={venue.id}
 								venue={venue}
-								onSessionClick={(session) => handleSessionClick(venue, session)}
+								onSessionClick={handleSessionClick}
 							/>
 						))
 					) : (
 						<div className="flex flex-col items-center justify-center py-20 text-gray-400">
-							{/* Lucide MapPin referenced but not imported in render scope? It is imported at top. */}
-							{/* Reusing MapPin from Lucide */}
 							<div className="mb-4 opacity-50">
 								<CalendarDays size={48} />
 							</div>
-							<p className="text-lg font-medium">
-								No venues available for this filter.
-							</p>
-							<p className="text-sm">
-								Try changing filters or select "All Facilities" to see more.
-							</p>
+							<p className="text-lg font-medium">{t("booking:no_venues")}</p>
+							<p className="text-sm">{t("booking:no_venues_hint")}</p>
 						</div>
 					)}
 				</div>
+
+				{/* Pagination Controls */}
+				{!isFilteringPending && filteredVenues.length > ITEMS_PER_PAGE && (
+					<Pagination className="mt-8">
+						<PaginationContent>
+							<PaginationItem>
+								<PaginationPrevious
+									onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+									disabled={currentPage === 1}
+								/>
+							</PaginationItem>
+
+							{/* First Page */}
+							{currentPage > 2 && (
+								<PaginationItem>
+									<PaginationLink
+										onClick={() => setCurrentPage(1)}
+										isActive={currentPage === 1}
+									>
+										1
+									</PaginationLink>
+								</PaginationItem>
+							)}
+
+							{/* Ellipsis Start */}
+							{currentPage > 3 && (
+								<PaginationItem>
+									<PaginationEllipsis />
+								</PaginationItem>
+							)}
+
+							{/* Current Range */}
+							{Array.from({ length: totalPages }, (_, i) => i + 1)
+								.filter(
+									(page) =>
+										page === currentPage ||
+										page === currentPage - 1 ||
+										page === currentPage + 1,
+								)
+								.map((page) => (
+									<PaginationItem key={page}>
+										<PaginationLink
+											onClick={() => setCurrentPage(page)}
+											isActive={currentPage === page}
+										>
+											{page}
+										</PaginationLink>
+									</PaginationItem>
+								))}
+
+							{/* Ellipsis End */}
+							{currentPage < totalPages - 2 && (
+								<PaginationItem>
+									<PaginationEllipsis />
+								</PaginationItem>
+							)}
+
+							{/* Last Page */}
+							{/* Allow showing last page if it wasn't already shown in the range */}
+							{currentPage < totalPages - 1 && (
+								<PaginationItem>
+									<PaginationLink
+										onClick={() => setCurrentPage(totalPages)}
+										isActive={currentPage === totalPages}
+									>
+										{totalPages}
+									</PaginationLink>
+								</PaginationItem>
+							)}
+
+							<PaginationItem>
+								<PaginationNext
+									onClick={() =>
+										setCurrentPage((p) => Math.min(totalPages, p + 1))
+									}
+									disabled={currentPage === totalPages}
+								/>
+							</PaginationItem>
+						</PaginationContent>
+					</Pagination>
+				)}
 			</main>
 
 			{/* Modals */}
@@ -638,9 +767,9 @@ function BookingPage() {
 					</svg>
 				</div>
 				<div>
-					<h4 className="font-bold">Booking Confirmed!</h4>
+					<h4 className="font-bold">{t("booking:booking_confirmed")}</h4>
 					<p className="text-pacific-blue-200 text-sm">
-						Your session has been reserved.
+						{t("booking:booking_confirmed_msg")}
 					</p>
 				</div>
 			</div>

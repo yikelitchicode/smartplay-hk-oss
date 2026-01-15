@@ -11,6 +11,7 @@ export interface DrawerProps {
 	showCloseButton?: boolean;
 	closeOnEscape?: boolean;
 	closeOnOutsideClick?: boolean;
+	title?: string;
 }
 
 const sizeStyles = {
@@ -44,6 +45,7 @@ export const Drawer = ({
 	size = "md",
 	showCloseButton = true,
 	closeOnOutsideClick = true,
+	title,
 }: DrawerProps) => {
 	return (
 		<Dialog.Root
@@ -64,7 +66,7 @@ export const Drawer = ({
 					{showCloseButton && (
 						<div className="flex items-center justify-between p-4 border-b border-gray-200">
 							<h2 className="text-xl font-semibold text-gray-900">
-								Navigation
+								{title || "Navigation"}
 							</h2>
 							<button
 								type="button"

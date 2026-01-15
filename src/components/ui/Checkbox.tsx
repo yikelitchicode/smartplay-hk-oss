@@ -50,7 +50,8 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
 			}
 		}, [indeterminate]);
 
-		React.useImperativeHandle(ref, () => checkboxRef.current);
+		// biome-ignore lint/style/noNonNullAssertion: ref is guaranteed to be set by React
+		React.useImperativeHandle(ref, () => checkboxRef.current!);
 
 		const checkboxStyles =
 			"rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
@@ -58,8 +59,8 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
 		return (
 			<div>
 				<div className="flex items-start">
-					<div className="flex items-center h-5">
-						<BaseCheckbox
+					<div className="flex items-center">
+						<BaseCheckbox.Root
 							ref={checkboxRef}
 							id={checkboxId}
 							className={`${sizeStyles[size]} ${checkboxStyles} ${className}`.trim()}
@@ -68,7 +69,9 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
 								error ? errorId : helperText ? helperId : undefined
 							}
 							disabled={disabled}
-							{...props}
+							// biome-ignore lint/suspicious/noExplicitAny: props mismatch with Base UI
+							{...(props as any)}
+							value={props.value as string | undefined}
 						/>
 					</div>
 					{label && (

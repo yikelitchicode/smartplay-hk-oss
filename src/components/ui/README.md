@@ -37,6 +37,7 @@ import { Button } from '@/components/ui';
 ```
 
 **Props:**
+
 - `variant`: 'primary' | 'secondary' | 'ghost' | 'danger'
 - `size`: 'sm' | 'md' | 'lg'
 - `loading`: boolean
@@ -63,6 +64,7 @@ import { Input } from '@/components/ui';
 ```
 
 **Props:**
+
 - `label`: string
 - `error`: string
 - `helperText`: string
@@ -89,6 +91,7 @@ import { Textarea } from '@/components/ui';
 ```
 
 **Props:**
+
 - `label`: string
 - `error`: string
 - `helperText`: string
@@ -129,6 +132,7 @@ function Example() {
 ```
 
 **Props:**
+
 - `open`: boolean
 - `onClose`: () => void
 - `title`: string
@@ -164,6 +168,7 @@ const options = [
 ```
 
 **Props:**
+
 - `label`: string
 - `options`: SelectOption[]
 - `value`: string
@@ -193,6 +198,7 @@ import { Checkbox } from '@/components/ui';
 ```
 
 **Props:**
+
 - `label`: string
 - `error`: string
 - `helperText`: string
@@ -217,6 +223,7 @@ import { Switch } from '@/components/ui';
 ```
 
 **Props:**
+
 - `label`: string
 - `description`: string
 - `error`: string
@@ -237,6 +244,7 @@ import { Tooltip } from '@/components/ui';
 ```
 
 **Props:**
+
 - `content`: React.ReactNode
 - `children`: React.ReactNode
 - `placement`: 'top' | 'bottom' | 'left' | 'right'
@@ -263,6 +271,7 @@ import { Alert } from '@/components/ui';
 ```
 
 **Props:**
+
 - `variant`: 'info' | 'success' | 'warning' | 'error'
 - `title`: string
 - `onClose`: () => void
@@ -284,6 +293,7 @@ import { Badge } from '@/components/ui';
 ```
 
 **Props:**
+
 - `variant`: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info'
 - `size`: 'sm' | 'md' | 'lg'
 - `dot`: boolean
@@ -303,6 +313,7 @@ import { Progress } from '@/components/ui';
 ```
 
 **Props:**
+
 - `value`: number (default: 0)
 - `max`: number (default: 100)
 - `size`: 'sm' | 'md' | 'lg'
@@ -315,6 +326,7 @@ import { Progress } from '@/components/ui';
 ## Accessibility
 
 All components are built with accessibility in mind:
+
 - Proper ARIA attributes
 - Keyboard navigation support
 - Focus management
@@ -323,6 +335,7 @@ All components are built with accessibility in mind:
 ## Customization
 
 Components use Tailwind CSS classes for styling. You can customize them by:
+
 1. Modifying the component files directly
 2. Using the `className` prop to add custom styles
 3. Extending components with additional props

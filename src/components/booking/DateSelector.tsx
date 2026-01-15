@@ -1,5 +1,7 @@
 import { format, parseISO } from "date-fns";
-import type React from "react";
+import { enUS, zhCN, zhHK } from "date-fns/locale";
+import { memo, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import type { AvailabilityTheme } from "@/lib/booking/utils";
 
 interface DateSelectorProps {
@@ -9,32 +11,45 @@ interface DateSelectorProps {
 	dateStyles?: Record<string, AvailabilityTheme>;
 }
 
-const DateSelector: React.FC<DateSelectorProps> = ({
+export const DateSelector = memo(function DateSelector({
 	dates,
 	selectedDate,
 	onSelectDate,
 	dateStyles,
-}) => {
-	// Memoize date format helpers if needed, but simple map is usually fast enough
+}: DateSelectorProps) {
+	const { t, i18n } = useTranslation(["booking"]);
+
+	const dateLocale = useMemo(() => {
+		if (i18n.language === "zh") return zhHK;
+		if (i18n.language === "cn") return zhCN;
+		return enUS;
+	}, [i18n.language]);
+
+	const formattedDates = useMemo(() => {
+		return dates.map((dateStr) => {
+			let dateObj: Date;
+			try {
+				dateObj = parseISO(dateStr);
+			} catch (_e) {
+				dateObj = new Date();
+			}
+			return {
+				dateStr,
+				dayName: format(dateObj, "EEE", { locale: dateLocale }),
+				dayNumber: format(dateObj, "d"),
+				month: format(dateObj, "MMM", { locale: dateLocale }),
+			};
+		});
+	}, [dates, dateLocale]);
 
 	return (
 		<div className="w-full bg-white border-b border-gray-200 shadow-sm">
 			<div className="max-w-7xl mx-auto px-4 py-3">
 				<div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1">
-					{dates.map((dateStr) => {
+					{formattedDates.map(({ dateStr, dayName, dayNumber, month }) => {
 						const isSelected = dateStr === selectedDate;
 						const style = dateStyles?.[dateStr];
 						const isDisabled = style?.disabled ?? false;
-
-						let dateObj: Date;
-						try {
-							dateObj = parseISO(dateStr);
-						} catch (_e) {
-							dateObj = new Date();
-						}
-						const dayName = format(dateObj, "EEE");
-						const dayNumber = format(dateObj, "d");
-						const month = format(dateObj, "MMM");
 
 						// Default neutral style if no availability data
 						const availabilityClass = style
@@ -46,6 +61,8 @@ const DateSelector: React.FC<DateSelectorProps> = ({
 								key={dateStr}
 								type="button"
 								onClick={() => onSelectDate(dateStr)}
+								aria-label={`${month} ${dayNumber}, ${dayName}${isSelected ? ` (${t("booking:selected")})` : ""}${isDisabled ? ` (${t("booking:fully_booked")})` : ""}`}
+								aria-pressed={isSelected}
 								className={`flex flex-col items-center min-w-[70px] p-2 rounded-xl transition-all duration-200 border relative ${
 									isSelected
 										? "bg-primary border-primary text-white shadow-md transform scale-105"
@@ -55,8 +72,13 @@ const DateSelector: React.FC<DateSelectorProps> = ({
 								{/* Availability Dot */}
 								{style && !isSelected && (
 									<div
-										className={`absolute top-1 right-1 w-2 h-2 rounded-full ${style.ring.replace("ring-", "bg-") || "bg-current opacity-20"}`}
-										title={isDisabled ? "Full" : "Available"}
+										className="absolute top-1 right-1 w-2 h-2 rounded-full bg-current opacity-20"
+										aria-hidden="true"
+										title={
+											isDisabled
+												? t("booking:fully_booked")
+												: t("booking:available_venues")
+										}
 									/>
 								)}
 
@@ -78,6 +100,4 @@ const DateSelector: React.FC<DateSelectorProps> = ({
 			</div>
 		</div>
 	);
-};
-
-export default DateSelector;
+});

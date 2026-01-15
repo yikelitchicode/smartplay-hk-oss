@@ -2,7 +2,7 @@ import { Button as BaseButton } from "@base-ui/react/button";
 import * as React from "react";
 
 export interface ButtonProps
-	extends Omit<React.ComponentProps<"button">, "type"> {
+	extends Omit<React.ComponentProps<"button">, "children"> {
 	variant?: "primary" | "secondary" | "ghost" | "danger";
 	size?: "sm" | "md" | "lg";
 	loading?: boolean;

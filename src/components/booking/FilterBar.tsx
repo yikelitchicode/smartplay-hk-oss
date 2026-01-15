@@ -5,7 +5,8 @@ import {
 	RotateCcw,
 	Search,
 } from "lucide-react";
-import React, { useMemo } from "react";
+import { type JSX, useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ScrollArea } from "@/components/ui/ScrollArea";
 import {
 	Select,
@@ -17,6 +18,8 @@ import {
 	type AvailabilityTheme,
 	getAvailabilityColor,
 } from "@/lib/booking/utils";
+import { resolveLocalizedName } from "@/lib/i18n-utils";
+import type { MetadataResult } from "@/services/booking.service";
 
 interface FilterBarProps {
 	// Search Data
@@ -24,12 +27,30 @@ interface FilterBarProps {
 	onSearchChange: (query: string) => void;
 
 	// Location Data
-	availableDistricts: { code: string; name: string; region: RegionType }[];
+	availableDistricts: {
+		code: string;
+		name: string;
+		nameEn?: string | null;
+		nameTc?: string | null;
+		nameSc?: string | null;
+		region: RegionType;
+	}[];
 	selectedDistricts: string[]; // ['All'] or list of District Names
 	onSelectDistrict: (district: string) => void;
 
 	// Center Data
-	availableCenters: { id: string; name: string; districtName: string }[];
+	availableCenters: {
+		id: string;
+		name: string;
+		nameEn?: string | null;
+		nameTc?: string | null;
+		nameSc?: string | null;
+		districtName: string;
+		districtNameEn?: string | null;
+		districtNameTc?: string | null;
+		districtNameSc?: string | null;
+		districtCode: string;
+	}[];
 	selectedCenter: string;
 	onSelectCenter: (centerId: string) => void;
 
@@ -49,6 +70,9 @@ interface FilterBarProps {
 
 	// Actions
 	onResetFilters: () => void;
+
+	// Metadata
+	metadata: MetadataResult;
 }
 
 const REGIONS: RegionType[] = [
@@ -57,7 +81,7 @@ const REGIONS: RegionType[] = [
 	"New Territories",
 ];
 
-const FilterBar: React.FC<FilterBarProps> = ({
+export function FilterBar({
 	searchQuery,
 	onSearchChange,
 	availableDistricts,
@@ -75,10 +99,17 @@ const FilterBar: React.FC<FilterBarProps> = ({
 	centerStyles,
 	facilityStyles,
 	onResetFilters,
-}) => {
-	const [selectedRegion, setSelectedRegion] = React.useState<
-		RegionType | "All"
-	>("All");
+	metadata,
+}: FilterBarProps): JSX.Element {
+	const { t, i18n } = useTranslation(["booking"]);
+	const lang = i18n.language;
+	const isEn = lang === "en" || lang === "en-US";
+	const isSc = lang === "cn" || lang === "zh-CN";
+	const isTc = lang === "zh" || lang === "zh-HK";
+
+	const [selectedRegion, setSelectedRegion] = useState<RegionType | "All">(
+		"All",
+	);
 
 	// Filter districts based on selected region
 	const filteredDistricts = useMemo(() => {
@@ -87,31 +118,58 @@ const FilterBar: React.FC<FilterBarProps> = ({
 	}, [selectedRegion, availableDistricts]);
 
 	// Handle Region Click
-	const handleRegionClick = (region: RegionType | "All") => {
-		setSelectedRegion(region);
-		onSelectDistrict("All"); // Reset district when region changes
-	};
+	const handleRegionClick = useCallback(
+		(region: RegionType | "All") => {
+			setSelectedRegion(region);
+			onSelectDistrict("All"); // Reset district when region changes
+		},
+		[onSelectDistrict],
+	);
 
-	const handleReset = () => {
+	const handleReset = useCallback(() => {
 		setSelectedRegion("All");
 		onResetFilters();
-	};
+	}, [onResetFilters]);
 
 	// Prepare Select Options for Facilities
 	// Transform FacilityGroups to SelectGroupType[]
 	const facilityOptions = useMemo(() => {
 		const opts: (SelectOptionType | SelectGroupType)[] = [
-			{ value: "All", label: "All Facilities" },
+			{ value: "All", label: t("booking:all_facilities") },
 		];
 
 		facilityGroups.forEach((group) => {
+			// Resolve Group Name
+			let resolvedGroupLabel = group.label;
+
+			// Look up group metadata to get localized name
+			const groupMeta = metadata.facilityGroups.find(
+				(g) => g.code === group.value,
+			);
+			if (groupMeta) {
+				if (isEn) resolvedGroupLabel = groupMeta.nameEn || groupMeta.name;
+				else if (isSc) resolvedGroupLabel = groupMeta.nameSc || groupMeta.name;
+				else if (isTc) resolvedGroupLabel = groupMeta.nameTc || groupMeta.name;
+				else resolvedGroupLabel = groupMeta.name;
+			}
+
 			opts.push({
-				label: group.label,
+				label: resolvedGroupLabel,
 				options: group.options.map((o) => {
 					const style = facilityStyles[o.value] || getAvailabilityColor(0, 0);
+					const meta = metadata.facilityTypes.find((f) => f.code === o.value);
+
+					let label = o.label;
+					if (meta) {
+						if (isEn) label = meta.nameEn || meta.name;
+						else if (isSc) label = meta.nameSc || meta.name;
+						else if (isTc) label = meta.nameTc || meta.name;
+						else label = meta.name;
+					}
+
 					return {
 						value: o.value,
-						label: o.label,
+						label: label,
 						className: `${style.bg} ${style.text} ${style.disabled ? "opacity-60" : ""}`,
 						disabled: style.disabled,
 					};
@@ -119,40 +177,79 @@ const FilterBar: React.FC<FilterBarProps> = ({
 			});
 		});
 		return opts;
-	}, [facilityGroups, facilityStyles]);
+	}, [
+		facilityGroups,
+		facilityStyles,
+		isEn,
+		isSc,
+		isTc,
+		t,
+		metadata.facilityTypes,
+		metadata.facilityGroups,
+	]);
 
 	// Prepare Select Options for Centers
 	const centerOptions = useMemo(() => {
 		const opts: (SelectOptionType | SelectGroupType)[] = [
-			{ value: "All", label: "All Centers" },
+			{ value: "All", label: t("booking:all_centers") },
 		];
 
-		// Group centers by districtName
+		// Group centers by districtCode (stable key)
 		const groups: Record<string, SelectOptionType[]> = {};
+		const districtCodeToName: Record<string, string> = {};
 
 		for (const c of availableCenters) {
-			if (!groups[c.districtName]) {
-				groups[c.districtName] = [];
+			const dCode = c.districtCode || c.districtName; // Fallback to name if code missing (shouldn't happen)
+			if (!groups[dCode]) {
+				groups[dCode] = [];
+				// Resolve district name using helper (with sify fallback for SC)
+				const dMeta = metadata.districts.find((d) => d.code === dCode);
+				const dName = resolveLocalizedName(
+					{
+						name: dMeta?.name || c.districtName,
+						nameEn: dMeta?.nameEn || c.districtNameEn,
+						nameTc: dMeta?.nameTc || c.districtNameTc,
+						nameSc: dMeta?.nameSc || c.districtNameSc,
+					},
+					lang,
+				);
+				districtCodeToName[dCode] = dName;
 			}
 			const style = centerStyles[c.id] || getAvailabilityColor(0, 0);
-			groups[c.districtName].push({
+			// Resolve center name using helper (with sify fallback for SC)
+			const cName = resolveLocalizedName(
+				{
+					name: c.name,
+					nameEn: c.nameEn,
+					nameTc: c.nameTc,
+					nameSc: c.nameSc,
+				},
+				lang,
+			);
+
+			groups[dCode].push({
 				value: c.id,
-				label: c.name,
+				label: cName,
 				className: `${style.bg} ${style.text} ${style.disabled ? "opacity-60" : ""}`,
 				disabled: style.disabled,
 			});
 		}
 
+		// Sort keys (district codes or names?) - maybe sort by translated name?
+		const sortedDistrictCodes = Object.keys(groups).sort((a, b) =>
+			districtCodeToName[a].localeCompare(districtCodeToName[b]),
+		);
+
 		// Add groups to opts
-		for (const [districtName, centers] of Object.entries(groups)) {
+		for (const dCode of sortedDistrictCodes) {
 			opts.push({
-				label: districtName,
-				options: centers,
+				label: districtCodeToName[dCode],
+				options: groups[dCode],
 			});
 		}
 
 		return opts;
-	}, [availableCenters, centerStyles]);
+	}, [availableCenters, centerStyles, lang, metadata.districts, t]);
 
 	return (
 		<div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden space-y-0 divide-y divide-gray-100">
@@ -166,7 +263,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
 						/>
 						<input
 							type="text"
-							placeholder="Search venues..."
+							placeholder={t("booking:search_placeholder")}
 							className="w-full pl-10 pr-4 py-3 bg-porcelain-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-transparent focus:bg-white transition-all outline-none"
 							value={searchQuery}
 							onChange={(e) => onSearchChange(e.target.value)}
@@ -176,10 +273,10 @@ const FilterBar: React.FC<FilterBarProps> = ({
 						type="button"
 						onClick={handleReset}
 						className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-porcelain-600 hover:text-primary hover:bg-porcelain-50 rounded-xl transition-all border border-porcelain-200"
-						title="Reset all filters"
+						title={t("booking:reset_hint")}
 					>
 						<RotateCcw size={16} />
-						<span className="hidden sm:inline">Reset</span>
+						<span className="hidden sm:inline">{t("booking:reset")}</span>
 					</button>
 				</div>
 			</div>
@@ -189,7 +286,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
 						<MapPin size={18} className="text-primary" />
-						<span>Location</span>
+						<span>{t("booking:location")}</span>
 					</div>
 				</div>
 
@@ -206,11 +303,13 @@ const FilterBar: React.FC<FilterBarProps> = ({
 									: "text-porcelain-500 hover:text-porcelain-700"
 							}`}
 						>
-							{region === "Hong Kong Island"
-								? "HK Island"
-								: region === "New Territories"
-									? "New Terr."
-									: region}
+							{region === "All"
+								? t("booking:all")
+								: region === "Hong Kong Island"
+									? t("booking:hk_island_short")
+									: region === "New Territories"
+										? t("booking:new_terr_short")
+										: t("booking:kowloon")}
 						</button>
 					))}
 				</div>
@@ -232,7 +331,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
 										: "bg-white border-porcelain-200 text-porcelain-600 hover:bg-pacific-blue-50 hover:border-pacific-blue-200"
 								}`}
 							>
-								All Districts
+								{t("booking:all_districts")}
 							</button>
 							{filteredDistricts.map((dist) => {
 								const style = districtStyles[dist.code];
@@ -253,7 +352,21 @@ const FilterBar: React.FC<FilterBarProps> = ({
 												: availabilityClass
 										}`}
 									>
-										{dist.name}
+										{resolveLocalizedName(
+											{
+												name: dist.name,
+												nameEn:
+													metadata.districts.find((m) => m.code === dist.code)
+														?.nameEn || dist.nameEn,
+												nameTc:
+													metadata.districts.find((m) => m.code === dist.code)
+														?.nameTc || dist.nameTc,
+												nameSc:
+													metadata.districts.find((m) => m.code === dist.code)
+														?.nameSc || dist.nameSc,
+											},
+											lang,
+										)}
 									</button>
 								);
 							})}
@@ -268,7 +381,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
 				<div className="w-full md:w-1/3 space-y-2">
 					<div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
 						<CircleDollarSign size={18} className="text-primary" />
-						<span>Price Type</span>
+						<span>{t("booking:price_type")}</span>
 					</div>
 					<div className="flex bg-porcelain-200/50 p-1.5 rounded-xl">
 						{(["Paid", "Free"] as const).map((type) => (
@@ -282,7 +395,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
 										: "text-porcelain-500 hover:text-porcelain-700 hover:bg-white/50"
 								}`}
 							>
-								{type === "Paid" ? "收費 (Paid)" : "不收費 (Free)"}
+								{type === "Paid" ? t("booking:paid") : t("booking:free")}
 							</button>
 						))}
 					</div>
@@ -292,13 +405,13 @@ const FilterBar: React.FC<FilterBarProps> = ({
 				<div className="flex-1 space-y-2">
 					<div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
 						<MapPin size={18} className="text-primary" />
-						<span>Center</span>
+						<span>{t("booking:center")}</span>
 					</div>
 					<Select
 						options={centerOptions}
 						value={selectedCenter}
 						onChange={(val) => onSelectCenter(val)}
-						placeholder="Select Center"
+						placeholder={t("booking:select_center")}
 						triggerClassName={
 							centerStyles[selectedCenter]
 								? `${centerStyles[selectedCenter].bg} ${centerStyles[selectedCenter].text} ${centerStyles[selectedCenter].border}`
@@ -311,13 +424,13 @@ const FilterBar: React.FC<FilterBarProps> = ({
 				<div className="flex-1 space-y-2">
 					<div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
 						<Dumbbell size={18} className="text-primary" />
-						<span>Facility</span>
+						<span>{t("booking:facility")}</span>
 					</div>
 					<Select
 						options={facilityOptions}
 						value={selectedFacilityType}
 						onChange={(val) => onSelectFacilityType(val)}
-						placeholder="Select Facility"
+						placeholder={t("booking:select_facility")}
 						triggerClassName={
 							facilityStyles[selectedFacilityType]
 								? `${facilityStyles[selectedFacilityType].bg} ${facilityStyles[selectedFacilityType].text} ${facilityStyles[selectedFacilityType].border}`
@@ -328,6 +441,4 @@ const FilterBar: React.FC<FilterBarProps> = ({
 			</div>
 		</div>
 	);
-};
-
-export default FilterBar;
+}

@@ -30,7 +30,6 @@ export const Modal = ({
 	children,
 	size = "md",
 	showCloseButton = true,
-	closeOnEscape = true,
 	closeOnOutsideClick = true,
 }: ModalProps) => {
 	const modalId = React.useId();
@@ -39,7 +38,6 @@ export const Modal = ({
 		<Dialog.Root
 			open={open}
 			onOpenChange={(isOpen) => !isOpen && onClose()}
-			closeOnEscape={closeOnEscape}
 			modal
 		>
 			<Dialog.Portal>
