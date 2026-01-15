@@ -2,7 +2,11 @@
  * Validation utilities for crawler testing
  */
 
-import type { FacilityApiResponse, ProcessedFacilityData } from "../../src/lib/crawler/types";
+import type {
+	FacilityApiResponse,
+	ProcessedFacilityData,
+	TimePeriodData,
+} from "../../src/lib/crawler/types";
 
 export interface ValidationResult {
 	valid: boolean;
@@ -15,7 +19,9 @@ export interface ValidationResult {
 	};
 }
 
-export function validateApiResponse(response: any): ValidationResult {
+export function validateApiResponse(
+	response: FacilityApiResponse,
+): ValidationResult {
 	const result: ValidationResult = {
 		valid: true,
 		errors: [],
@@ -35,7 +41,9 @@ export function validateApiResponse(response: any): ValidationResult {
 
 	if (response.code !== "0") {
 		result.valid = false;
-		result.errors.push(`API returned error code: ${response.code} - ${response.message}`);
+		result.errors.push(
+			`API returned error code: ${response.code} - ${response.message}`,
+		);
 	}
 
 	if (!response.data) {
@@ -47,20 +55,26 @@ export function validateApiResponse(response: any): ValidationResult {
 	const { morning, afternoon, evening } = response.data;
 
 	if (!morning || !afternoon || !evening) {
-		result.errors.push("Missing one or more time periods (morning, afternoon, evening)");
+		result.errors.push(
+			"Missing one or more time periods (morning, afternoon, evening)",
+		);
 		result.valid = false;
 	}
 
 	// Basic structure check
-	const checkPeriod = (name: string, data: any) => {
-		if (data && data.distList) {
+	const checkPeriod = (name: string, data: TimePeriodData) => {
+		if (data?.distList) {
 			for (const dist of data.distList) {
 				result.summary.totalSessions += dist.sessionCount || 0;
 				if (dist.venueList) {
 					result.summary.totalVenues += dist.venueList.length;
 					for (const venue of dist.venueList) {
-						if (!venue.venueId) result.errors.push(`Venue missing ID in ${name}`);
-						if (!venue.fatList) result.errors.push(`Venue ${venue.venueName} missing facility list in ${name}`);
+						if (!venue.venueId)
+							result.errors.push(`Venue missing ID in ${name}`);
+						if (!venue.fatList)
+							result.errors.push(
+								`Venue ${venue.venueName} missing facility list in ${name}`,
+							);
 					}
 				}
 			}
@@ -74,7 +88,9 @@ export function validateApiResponse(response: any): ValidationResult {
 	return result;
 }
 
-export function validateProcessedData(data: ProcessedFacilityData[]): ValidationResult {
+export function validateProcessedData(
+	data: ProcessedFacilityData[],
+): ValidationResult {
 	const result: ValidationResult = {
 		valid: true,
 		errors: [],
@@ -92,7 +108,7 @@ export function validateProcessedData(data: ProcessedFacilityData[]): Validation
 		return result;
 	}
 
-	const venueIds = new Set<number>();
+	const venueIds = new Set<string | number>();
 
 	for (const item of data) {
 		venueIds.add(item.venueId);
@@ -102,13 +118,18 @@ export function validateProcessedData(data: ProcessedFacilityData[]): Validation
 
 		// Required fields check
 		if (!item.venueId) result.errors.push("Missing venueId in processed item");
-		if (!item.districtCode) result.errors.push("Missing districtCode in processed item");
-		if (!item.sessionStartDate) result.errors.push("Missing sessionStartDate in processed item");
-		if (!item.startTime) result.errors.push("Missing startTime in processed item");
-		
+		if (!item.districtCode)
+			result.errors.push("Missing districtCode in processed item");
+		if (!item.sessionStartDate)
+			result.errors.push("Missing sessionStartDate in processed item");
+		if (!item.startTime)
+			result.errors.push("Missing startTime in processed item");
+
 		// Logic check
 		if (item.available && !item.isOpen) {
-			result.warnings.push(`Session ${item.startTime} at ${item.venueName} is available but not open`);
+			result.warnings.push(
+				`Session ${item.startTime} at ${item.venueName} is available but not open`,
+			);
 		}
 	}
 

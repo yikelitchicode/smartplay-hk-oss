@@ -2,9 +2,13 @@
  * Data processor for transforming API responses into database entities
  */
 
+import { sify } from "chinese-conv";
+import { DISTRICT_REGIONS, type DistrictCode } from "./config";
 import type {
+	DistrictInsert,
 	FacilityApiResponse,
 	FacilityInsert,
+	FacilityTypeInsert,
 	ProcessedFacilityData,
 	SessionInsert,
 } from "./types";
@@ -17,6 +21,7 @@ export class CrawlerDataProcessor {
 	processRawResponse(
 		response: FacilityApiResponse,
 		crawlJobId: string,
+		targetLang?: string,
 	): ProcessedFacilityData[] {
 		// Validate response
 		if (response.code !== "0") {
@@ -55,23 +60,34 @@ export class CrawlerDataProcessor {
 						)
 							continue;
 						for (const session of facilityType.sessionList) {
+							const isEn = targetLang === "en" || !facilityType.fatName;
 							processedData.push({
 								crawlJobId,
 								timestamp: response.timestamp,
+								lang: isEn ? "en" : "zh",
 
 								// District
 								districtCode: district.distCode,
 								districtName: district.distName,
+								districtNameTc: isEn ? undefined : district.distName,
+								districtNameSc: isEn ? undefined : sify(district.distName),
 
 								// Venue
 								venueId: String(venue.venueId),
 								venueName: venue.venueName,
+								venueNameEn: venue.enVenueName,
+								venueNameTc: isEn ? undefined : venue.venueName,
+								venueNameSc: isEn ? undefined : sify(venue.venueName),
 								venueImageUrl: venue.venueImageUrl,
 
 								// Facility Type
 								facilityTypeId: facilityType.fatId,
 								facilityTypeName: facilityType.fatName,
 								facilityTypeNameEn: facilityType.enFatName,
+								facilityTypeNameTc: isEn ? undefined : facilityType.fatName,
+								facilityTypeNameSc: isEn
+									? undefined
+									: sify(facilityType.fatName),
 								facilityCode: facilityType.faCode,
 								facilityGroupCode: facilityType.faGroupCode,
 								facilityVRId: String(facilityType.fvrId),
@@ -93,7 +109,15 @@ export class CrawlerDataProcessor {
 			}
 		}
 
-		console.log(`Processed ${processedData.length} sessions from API response`);
+		// Cross-populate names based on language
+		for (const data of processedData) {
+			if (data.lang === "en") {
+				data.venueNameEn = data.venueName;
+				data.districtNameEn = data.districtName;
+				// In EN response, we don't have ZH name, so we keep it as is
+				// Database upsert logic will handle COALESCE to avoid overwriting ZH with EN
+			}
+		}
 
 		return processedData;
 	}
@@ -104,20 +128,52 @@ export class CrawlerDataProcessor {
 	toDatabaseEntities(processedData: ProcessedFacilityData[]): {
 		facilities: FacilityInsert[];
 		sessions: SessionInsert[];
+		districts: DistrictInsert[];
+		facilityTypes: FacilityTypeInsert[];
 	} {
 		const facilitiesMap = new Map<string, FacilityInsert>();
-		const sessions: SessionInsert[] = [];
+		const sessionsMap = new Map<string, SessionInsert>();
+		const districtsMap = new Map<string, DistrictInsert>();
 
 		// Group unique facilities and create sessions
 		for (const data of processedData) {
+			// Extract District
+			if (!districtsMap.has(data.districtCode)) {
+				districtsMap.set(data.districtCode, {
+					code: data.districtCode,
+					name: data.districtName,
+					nameEn: data.districtNameEn,
+					nameTc: data.districtNameTc,
+					nameSc: data.districtNameSc,
+					region: DISTRICT_REGIONS[data.districtCode as DistrictCode],
+				});
+			} else if (data.districtNameEn) {
+				// Update with names if found later
+				const existing = districtsMap.get(data.districtCode);
+				if (existing) {
+					if (data.districtNameEn) existing.nameEn = data.districtNameEn;
+					if (data.districtNameTc) existing.nameTc = data.districtNameTc;
+					if (data.districtNameSc) existing.nameSc = data.districtNameSc;
+				}
+			}
+
+			// Extract FacilityType - REMOVED: Managed by Metadata Sync
+			// We assume FacilityTypes are already populated by metadata-crawler.
+
 			// Group facilities (avoid duplicates)
 			if (!facilitiesMap.has(data.venueId)) {
 				facilitiesMap.set(data.venueId, {
 					id: data.venueId,
 					name: data.venueName,
+					nameEn: data.venueNameEn,
+					nameTc: data.venueNameTc,
+					nameSc: data.venueNameSc,
 					imageUrl: data.venueImageUrl,
 					districtCode: data.districtCode,
 					districtName: data.districtName,
+					districtNameEn: data.lang === "en" ? data.districtName : undefined,
+					districtNameTc: data.districtNameTc,
+					districtNameSc: data.districtNameSc,
 					lastCrawlAt: new Date(),
 				});
 			}
@@ -127,10 +183,11 @@ export class CrawlerDataProcessor {
 				id: this.generateSessionId(data),
 				crawlJobId: data.crawlJobId,
 				venueId: data.venueId,
-				facilityTypeId: data.facilityTypeId,
-				facilityTypeName: data.facilityTypeName,
-				facilityTypeNameEn: data.facilityTypeNameEn,
 				facilityCode: data.facilityCode,
+				facilityTypeName: data.facilityTypeName || data.facilityTypeNameEn, // Fallback if ZH missing
+				facilityTypeNameEn: data.facilityTypeNameEn,
+				facilityTypeNameTc: data.facilityTypeNameTc,
+				facilityTypeNameSc: data.facilityTypeNameSc,
 				facilityVRId: data.facilityVRId,
 				date: new Date(data.sessionStartDate),
 				startTime: data.startTime,
@@ -142,16 +199,23 @@ export class CrawlerDataProcessor {
 				createdAt: new Date(),
 			};
 
-			sessions.push(session);
+			// Deduplicate sessions based on unique constraint fields
+			// Constraint: [venueId, facilityCode, date, startTime]
+			const sessionKey = `${data.venueId}-${data.facilityCode}-${data.sessionStartDate}-${data.startTime}`;
+			if (!sessionsMap.has(sessionKey)) {
+				sessionsMap.set(sessionKey, session);
+			}
 		}
 
 		console.log(
-			`Prepared ${facilitiesMap.size} facilities and ${sessions.length} sessions`,
+			`Prepared ${facilitiesMap.size} facilities, ${districtsMap.size} districts, and ${sessionsMap.size} sessions`,
 		);
 
 		return {
 			facilities: Array.from(facilitiesMap.values()),
-			sessions,
+			sessions: Array.from(sessionsMap.values()),
+			districts: Array.from(districtsMap.values()),
+			facilityTypes: [], // No longer inserting facility types here
 		};
 	}
 
@@ -161,20 +225,11 @@ export class CrawlerDataProcessor {
 	 */
 	private generateSessionId(data: ProcessedFacilityData): string {
 		// Create a unique string from all relevant fields
-		const uniqueString = `${data.venueId}-${data.facilityTypeId}-${data.sessionStartDate}-${data.startTime}`;
-
-		// Simple hash function to generate consistent ID
-		let hash = 0;
-		for (let i = 0; i < uniqueString.length; i++) {
-			const char = uniqueString.charCodeAt(i);
-			hash = (hash << 5) - hash + char;
-			hash = hash & hash; // Convert to 32-bit integer
-		}
-
-		// Convert to base64 and limit length
-		return Buffer.from(Math.abs(hash).toString())
-			.toString("base64")
-			.substring(0, 32);
+		// Format: venueId-fatId-date-time
+		// Example: 100-302-20250114-1430
+		const dateStr = data.sessionStartDate.replace(/-/g, "");
+		const timeStr = data.startTime.replace(/:/g, "");
+		return `${data.venueId}-${data.facilityTypeId}-${dateStr}-${timeStr}`;
 	}
 
 	/**

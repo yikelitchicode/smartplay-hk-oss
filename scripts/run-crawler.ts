@@ -1,4 +1,3 @@
-
 /**
  * Manual Crawler Trigger
  * Usage: npx tsx scripts/run-crawler.ts [--date=YYYY-MM-DD]

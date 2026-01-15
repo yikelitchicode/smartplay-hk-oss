@@ -1,7 +1,9 @@
 /**
- * HTTP client for SmartPlay API using fetch with retry logic
+ * HTTP client for SmartPlay API using fetch with retry logic and circuit breaker
  */
 
+import { crawlerLogger } from "@/lib/logger";
+import { CircuitBreaker } from "./circuit-breaker";
 import type {
 	CrawlerConfig,
 	CrawlRequestParams,
@@ -12,17 +14,28 @@ import { CrawlerHttpError } from "./types";
 export class SmartPlayHttpClient {
 	private config: CrawlerConfig;
 	private abortController: AbortController | null = null;
+	private circuitBreaker: CircuitBreaker;
 
-	constructor(config: CrawlerConfig) {
+	constructor(config: CrawlerConfig, circuitBreaker?: CircuitBreaker) {
 		this.config = config;
+		// Use provided circuit breaker or create default one
+		this.circuitBreaker =
+			circuitBreaker ||
+			new CircuitBreaker({
+				threshold: 5,
+				timeout: 60000, // 1 minute
+				halfOpenAttempts: 3,
+				logging: true,
+			});
 	}
 
 	/**
 	 * Build headers for API request
 	 */
-	private buildHeaders(): Record<string, string> {
+	private buildHeaders(lang?: string): Record<string, string> {
 		return {
 			...this.config.headers,
+			"Accept-Language": lang || this.config.headers["Accept-Language"],
 			"Accept-Encoding": "gzip, deflate, br, zstd",
 			Connection: "keep-alive",
 			"Sec-Fetch-Dest": "empty",
@@ -47,20 +60,30 @@ export class SmartPlayHttpClient {
 
 		try {
 			// Build URL with query parameters
-			const queryParams = new URLSearchParams({
-				distCode: params.distCode,
-				faCode: params.faCode,
-				playDate: params.playDate,
-			});
+			const queryParams = new URLSearchParams();
+			queryParams.append("distCode", params.distCode);
+			queryParams.append("playDate", params.playDate);
+
+			// Append each facility code - SmartPlay API typically takes multiple faCode params
+			for (const code of params.faCode) {
+				queryParams.append("faCode", code);
+			}
 
 			const url = `${this.config.api.baseUrl}${this.config.api.endpoint}?${queryParams.toString()}`;
 
-			console.log(`Fetching: ${url}`);
+			crawlerLogger.info(
+				{
+					faCode: params.faCode,
+					playDate: params.playDate,
+					url: url.replace(/\b(playDate=)[^&]+/, "playDate=REDACTED"), // Redact sensitive params
+				},
+				"Fetching facilities",
+			);
 
 			// Make request using fetch
 			const response = await fetch(url, {
 				method: "GET",
-				headers: this.buildHeaders(),
+				headers: this.buildHeaders(params.lang),
 				signal: this.abortController.signal,
 			});
 
@@ -124,45 +147,69 @@ export class SmartPlayHttpClient {
 	}
 
 	/**
-	 * Fetch with retry logic
+	 * Fetch with retry logic and circuit breaker protection
 	 */
 	async fetchWithRetry(
 		params: CrawlRequestParams,
 	): Promise<FacilityApiResponse> {
-		let lastError: Error | null = null;
+		// Execute request through circuit breaker
+		return this.circuitBreaker.execute(async () => {
+			let lastError: Error | null = null;
 
-		for (let attempt = 1; attempt <= this.config.api.retryAttempts; attempt++) {
-			try {
-				const response = await this.fetchFacilities(params);
+			for (
+				let attempt = 1;
+				attempt <= this.config.api.retryAttempts;
+				attempt++
+			) {
+				try {
+					const response = await this.fetchFacilities(params);
 
-				// Log success on retries
-				if (attempt > 1) {
-					console.log(`Request succeeded on attempt ${attempt}`);
-				}
+					// Log success on retries
+					if (attempt > 1) {
+						crawlerLogger.info(
+							{
+								attempt,
+								maxAttempts: this.config.api.retryAttempts,
+							},
+							"Request succeeded after retry",
+						);
+					}
 
-				return response;
-			} catch (error) {
-				lastError = error as Error;
-				console.warn(
-					`Attempt ${attempt}/${this.config.api.retryAttempts} failed:`,
-					lastError.message,
-				);
+					return response;
+				} catch (error) {
+					lastError = error as Error;
+					crawlerLogger.warn(
+						{
+							attempt,
+							maxAttempts: this.config.api.retryAttempts,
+							error: lastError.message,
+							errorName: lastError.name,
+						},
+						"Request attempt failed",
+					);
 
-				// Don't wait after the last attempt
-				if (attempt < this.config.api.retryAttempts) {
-					const delay = this.config.api.retryDelay * attempt; // Exponential backoff
-					console.log(`Retrying in ${delay}ms...`);
-					await this.delay(delay);
+					// Don't wait after the last attempt
+					if (attempt < this.config.api.retryAttempts) {
+						const delay = this.config.api.retryDelay * attempt; // Linear backoff
+						crawlerLogger.debug(
+							{
+								delay,
+								nextAttempt: attempt + 1,
+							},
+							"Retrying after delay",
+						);
+						await this.delay(delay);
+					}
 				}
 			}
-		}
 
-		// All attempts failed
-		throw new CrawlerHttpError(
-			`All ${this.config.api.retryAttempts} attempts failed. Last error: ${lastError?.message}`,
-			undefined,
-			params.toString(),
-		);
+			// All attempts failed
+			throw new CrawlerHttpError(
+				`All ${this.config.api.retryAttempts} attempts failed. Last error: ${lastError?.message}`,
+				undefined,
+				params.toString(),
+			);
+		});
 	}
 
 	/**
@@ -173,6 +220,20 @@ export class SmartPlayHttpClient {
 			this.abortController.abort();
 			this.abortController = null;
 		}
+	}
+
+	/**
+	 * Get circuit breaker state for monitoring
+	 */
+	getCircuitBreakerState() {
+		return this.circuitBreaker.getState();
+	}
+
+	/**
+	 * Reset circuit breaker (useful for manual recovery)
+	 */
+	resetCircuitBreaker() {
+		this.circuitBreaker.reset();
 	}
 
 	/**

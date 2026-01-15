@@ -98,7 +98,7 @@ export class SchedulerCheckpointService {
 		const errorEntry = {
 			date,
 			error: error.message,
-			attempt,
+			attempts: attempt,
 			timestamp: new Date().toISOString(),
 		};
 

@@ -1,8 +1,11 @@
+import PQueue from "p-queue";
 import { prisma } from "@/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { CrawlerDataProcessor } from "./data-processor";
 import { CrawlerDatabaseService } from "./db";
+import { DeadLetterQueue } from "./dead-letter-queue";
 import { SmartPlayHttpClient } from "./http-client";
+import { syncFacilityConfig } from "./metadata-crawler";
 import type {
 	CrawlerConfig,
 	FacilityApiResponse,
@@ -26,30 +29,66 @@ export class CrawlerOrchestrator {
 	private processor: CrawlerDataProcessor;
 	private db: CrawlerDatabaseService;
 	private config: CrawlerConfig;
+	private queue: PQueue;
+	private dlq: DeadLetterQueue;
 
 	constructor(config: CrawlerConfig) {
 		this.config = config;
 		this.httpClient = new SmartPlayHttpClient(config);
 		this.processor = new CrawlerDataProcessor();
 		this.db = new CrawlerDatabaseService();
+		this.dlq = new DeadLetterQueue();
+
+		// Configure concurrency for parallel processing
+		// Max 10 parallel requests to avoid overwhelming the API
+		this.queue = new PQueue({
+			concurrency: 10,
+			autoStart: true,
+		});
 	}
 
 	/**
 	 * Run a crawl job with specified parameters
 	 */
 	async runCrawl(
-		params?: Partial<CrawlerConfig["parameters"]>,
+		params?: Partial<CrawlerConfig["parameters"]> & { lang?: string },
 	): Promise<{ jobId: string; success: boolean; failedCodes: string[] }> {
+		// 0. Ensure metadata is synchronized
+		// We sync if no facility types exist in DB or if explicitly requested
+		const typeCount = await prisma.facilityType.count();
+		if (typeCount === 0) {
+			console.log("Database is empty. Synchronizing facility metadata...");
+			await syncFacilityConfig();
+		}
+
 		// Merge config with runtime params
 		const distCode = (params?.distCode || this.config.parameters.distCode).join(
 			",",
 		);
-		const faCodes = params?.faCode || this.config.parameters.faCode;
 		const playDate = params?.playDate || this.config.parameters.playDate;
+		let faCodes = params?.faCode || this.config.parameters.faCode;
+
+		// If no codes provided, fetch all active codes from database
+		if (faCodes.length === 0) {
+			console.log(
+				"No facility codes provided. Fetching active codes from database...",
+			);
+			const activeTypes = await prisma.facilityType.findMany({
+				where: { isVisible: true },
+				select: { code: true },
+			});
+			faCodes = activeTypes.map((t) => t.code);
+
+			if (faCodes.length === 0) {
+				console.warn(
+					"No active facility types found in database. Using fallback config.",
+				);
+				faCodes = [...this.config.parameters.faCode];
+			}
+		}
 
 		console.log(
-			`Starting crawl for ${faCodes.length} facility codes:`,
-			faCodes,
+			`Starting crawl for ${faCodes.length} facility codes on ${playDate}`,
 		);
 
 		// 1. Create crawl job record
@@ -66,25 +105,62 @@ export class CrawlerOrchestrator {
 		const allRawResponses: FacilityApiResponse[] = [];
 
 		try {
-			for (const faCode of faCodes) {
-				try {
-					console.log(`[${faCode}] Fetching data...`);
-					const response = await this.httpClient.fetchWithRetry({
-						distCode,
-						faCode: [faCode],
-						playDate,
-					});
-					allRawResponses.push(response);
+			console.log(
+				`Processing ${faCodes.length} facility codes with concurrency 5...`,
+			);
 
-					const processedData = this.processor.processRawResponse(
-						response,
-						crawlJob.id,
-					);
+			// Process facilities in parallel with controlled concurrency
+			const results = await Promise.allSettled(
+				faCodes.map((faCode) =>
+					this.queue.add(() =>
+						this.fetchAndProcessFacility(
+							faCode,
+							distCode,
+							playDate,
+							crawlJob.id,
+							params?.lang,
+						),
+					),
+				),
+			);
+
+			// Process results and handle DLQ
+			for (const [index, result] of results.entries()) {
+				const faCode = faCodes[index];
+				if (result.status === "fulfilled") {
+					const { response, processedData } = result.value;
+					allRawResponses.push(response);
 					allProcessedData.push(...processedData);
-					console.log(`[${faCode}] Processed ${processedData.length} sessions`);
-				} catch (error) {
-					console.error(`[${faCode}] Failed to crawl:`, error);
+
+					// Success: clear from DLQ if exists
+					try {
+						await this.dlq.markResolved(faCode, playDate, distCode);
+					} catch (dlqError) {
+						console.error(
+							`[${faCode}] Failed to mark DLQ as resolved:`,
+							dlqError,
+						);
+					}
+				} else {
+					console.error(`[${faCode}] Failed to crawl:`, result.reason);
 					failedCodes.push(faCode);
+
+					// Failure: add to DLQ
+					const error =
+						result.reason instanceof Error
+							? result.reason
+							: new Error(String(result.reason));
+					try {
+						await this.dlq.addFailure({
+							faCode,
+							date: playDate,
+							distCode,
+							error,
+							jobId: crawlJob.id,
+						});
+					} catch (dlqError) {
+						console.error(`[${faCode}] Failed to add to DLQ:`, dlqError);
+					}
 				}
 			}
 
@@ -244,5 +320,37 @@ export class CrawlerOrchestrator {
 			availableSessions,
 			lastCrawlAt: latestCrawl?.completedAt || null,
 		};
+	}
+
+	/**
+	 * Fetch and process a single facility code
+	 * Helper method for parallel processing
+	 */
+	private async fetchAndProcessFacility(
+		faCode: string,
+		distCode: string,
+		playDate: string,
+		jobId: string,
+		lang?: string,
+	): Promise<{
+		response: FacilityApiResponse;
+		processedData: ProcessedFacilityData[];
+	}> {
+		console.log(`[${faCode}] Fetching data...`);
+		const response = await this.httpClient.fetchWithRetry({
+			distCode,
+			faCode: [faCode],
+			playDate,
+			lang,
+		});
+
+		const processedData = this.processor.processRawResponse(
+			response,
+			jobId,
+			lang,
+		);
+		console.log(`[${faCode}] Processed ${processedData.length} sessions`);
+
+		return { response, processedData };
 	}
 }

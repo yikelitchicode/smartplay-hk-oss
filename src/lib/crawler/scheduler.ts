@@ -151,6 +151,11 @@ export class CrawlerScheduler {
 
 				// Run the actual crawl
 				// We pass currentFaCodes if set (for retries), otherwise it uses default from config
+				//
+				// NOTE: The zh-hk API response already contains BOTH languages:
+				// - fatName: Chinese name (中文)
+				// - enFatName: English name
+				// Therefore, we only need one crawl instead of two.
 				const result = await this.orchestrator.runCrawl({
 					playDate: date,
 					faCode: currentFaCodes,
@@ -160,6 +165,23 @@ export class CrawlerScheduler {
 					if (enableCheckpoints) {
 						await this.checkpoint.markDayCompleted(runId, date, result.jobId);
 					}
+
+					// Trigger English Metadata Refresh (Best Effort)
+					try {
+						console.log(`[Day ${date}] Triggering English metadata refresh...`);
+						await this.orchestrator.runCrawl({
+							playDate: date,
+							faCode: currentFaCodes,
+							lang: "en",
+						});
+						console.log(`[Day ${date}] English metadata refresh completed`);
+					} catch (enError) {
+						console.warn(
+							`[Day ${date}] English metadata refresh failed (non-critical):`,
+							enError,
+						);
+					}
+
 					return; // Full success
 				}
 
@@ -211,10 +233,22 @@ export class CrawlerScheduler {
 	 */
 	private generateDatesToProcess(): string[] {
 		const dates: string[] = [];
-		const today = new Date();
-		const DAYS_TO_CRAWL = 7;
+		const daysToCrawl = this.config.parameters.daysToCrawl || 7;
 
-		for (let i = 0; i < DAYS_TO_CRAWL; i++) {
+		// Calculate "today" in the target timezone (HKT)
+		// We use Intl.DateTimeFormat to get the correct YYYY-MM-DD for HK
+		const formatter = new Intl.DateTimeFormat("en-CA", {
+			timeZone: this.config.schedule.timezone,
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+		});
+
+		const now = new Date();
+		const todayStr = formatter.format(now); // "2026-01-14"
+		const today = new Date(todayStr);
+
+		for (let i = 0; i < daysToCrawl; i++) {
 			const targetDate = new Date(today);
 			targetDate.setDate(today.getDate() + i);
 			dates.push(targetDate.toISOString().split("T")[0]);
@@ -224,7 +258,8 @@ export class CrawlerScheduler {
 	}
 
 	/**
-	 * Stop the scheduled crawler
+	 * Stop the scheduled crawler immediately
+	 * Does not wait for in-progress crawls to complete
 	 */
 	stop() {
 		if (this.task) {
@@ -238,12 +273,68 @@ export class CrawlerScheduler {
 	}
 
 	/**
+	 * Gracefully stop the scheduler and wait for in-progress crawls
+	 * @param timeout Maximum time to wait for crawls to complete (ms)
+	 * @returns Promise that resolves when shutdown is complete
+	 */
+	async gracefulStop(timeout: number = 30000): Promise<void> {
+		console.log("🛑 Initiating graceful scheduler shutdown...");
+
+		// First, stop accepting new scheduled tasks
+		if (this.task) {
+			this.task.stop();
+			this.task = null;
+			console.log("✅ Scheduler stopped accepting new tasks");
+		}
+
+		// Wait for in-progress crawl to complete (with timeout)
+		if (this.isRunning) {
+			console.log("⏳ Waiting for in-progress crawl to complete...");
+			const startTime = Date.now();
+
+			return new Promise<void>((resolve) => {
+				const checkInterval = setInterval(() => {
+					const elapsed = Date.now() - startTime;
+
+					if (!this.isRunning) {
+						clearInterval(checkInterval);
+						console.log("✅ In-progress crawl completed");
+						resolve();
+						return;
+					}
+
+					if (elapsed > timeout) {
+						clearInterval(checkInterval);
+						const warning = `⏰ Graceful shutdown timeout after ${elapsed}ms. Forcing shutdown.`;
+						console.warn(warning);
+						this.isRunning = false; // Force stop
+						resolve();
+						return;
+					}
+
+					// Log progress every 5 seconds
+					if (elapsed % 5000 < 100) {
+						console.log(
+							`⏳ Still waiting... (${Math.round(elapsed / 1000)}s elapsed)`,
+						);
+					}
+				}, 100);
+			});
+		} else {
+			console.log("✅ No crawl in progress, scheduler stopped immediately");
+		}
+	}
+
+	/**
 	 * Run crawl immediately (manual trigger)
 	 */
 	async runNow(params?: Partial<CrawlerConfig["parameters"]>): Promise<string> {
 		console.log("Running manual crawl...");
+		// NOTE: The zh-hk API response already contains BOTH languages (fatName and enFatName)
+		// No need for separate English crawl
 		const result = await this.orchestrator.runCrawl(params);
 		console.log(`Manual crawl completed: ${result.jobId}`);
+
 		return result.jobId;
 	}
 
@@ -294,11 +385,26 @@ export function getScheduler(): CrawlerScheduler {
 }
 
 /**
- * Cleanup scheduler (useful for testing or graceful shutdown)
+ * Cleanup scheduler with graceful shutdown
+ * Waits for in-progress crawls to complete before stopping
+ * @param timeout Maximum time to wait for crawls to complete (ms)
  */
-export function destroyScheduler() {
+export async function destroyScheduler(timeout: number = 30000): Promise<void> {
+	if (globalScheduler) {
+		await globalScheduler.gracefulStop(timeout);
+		globalScheduler = null;
+		console.log("✅ Scheduler destroyed and cleaned up");
+	}
+}
+
+/**
+ * Cleanup scheduler immediately (legacy method for backward compatibility)
+ * Does not wait for in-progress crawls to complete
+ */
+export function destroySchedulerImmediately(): void {
 	if (globalScheduler) {
 		globalScheduler.stop();
 		globalScheduler = null;
+		console.log("⏹️ Scheduler destroyed immediately");
 	}
 }

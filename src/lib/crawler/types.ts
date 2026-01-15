@@ -31,6 +31,7 @@ export interface DistrictData {
 
 export interface VenueData {
 	venueName: string;
+	enVenueName?: string;
 	venueId: number;
 	venueImageUrl: string;
 	sessionCount: number;
@@ -70,6 +71,7 @@ export interface CrawlRequestParams {
 	distCode: string; // Comma-separated: "CW,EN,SN,WCH"
 	faCode: string[]; // Facility type codes: ["TENC", "NFTENC"]
 	playDate: string; // Date: "YYYY-MM-DD"
+	lang?: string; // Language header: "zh-hk" or "en-us"
 }
 
 // Internal processed data structure
@@ -80,16 +82,24 @@ export interface ProcessedFacilityData {
 	// District
 	districtCode: string;
 	districtName: string;
+	districtNameEn?: string;
+	districtNameTc?: string;
+	districtNameSc?: string;
 
 	// Venue
 	venueId: string;
 	venueName: string;
+	venueNameEn?: string;
+	venueNameTc?: string;
+	venueNameSc?: string;
 	venueImageUrl: string;
 
 	// Facility Type
 	facilityTypeId: number;
 	facilityTypeName: string;
 	facilityTypeNameEn: string;
+	facilityTypeNameTc?: string;
+	facilityTypeNameSc?: string;
 	facilityCode: string;
 	facilityGroupCode: string;
 	facilityVRId: string;
@@ -103,25 +113,51 @@ export interface ProcessedFacilityData {
 	isOpen: boolean;
 
 	timePeriod: "morning" | "afternoon" | "evening";
+	lang?: string;
 }
 
 // Database insert types
 export interface FacilityInsert {
 	id: string;
 	name: string;
+	nameEn?: string;
+	nameTc?: string;
+	nameSc?: string;
 	imageUrl: string;
 	districtCode: string;
 	districtName: string;
+	districtNameEn?: string;
+	districtNameTc?: string;
+	districtNameSc?: string;
 	lastCrawlAt: Date;
+}
+
+export interface DistrictInsert {
+	code: string;
+	name: string;
+	nameEn?: string;
+	nameTc?: string;
+	nameSc?: string;
+	region?: string;
+}
+
+export interface FacilityTypeInsert {
+	id: number;
+	code: string;
+	name: string;
+	nameEn?: string;
+	nameTc?: string;
+	nameSc?: string;
 }
 
 export interface SessionInsert {
 	id: string;
 	crawlJobId: string;
 	venueId: string;
-	facilityTypeId: number;
 	facilityTypeName: string;
 	facilityTypeNameEn: string;
+	facilityTypeNameTc?: string;
+	facilityTypeNameSc?: string;
 	facilityCode: string;
 	facilityVRId: string;
 	date: Date;
@@ -154,6 +190,7 @@ export interface CrawlerConfig {
 		distCode: string[];
 		faCode: string[];
 		playDate: string;
+		daysToCrawl: number;
 	};
 	schedule: {
 		enabled: boolean;

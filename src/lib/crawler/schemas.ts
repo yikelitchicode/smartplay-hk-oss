@@ -22,7 +22,7 @@ export const facilityTypeSchema = z.object({
 	sessionCount: z.number(),
 	faCode: z.string(),
 	faGroupCode: z.string(),
-	fvrId: z.number(),
+	fvrId: z.union([z.number(), z.string()]),
 	sessionList: z.array(sessionSchema),
 	openFlag: z.boolean(),
 	fitness: z.boolean(),
@@ -30,7 +30,7 @@ export const facilityTypeSchema = z.object({
 
 export const venueSchema = z.object({
 	venueName: z.string(),
-	venueId: z.number(),
+	venueId: z.union([z.number(), z.string()]),
 	venueImageUrl: z.string(),
 	sessionCount: z.number(),
 	fatList: z.array(facilityTypeSchema),
@@ -87,18 +87,17 @@ export const uiSessionSchema = z.object({
 });
 
 export const uiVenueSchema = z.object({
-	id: z.number(),
+	id: z.union([z.number(), z.string()]),
 	name: z.string(),
 	district: z.string(),
 	districtCode: z.string(),
 	imageUrl: z.string(),
 	facilities: z.array(
 		z.object({
-			typeId: z.number(),
-			typeName: z.string(),
-			typeNameEn: z.string(),
 			code: z.string(),
-			vrId: z.number(),
+			name: z.string(),
+			nameEn: z.string(),
+			vrId: z.union([z.number(), z.string()]),
 			sessions: z.array(uiSessionSchema),
 		}),
 	),

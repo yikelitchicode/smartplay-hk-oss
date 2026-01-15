@@ -79,7 +79,9 @@ export class TestLogger {
 
 	private formatValue(value: unknown): string {
 		if (typeof value === "boolean") {
-			return value ? `${COLORS.green}true${COLORS.reset}` : `${COLORS.red}false${COLORS.reset}`;
+			return value
+				? `${COLORS.green}true${COLORS.reset}`
+				: `${COLORS.red}false${COLORS.reset}`;
 		}
 		if (typeof value === "number") {
 			return `${COLORS.yellow}${value}${COLORS.reset}`;
