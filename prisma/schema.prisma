@@ -7,11 +7,171 @@ datasource db {
   provider = "postgresql"
 }
 
+model District {
+  code       String     @id
+  name       String
+  nameEn     String?
+  region     String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  nameSc     String?
+  nameTc     String?
+  facilities Facility[]
+}
 
-// ============================================
+model FacilityGroup {
+  code       String         @id
+  name       String
+  nameEn     String?
+  nameTc     String?
+  nameSc     String?
+  icon       String?
+  seq        Int            @default(0)
+  isFree     Boolean        @default(false)
+  isVisible  Boolean        @default(true)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  facilities FacilityType[]
+}
 
-// Crawler Models
-// ============================================
+model FacilityType {
+  code      String        @id
+  groupCode String
+  name      String
+  nameEn    String?
+  nameTc    String?
+  nameSc    String?
+  icon      String?
+  seq       Int           @default(0)
+  isFree    Boolean       @default(false)
+  isVisible Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  group     FacilityGroup @relation(fields: [groupCode], references: [code])
+  sessions  Session[]
+}
+
+model ScheduledCrawlRun {
+  id             String     @id @default(cuid())
+  status         JobStatus  @default(RUNNING)
+  daysToProcess  String[]
+  totalDays      Int
+  completedDays  String[]   @default([])
+  failedDays     Json       @default("[]")
+  currentDay     String?
+  startedAt      DateTime   @default(now())
+  completedAt    DateTime?
+  lastActivityAt DateTime   @default(now())
+  crawlJobs      CrawlJob[]
+
+  @@index([status, startedAt])
+}
+
+model CrawlJob {
+  id             String             @id @default(cuid())
+  status         JobStatus          @default(PENDING)
+  distCode       String
+  faCode         String
+  playDate       String
+  startedAt      DateTime           @default(now())
+  completedAt    DateTime?
+  errorMessage   String?
+  scheduledRunId String?
+  scheduledRun   ScheduledCrawlRun? @relation(fields: [scheduledRunId], references: [id])
+  results        CrawlResult[]
+  sessions       Session[]
+
+  @@index([status, startedAt])
+  @@index([playDate])
+  @@index([scheduledRunId])
+}
+
+model CrawlResult {
+  id           String   @id @default(cuid())
+  crawlJobId   String
+  venueCount   Int
+  sessionCount Int
+  rawData      Json
+  createdAt    DateTime @default(now())
+  crawlJob     CrawlJob @relation(fields: [crawlJobId], references: [id], onDelete: Cascade)
+
+  @@index([crawlJobId])
+}
+
+model Facility {
+  id             String    @id
+  name           String
+  nameEn         String?
+  imageUrl       String
+  districtCode   String
+  districtName   String
+  districtNameEn String?
+  lastCrawlAt    DateTime  @default(now())
+  districtNameSc String?
+  districtNameTc String?
+  nameSc         String?
+  nameTc         String?
+  district       District  @relation(fields: [districtCode], references: [code])
+  sessions       Session[]
+
+  @@index([districtCode])
+  @@index([lastCrawlAt])
+}
+
+model Session {
+  id                 String       @id
+  crawlJobId         String
+  venueId            String
+  facilityCode       String
+  facilityTypeName   String
+  facilityTypeNameEn String
+  facilityVRId       String
+  date               DateTime
+  startTime          String
+  endTime            String
+  timePeriod         TimePeriod
+  available          Boolean
+  isPeakHour         Boolean
+  isOpen             Boolean
+  createdAt          DateTime     @default(now())
+  facilityTypeNameSc String?
+  facilityTypeNameTc String?
+  crawlJob           CrawlJob     @relation(fields: [crawlJobId], references: [id], onDelete: Cascade)
+  facilityType       FacilityType @relation(fields: [facilityCode], references: [code])
+  venue              Facility     @relation(fields: [venueId], references: [id])
+
+  @@unique([venueId, facilityCode, date, startTime])
+  @@index([crawlJobId])
+  @@index([date])
+  @@index([available])
+  @@index([venueId, date])
+  @@index([date, available])
+  @@index([date, facilityCode])
+}
+
+model DeadLetterEntry {
+  id            String    @id @default(cuid())
+  faCode        String
+  date          DateTime  @db.Date
+  distCode      String
+  error         String
+  errorType     String?
+  statusCode    Int?
+  attempts      Int       @default(1)
+  maxAttempts   Int       @default(3)
+  firstFailedAt DateTime  @default(now())
+  lastFailedAt  DateTime  @default(now())
+  nextRetryAt   DateTime?
+  resolvedAt    DateTime?
+  status        DLQStatus @default(PENDING)
+  jobId         String?
+  metadata      Json?
+
+  @@unique([faCode, date, distCode])
+  @@index([status, nextRetryAt])
+  @@index([date, status])
+  @@index([lastFailedAt])
+}
 
 enum JobStatus {
   PENDING
@@ -26,109 +186,9 @@ enum TimePeriod {
   EVENING
 }
 
-// Scheduled runs (for multi-day tracking)
-model ScheduledCrawlRun {
-  id              String   @id @default(cuid())
-  status          JobStatus @default(RUNNING)
-  
-  // Configuration snapshot
-  daysToProcess   String[]  // ["2025-01-14", "2025-01-15", ...]
-  totalDays       Int
-  
-  // Progress tracking
-  completedDays   String[]  @default([])
-  failedDays      Json      @default("[]")  // [{"date": "2025-01-16", "error": "...", "attempts": 2}]
-  currentDay      String?
-  
-  // Timing
-  startedAt       DateTime  @default(now())
-  completedAt     DateTime?
-  lastActivityAt  DateTime  @default(now())
-  
-  // Related jobs
-  crawlJobs       CrawlJob[]
-  
-  @@index([status, startedAt])
-}
-
-model CrawlJob {
-  id           String    @id @default(cuid())
-  status       JobStatus @default(PENDING)
-  distCode     String
-  faCode       String
-  playDate     String
-  startedAt    DateTime  @default(now())
-  completedAt  DateTime?
-  errorMessage String?
-
-  results      CrawlResult[]
-  sessions     Session[]
-
-  scheduledRunId  String?
-  scheduledRun    ScheduledCrawlRun? @relation(fields: [scheduledRunId], references: [id])
-
-  @@index([status, startedAt])
-  @@index([playDate])
-  @@index([scheduledRunId])
-}
-
-model CrawlResult {
-  id           String   @id @default(cuid())
-  crawlJobId   String
-  crawlJob     CrawlJob @relation(fields: [crawlJobId], references: [id], onDelete: Cascade)
-
-  venueCount   Int
-  sessionCount Int
-  rawData      Json
-
-  createdAt    DateTime @default(now())
-
-  @@index([crawlJobId])
-}
-
-
-model Facility {
-  id           String       @id
-  name         String
-  imageUrl     String
-  districtCode String
-  districtName String
-  lastCrawlAt  DateTime     @default(now())
-
-  sessions     Session[]
-
-  @@index([districtCode])
-  @@index([lastCrawlAt])
-}
-
-model Session {
-  id                  String     @id
-  crawlJobId          String
-  crawlJob            CrawlJob   @relation(fields: [crawlJobId], references: [id], onDelete: Cascade)
-
-  venueId             String
-  venue               Facility   @relation(fields: [venueId], references: [id])
-
-  facilityTypeId      Int
-  facilityTypeName    String
-  facilityTypeNameEn  String
-  facilityCode        String
-  facilityVRId        String
-
-  date                DateTime
-  startTime           String
-  endTime             String
-  timePeriod          TimePeriod
-
-  available           Boolean
-  isPeakHour          Boolean
-  isOpen              Boolean
-
-  createdAt           DateTime   @default(now())
-
-  @@unique([venueId, facilityTypeId, date, startTime])
-  @@index([crawlJobId])
-  @@index([date])
-  @@index([available])
-  @@index([venueId, date])
+enum DLQStatus {
+  PENDING
+  RETRYING
+  RESOLVED
+  PERMANENT
 }
