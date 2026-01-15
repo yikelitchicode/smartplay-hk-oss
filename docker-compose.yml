@@ -1,0 +1,75 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:${POSTGRES_VERSION:-18-alpine}
+    container_name: ${POSTGRES_CONTAINER_NAME:-smartplay-postgres}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-smartplay}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-smartplay_password}
+      POSTGRES_DB: ${POSTGRES_DB:-smartplay}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ${POSTGRES_VOLUME_NAME:-smartplay_postgres_data}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-smartplay}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Platform auto-detection: builds for current machine architecture
+      # Options: linux/amd64, linux/arm64, or leave empty for auto-detection
+      platform: ${DOCKER_PLATFORM:-}
+    container_name: ${APP_CONTAINER_NAME:-smartplay-app}
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      # Application Settings
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://smartplay:smartplay_password@postgres:5432/smartplay}
+
+      # Note: Crawler configuration is in src/lib/crawler/config.ts
+      # The scheduler runs automatically via scripts/scheduler.ts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - internal
+
+  # Cloudflare Tunnel (Optional - for public internet access)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: ${CLOUDFLARED_CONTAINER_NAME:-smartplay-cloudflared}
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      # Cloudflare Tunnel Token
+      # Get your token from: https://dash.cloudflare.com/get-started
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      - app
+    networks:
+      - internal
+    profiles:
+      - cloudflare  # Disabled by default, enable with: docker compose --profile cloudflare up
+
+volumes:
+  ${POSTGRES_VOLUME_NAME:-smartplay_postgres_data}:
+    driver: local
+
+networks:
+  internal:
+    driver: bridge
