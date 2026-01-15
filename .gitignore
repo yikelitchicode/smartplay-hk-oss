@@ -5,6 +5,8 @@ dist-ssr
 *.local
 count.txt
 .env
+.env.local
+.env.*.local
 .nitro
 .tanstack
 .wrangler
@@ -17,3 +19,10 @@ src/components/draft
 .vscode
 .serena
 claudedocs
+scripts/logs
+.opencode
+
+# Keep example env files for documentation
+!.env.example
+!.env.docker
+!.env.*.example

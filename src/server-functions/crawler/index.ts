@@ -8,6 +8,11 @@ import { getScheduler, initScheduler } from "@/lib/crawler";
 import "@/lib/server-init"; // Initialize scheduler on server start
 import { z } from "zod";
 import type { UIVenue } from "@/lib/crawler/schemas";
+import {
+	createErrorResponse,
+	createSuccessResponse,
+} from "@/lib/server-utils/error-handler";
+import { dateSchema } from "@/lib/server-utils/validation";
 
 // ============================================
 // Manual Trigger
@@ -20,21 +25,21 @@ export const runCrawl = createServerFn({
 		z.object({
 			distCode: z.array(z.string()).optional(),
 			faCode: z.array(z.string()).optional(),
-			playDate: z.string().optional(),
+			playDate: dateSchema.optional(),
 		}),
 	)
 	.handler(async ({ data }) => {
-		const scheduler = initScheduler();
+		try {
+			console.log("Manual crawl trigger with params:", data);
 
-		console.log("Manual crawl trigger with params:", data);
+			const scheduler = initScheduler();
+			const jobId = await scheduler.runNow(data);
 
-		const jobId = await scheduler.runNow(data);
-
-		return {
-			success: true,
-			jobId,
-			message: "Crawl job started successfully",
-		};
+			return createSuccessResponse({ jobId }, "Crawl job started successfully");
+		} catch (error) {
+			console.error("Error running crawl:", error);
+			return createErrorResponse("Failed to start crawl job", "CRAWL_ERROR");
+		}
 	});
 
 // ============================================
@@ -44,17 +49,26 @@ export const runCrawl = createServerFn({
 export const getCrawlHistory = createServerFn({
 	method: "GET",
 })
-	.inputValidator((data: { limit?: number }) => data)
+	.inputValidator(
+		z.object({
+			limit: z.number().min(1).max(100).optional(),
+		}),
+	)
 	.handler(async ({ data }) => {
-		const scheduler = getScheduler();
-		const orchestrator = scheduler.getOrchestrator();
+		try {
+			const scheduler = getScheduler();
+			const orchestrator = scheduler.getOrchestrator();
 
-		const history = await orchestrator.getCrawlHistory(data.limit ?? 10);
+			const history = await orchestrator.getCrawlHistory(data.limit ?? 10);
 
-		return {
-			success: true,
-			data: history,
-		};
+			return createSuccessResponse(history);
+		} catch (error) {
+			console.error("Error fetching crawl history:", error);
+			return createErrorResponse(
+				"Failed to fetch crawl history",
+				"FETCH_HISTORY_ERROR",
+			);
+		}
 	});
 
 // ============================================
@@ -64,24 +78,30 @@ export const getCrawlHistory = createServerFn({
 export const getCrawlJob = createServerFn({
 	method: "GET",
 })
-	.inputValidator((data: { jobId: string }) => data)
+	.inputValidator(
+		z.object({
+			jobId: z.string().min(1),
+		}),
+	)
 	.handler(async ({ data }) => {
-		const scheduler = getScheduler();
-		const orchestrator = scheduler.getOrchestrator();
+		try {
+			const scheduler = getScheduler();
+			const orchestrator = scheduler.getOrchestrator();
 
-		const job = await orchestrator.getCrawlJob(data.jobId);
+			const job = await orchestrator.getCrawlJob(data.jobId);
 
-		if (!job) {
-			return {
-				success: false,
-				error: "Job not found",
-			};
+			if (!job) {
+				return createErrorResponse("Job not found", "JOB_NOT_FOUND");
+			}
+
+			return createSuccessResponse(job);
+		} catch (error) {
+			console.error("Error fetching crawl job:", error);
+			return createErrorResponse(
+				"Failed to fetch crawl job",
+				"FETCH_JOB_ERROR",
+			);
 		}
-
-		return {
-			success: true,
-			data: job,
-		};
 	});
 
 // ============================================
@@ -93,23 +113,28 @@ export const getAvailableSessions = createServerFn({
 })
 	.inputValidator(
 		z.object({
-			date: z.string(),
+			date: dateSchema,
 			districtCode: z.string().optional(),
 		}),
 	)
 	.handler(async ({ data }) => {
-		const scheduler = getScheduler();
-		const orchestrator = scheduler.getOrchestrator();
+		try {
+			const scheduler = getScheduler();
+			const orchestrator = scheduler.getOrchestrator();
 
-		const sessions = await orchestrator.getAvailableSessions(
-			data.date,
-			data.districtCode,
-		);
+			const sessions = await orchestrator.getAvailableSessions(
+				data.date,
+				data.districtCode,
+			);
 
-		return {
-			success: true,
-			data: sessions,
-		};
+			return createSuccessResponse(sessions);
+		} catch (error) {
+			console.error("Error fetching available sessions:", error);
+			return createErrorResponse(
+				"Failed to fetch available sessions",
+				"FETCH_SESSIONS_ERROR",
+			);
+		}
 	});
 
 // ============================================
@@ -121,68 +146,77 @@ export const getAvailableVenues = createServerFn({
 })
 	.inputValidator(
 		z.object({
-			date: z.string(),
+			date: dateSchema,
 			districtCode: z.string().optional(),
 		}),
 	)
 	.handler(async ({ data }) => {
-		const scheduler = getScheduler();
-		const orchestrator = scheduler.getOrchestrator();
+		try {
+			const scheduler = getScheduler();
+			const orchestrator = scheduler.getOrchestrator();
 
-		const sessions = await orchestrator.getAvailableSessions(
-			data.date,
-			data.districtCode,
-		);
-
-		// Group sessions by venue for a cleaner UI structure
-		const venuesMap = new Map<number, UIVenue>();
-
-		for (const session of sessions) {
-			const venue = session.venue;
-			if (!venuesMap.has(venue.id)) {
-				venuesMap.set(venue.id, {
-					id: venue.id,
-					name: venue.name,
-					district: venue.districtName,
-					districtCode: venue.districtCode,
-					imageUrl: venue.imageUrl,
-					facilities: [],
-				});
-			}
-
-			const uiVenue = venuesMap.get(venue.id);
-			if (!uiVenue) continue;
-
-			// Group by facility type
-			let facility = uiVenue.facilities.find(
-				(f) => f.typeId === session.facilityTypeId,
+			const sessions = await orchestrator.getAvailableSessions(
+				data.date,
+				data.districtCode,
 			);
-			if (!facility) {
-				facility = {
-					typeId: session.facilityTypeId,
-					typeName: session.facilityTypeName,
-					typeNameEn: session.facilityTypeNameEn,
-					code: session.facilityCode,
-					vrId: session.facilityVRId,
-					sessions: [],
-				};
-				uiVenue.facilities.push(facility);
+
+			// Group sessions by venue for a cleaner UI structure
+			const venuesMap = new Map<string | number, UIVenue>();
+
+			for (const session of sessions) {
+				const venue = session.venue;
+				if (!venuesMap.has(venue.id)) {
+					venuesMap.set(venue.id, {
+						id: venue.id,
+						name: venue.name,
+						district: venue.districtName,
+						districtCode: venue.districtCode,
+						imageUrl: venue.imageUrl,
+						facilities: [],
+					});
+				}
+
+				const uiVenue = venuesMap.get(venue.id);
+				if (!uiVenue) continue;
+
+				// Group by facility type
+				let facility = uiVenue.facilities.find(
+					(f) => f.code === session.facilityCode,
+				);
+				if (!facility) {
+					facility = {
+						code: session.facilityCode,
+						name: session.facilityTypeName,
+						nameEn: session.facilityTypeNameEn,
+						vrId: session.facilityVRId,
+						sessions: [],
+					};
+					uiVenue.facilities.push(facility);
+				}
+
+				if (facility) {
+					facility.sessions.push({
+						id: session.id,
+						startTime: session.startTime,
+						endTime: session.endTime,
+						available: session.available,
+						isPeakHour: session.isPeakHour,
+						timePeriod: session.timePeriod as
+							| "MORNING"
+							| "AFTERNOON"
+							| "EVENING",
+					});
+				}
 			}
 
-			facility.sessions.push({
-				id: session.id,
-				startTime: session.startTime,
-				endTime: session.endTime,
-				available: session.available,
-				isPeakHour: session.isPeakHour,
-				timePeriod: session.timePeriod as "MORNING" | "AFTERNOON" | "EVENING",
-			});
+			return createSuccessResponse(Array.from(venuesMap.values()));
+		} catch (error) {
+			console.error("Error fetching available venues:", error);
+			return createErrorResponse(
+				"Failed to fetch available venues",
+				"FETCH_VENUES_ERROR",
+			);
 		}
-
-		return {
-			success: true,
-			data: Array.from(venuesMap.values()),
-		};
 	});
 
 // ============================================
@@ -192,15 +226,20 @@ export const getAvailableVenues = createServerFn({
 export const getFacilityStats = createServerFn({
 	method: "GET",
 }).handler(async () => {
-	const scheduler = getScheduler();
-	const orchestrator = scheduler.getOrchestrator();
+	try {
+		const scheduler = getScheduler();
+		const orchestrator = scheduler.getOrchestrator();
 
-	const stats = await orchestrator.getFacilityStats();
+		const stats = await orchestrator.getFacilityStats();
 
-	return {
-		success: true,
-		data: stats,
-	};
+		return createSuccessResponse(stats);
+	} catch (error) {
+		console.error("Error fetching facility stats:", error);
+		return createErrorResponse(
+			"Failed to fetch facility stats",
+			"FETCH_STATS_ERROR",
+		);
+	}
 });
 
 // ============================================
@@ -210,15 +249,22 @@ export const getFacilityStats = createServerFn({
 export const getSchedulerStatus = createServerFn({
 	method: "GET",
 }).handler(async () => {
-	const scheduler = getScheduler();
+	try {
+		const scheduler = getScheduler();
 
-	return {
-		success: true,
-		data: {
+		const data = {
 			isActive: scheduler.isActive(),
 			isCrawlRunning: scheduler.isCrawlRunning(),
-		},
-	};
+		};
+
+		return createSuccessResponse(data);
+	} catch (error) {
+		console.error("Error fetching scheduler status:", error);
+		return createErrorResponse(
+			"Failed to fetch scheduler status",
+			"FETCH_STATUS_ERROR",
+		);
+	}
 });
 
 // ============================================
@@ -228,39 +274,43 @@ export const getSchedulerStatus = createServerFn({
 export const startScheduler = createServerFn({
 	method: "POST",
 }).handler(async () => {
-	const scheduler = initScheduler();
+	try {
+		const scheduler = initScheduler();
 
-	if (scheduler.isActive()) {
-		return {
-			success: true,
-			message: "Scheduler already running",
-		};
+		if (scheduler.isActive()) {
+			return createSuccessResponse(undefined, "Scheduler already running");
+		}
+
+		scheduler.start();
+
+		return createSuccessResponse(undefined, "Scheduler started");
+	} catch (error) {
+		console.error("Error starting scheduler:", error);
+		return createErrorResponse(
+			"Failed to start scheduler",
+			"START_SCHEDULER_ERROR",
+		);
 	}
-
-	scheduler.start();
-
-	return {
-		success: true,
-		message: "Scheduler started",
-	};
 });
 
 export const stopScheduler = createServerFn({
 	method: "POST",
 }).handler(async () => {
-	const scheduler = getScheduler();
+	try {
+		const scheduler = getScheduler();
 
-	if (!scheduler.isActive()) {
-		return {
-			success: true,
-			message: "Scheduler not running",
-		};
+		if (!scheduler.isActive()) {
+			return createSuccessResponse(undefined, "Scheduler not running");
+		}
+
+		scheduler.stop();
+
+		return createSuccessResponse(undefined, "Scheduler stopped");
+	} catch (error) {
+		console.error("Error stopping scheduler:", error);
+		return createErrorResponse(
+			"Failed to stop scheduler",
+			"STOP_SCHEDULER_ERROR",
+		);
 	}
-
-	scheduler.stop();
-
-	return {
-		success: true,
-		message: "Scheduler stopped",
-	};
 });
