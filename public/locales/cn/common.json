@@ -1,8 +1,17 @@
 {
-  "welcome": "欢迎来到 SmartPlay HK OSS",
-  "language": "语言",
-  "menu": "菜单",
-  "footer": {
-    "rights": "版权所有 © 2026"
-  }
+	"welcome": "欢迎来到 SmartPlay HK OSS",
+	"language": "语言",
+	"menu": "菜单",
+	"nav": {
+		"title": "导航",
+		"home": "首页",
+		"booking": "场地查询"
+	},
+	"footer": {
+		"disclaimer": "免责声明：此为非官方开源工具，与康文署无任何关联。",
+		"visit_official": "访问康文署官方网站",
+		"inquiry_hotline": "热线",
+		"open_source": "在 GitHub 上查看源码",
+		"copyright": "由开源社区用 ❤️ 制作"
+	}
 }

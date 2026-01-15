@@ -1,8 +1,17 @@
 {
-  "welcome": "Welcome to SmartPlay HK OSS",
-  "language": "Language",
-  "menu": "Menu",
-  "footer": {
-    "rights": "All rights reserved © 2026"
-  }
+	"welcome": "Welcome to SmartPlay HK OSS",
+	"language": "Language",
+	"menu": "Menu",
+	"nav": {
+		"title": "Navigation",
+		"home": "Home",
+		"booking": "Facility Availability"
+	},
+	"footer": {
+		"disclaimer": "Disclaimer: This is an unofficial open-source tool and is not affiliated with or endorsed by the LCSD.",
+		"visit_official": "Visit Official LCSD Website",
+		"inquiry_hotline": "Hotline",
+		"open_source": "View Source on GitHub",
+		"copyright": "Made with ❤️ by the open source community"
+	}
 }

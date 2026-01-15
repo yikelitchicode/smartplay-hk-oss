@@ -1,4 +1,22 @@
 {
-  "title": "首頁",
-  "description": "這是 SmartPlay HK OSS 的首頁。"
+	"hero": {
+		"title": "SmartPlay HK OSS",
+		"subtitle": "社區驅動的場地查詢工具",
+		"description": "更快、更簡潔的開源替代方案，用於查詢康文署設施可用性。實時監控與進階篩選。"
+	},
+	"features": {
+		"booking": {
+			"title": "場地預訂",
+			"description": "即時查詢全港各地區網球、籃球等設施的可用情況。",
+			"cta": "查詢可用性",
+			"badge": "已啟用"
+		},
+		"activity": {
+			"title": "活動報名",
+			"description": "瀏覽並監控活動名額及報名狀態。",
+			"cta": "即將推出",
+			"badge": "計劃中"
+		}
+	},
+	"disclaimer": "注意：此為非官方開源工具。所有預訂必須透過康文署 SmartPlay 官方網站完成。"
 }

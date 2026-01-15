@@ -28,10 +28,43 @@ const envSchema = z.object({
 	DATABASE_URL: z
 		.string()
 		.min(1, "DATABASE_URL cannot be empty")
-		.refine(
-			(val) => val.startsWith("postgresql://") || val.startsWith("postgres://"),
-			"DATABASE_URL must start with postgresql:// or postgres://",
-		),
+		.refine((val) => {
+			try {
+				const url = new URL(val);
+				// Validate protocol
+				const isValidProtocol =
+					url.protocol === "postgresql:" || url.protocol === "postgres:";
+				if (!isValidProtocol) {
+					return false;
+				}
+
+				// Check for potentially dangerous parameters that could indicate injection attempts
+				const dangerousParams = [
+					"sslmode",
+					"connect_timeout",
+					"statement_timeout",
+					"query_timeout",
+				];
+				const hasDangerousParams = dangerousParams.some((param) =>
+					url.searchParams.has(param),
+				);
+				if (hasDangerousParams) {
+					console.warn(
+						"⚠️ DATABASE_URL contains potentially unsafe parameters. Ensure these are intentional.",
+					);
+				}
+
+				// Ensure hostname is present (prevents protocol-only URLs like "postgresql://")
+				if (!url.hostname) {
+					return false;
+				}
+
+				return true;
+			} catch {
+				// URL parsing failed
+				return false;
+			}
+		}, "DATABASE_URL must be a valid PostgreSQL URL with hostname (e.g., postgresql://user:pass@localhost:5432/db)"),
 
 	// Node Environment
 	NODE_ENV: z
@@ -64,8 +97,8 @@ function parseEnv(processEnv: NodeJS.ProcessEnv = process.env): EnvOutput {
 		return envSchema.parse(filteredEnv);
 	} catch (error) {
 		if (error instanceof z.ZodError) {
-			const formattedErrors = error.errors
-				.map((err) => {
+			const formattedErrors = error.issues
+				.map((err: z.ZodIssue) => {
 					const path = err.path.join(".");
 					return `  - ${path}: ${err.message}`;
 				})
@@ -116,3 +149,31 @@ export type EnvConfig = typeof envConfig;
 
 // Re-export for convenience
 export default envConfig;
+
+/**
+ * Sanitize secrets from environment configuration for safe logging
+ *
+ * This function redacts sensitive information (passwords, tokens) from
+ * the DATABASE_URL to prevent accidental exposure in logs.
+ *
+ * @param config - The environment configuration to sanitize
+ * @returns Sanitized configuration string with secrets redacted
+ *
+ * @example
+ * ```ts
+ * import { envConfig, sanitizeForLogs } from './lib/env'
+ *
+ * console.log('Database config:', sanitizeForLogs(envConfig))
+ * // Output: "Database config: postgresql://user:****@localhost:5432/db"
+ * ```
+ */
+export function sanitizeForLogs(config: EnvConfig): string {
+	const sanitizedUrl = config.databaseUrl.replace(/:[^:@]+@/, ":****@");
+	return JSON.stringify({
+		databaseUrl: sanitizedUrl,
+		nodeEnv: config.nodeEnv,
+		isDevelopment: config.isDevelopment,
+		isProduction: config.isProduction,
+		isTest: config.isTest,
+	});
+}

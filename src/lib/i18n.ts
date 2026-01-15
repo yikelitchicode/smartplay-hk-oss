@@ -5,13 +5,6 @@ import { initReactI18next } from "react-i18next";
 
 const isServer = typeof window === "undefined";
 
-i18n.use(HttpBackend).use(initReactI18next);
-
-// Only use language detector on the client
-if (!isServer) {
-	i18n.use(LanguageDetector);
-}
-
 const i18nConfig = {
 	fallbackLng: "en",
 	supportedLngs: ["en", "zh", "cn"],
@@ -28,9 +21,30 @@ const i18nConfig = {
 	},
 };
 
-// Initialize i18n
-if (!i18n.isInitialized) {
-	i18n.init(i18nConfig);
+// Bind react-i18next
+i18n.use(initReactI18next);
+
+// Use backend and detector
+i18n.use(HttpBackend);
+if (!isServer) {
+	i18n.use(LanguageDetector);
+}
+
+// Synchronous-ish initialization (returns the instance)
+i18n.init(i18nConfig).catch((err) => {
+	console.error("❌ i18n initialization error:", err);
+});
+
+export async function ensureI18nInitialized(): Promise<void> {
+	if (i18n.isInitialized) {
+		return;
+	}
+
+	return new Promise((resolve) => {
+		i18n.on("initialized", () => resolve());
+		// If already initialized by the time we attach, resolve immediately
+		if (i18n.isInitialized) resolve();
+	});
 }
 
 export default i18n;

@@ -1,4 +1,22 @@
 {
-  "title": "Home Page",
-  "description": "This is the home page of SmartPlay HK OSS."
+	"hero": {
+		"title": "SmartPlay HK OSS",
+		"subtitle": "Community-Driven Availability Checker",
+		"description": "A faster, cleaner, and open-source alternative to check LCSD facility availability. Real-time monitoring and advanced filtering."
+	},
+	"features": {
+		"booking": {
+			"title": "Venue Booking",
+			"description": "Check real-time availability for tennis, basketball, and more across all districts.",
+			"cta": "Check Availability",
+			"badge": "Active"
+		},
+		"activity": {
+			"title": "Activity",
+			"description": "Browse and monitor activity quotas and enrollment status.",
+			"cta": "Coming Soon",
+			"badge": "Planned"
+		}
+	},
+	"disclaimer": "Note: This is an unofficial open-source tool. All bookings must be completed via the official LCSD SmartPlay website."
 }
