@@ -10,11 +10,14 @@ export interface NormalizedSession {
 	isPassed: boolean;
 	peakHour: boolean;
 	facilityName: string;
-	facilityId: number;
+	facilityId: string; // Facility code (e.g., "TENC", "BASC")
 }
 
 export interface NormalizedFacility {
 	name: string;
+	nameEn?: string | null;
+	nameTc?: string | null;
+	nameSc?: string | null;
 	code: string;
 	sessions: NormalizedSession[];
 	priceType: PriceType;
@@ -23,8 +26,14 @@ export interface NormalizedFacility {
 export interface NormalizedVenue {
 	id: string;
 	name: string;
+	nameEn?: string | null;
+	nameTc?: string | null;
+	nameSc?: string | null;
 	districtCode: string;
 	districtName: string;
+	districtNameEn?: string | null;
+	districtNameTc?: string | null;
+	districtNameSc?: string | null;
 	region: RegionType;
 	imageUrl: string;
 	facilities: {
@@ -36,5 +45,6 @@ export type TimeFilter = "all" | "morning" | "afternoon" | "evening";
 
 export interface FacilityGroup {
 	label: string;
+	value: string; // Group code
 	options: { label: string; value: string }[];
 }
