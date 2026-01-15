@@ -7,21 +7,20 @@
 				"distList": [
 					{
 						"distCode": "ST",
-						"sessionCount": 7,
-						"distName": "Sha Tin",
+						"sessionCount": 4,
+						"distName": "沙田區",
 						"venueList": [
 							{
-								"venueName": "Che Kung Temple Sports Centre",
+								"venueName": "車公廟體育館",
 								"venueId": 70001933,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 1,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 1,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 125007375,
@@ -29,7 +28,7 @@
 											{
 												"ssnStartTime": "07:00:00",
 												"ssnEndTime": "08:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": true,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -39,7 +38,7 @@
 											{
 												"ssnStartTime": "08:00:00",
 												"ssnEndTime": "09:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -49,7 +48,7 @@
 											{
 												"ssnStartTime": "09:00:00",
 												"ssnEndTime": "10:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -59,7 +58,7 @@
 											{
 												"ssnStartTime": "10:00:00",
 												"ssnEndTime": "11:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -69,7 +68,7 @@
 											{
 												"ssnStartTime": "11:00:00",
 												"ssnEndTime": "12:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -83,17 +82,16 @@
 								]
 							},
 							{
-								"venueName": "Heng On Sports Centre",
+								"venueName": "恆安體育館",
 								"venueId": 67,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
-								"sessionCount": 2,
+								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
-										"sessionCount": 2,
-										"faCodeName": "Basketball",
+										"sessionCount": 0,
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 267,
@@ -101,27 +99,27 @@
 											{
 												"ssnStartTime": "07:00:00",
 												"ssnEndTime": "08:00:00",
-												"ssnStartDate": "2026-01-20",
-												"available": true,
+												"ssnStartDate": "2026-01-16",
+												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
-												"sessionCount": 1,
+												"sessionCount": 0,
 												"monthlyTicketFlag": "N"
 											},
 											{
 												"ssnStartTime": "08:00:00",
 												"ssnEndTime": "09:00:00",
-												"ssnStartDate": "2026-01-20",
-												"available": true,
+												"ssnStartDate": "2026-01-16",
+												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
-												"sessionCount": 1,
+												"sessionCount": 0,
 												"monthlyTicketFlag": "N"
 											},
 											{
 												"ssnStartTime": "09:00:00",
 												"ssnEndTime": "10:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -131,7 +129,7 @@
 											{
 												"ssnStartTime": "10:00:00",
 												"ssnEndTime": "11:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -141,7 +139,7 @@
 											{
 												"ssnStartTime": "11:00:00",
 												"ssnEndTime": "12:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -155,17 +153,16 @@
 								]
 							},
 							{
-								"venueName": "Hin Keng Sports Centre",
+								"venueName": "顯徑體育館",
 								"venueId": 69,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 0,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 268,
@@ -173,7 +170,7 @@
 											{
 												"ssnStartTime": "07:00:00",
 												"ssnEndTime": "08:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -183,7 +180,7 @@
 											{
 												"ssnStartTime": "08:00:00",
 												"ssnEndTime": "09:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -193,7 +190,7 @@
 											{
 												"ssnStartTime": "09:00:00",
 												"ssnEndTime": "10:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -203,7 +200,7 @@
 											{
 												"ssnStartTime": "10:00:00",
 												"ssnEndTime": "11:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -213,7 +210,7 @@
 											{
 												"ssnStartTime": "11:00:00",
 												"ssnEndTime": "12:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -227,17 +224,16 @@
 								]
 							},
 							{
-								"venueName": "Ma On Shan Sports Centre",
+								"venueName": "馬鞍山體育館",
 								"venueId": 60000514,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
-								"sessionCount": 2,
+								"sessionCount": 1,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
-										"sessionCount": 2,
-										"faCodeName": "Basketball",
+										"sessionCount": 1,
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 125005125,
@@ -245,7 +241,7 @@
 											{
 												"ssnStartTime": "07:00:00",
 												"ssnEndTime": "08:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": true,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -255,17 +251,17 @@
 											{
 												"ssnStartTime": "08:00:00",
 												"ssnEndTime": "09:00:00",
-												"ssnStartDate": "2026-01-20",
-												"available": true,
+												"ssnStartDate": "2026-01-16",
+												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
-												"sessionCount": 1,
+												"sessionCount": 0,
 												"monthlyTicketFlag": "N"
 											},
 											{
 												"ssnStartTime": "09:00:00",
 												"ssnEndTime": "10:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -275,7 +271,7 @@
 											{
 												"ssnStartTime": "10:00:00",
 												"ssnEndTime": "11:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -285,7 +281,7 @@
 											{
 												"ssnStartTime": "11:00:00",
 												"ssnEndTime": "12:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -299,17 +295,16 @@
 								]
 							},
 							{
-								"venueName": "Mei Lam Sports Centre",
+								"venueName": "美林體育館",
 								"venueId": 91,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 0,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 2024102500002293,
@@ -317,7 +312,7 @@
 											{
 												"ssnStartTime": "07:00:00",
 												"ssnEndTime": "08:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -327,7 +322,7 @@
 											{
 												"ssnStartTime": "08:00:00",
 												"ssnEndTime": "09:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -337,7 +332,7 @@
 											{
 												"ssnStartTime": "09:00:00",
 												"ssnEndTime": "10:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -347,7 +342,7 @@
 											{
 												"ssnStartTime": "10:00:00",
 												"ssnEndTime": "11:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -357,7 +352,7 @@
 											{
 												"ssnStartTime": "11:00:00",
 												"ssnEndTime": "12:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -371,17 +366,16 @@
 								]
 							},
 							{
-								"venueName": "Yuen Chau Kok Sports Centre",
+								"venueName": "圓洲角體育館",
 								"venueId": 70001533,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
-								"sessionCount": 2,
+								"sessionCount": 1,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
-										"sessionCount": 2,
-										"faCodeName": "Basketball",
+										"sessionCount": 1,
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 125006587,
@@ -389,17 +383,17 @@
 											{
 												"ssnStartTime": "07:00:00",
 												"ssnEndTime": "08:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": true,
 												"peakHour": false,
 												"sfadFlag": false,
-												"sessionCount": 2,
+												"sessionCount": 1,
 												"monthlyTicketFlag": "N"
 											},
 											{
 												"ssnStartTime": "08:00:00",
 												"ssnEndTime": "09:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -409,7 +403,7 @@
 											{
 												"ssnStartTime": "09:00:00",
 												"ssnEndTime": "10:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -419,7 +413,7 @@
 											{
 												"ssnStartTime": "10:00:00",
 												"ssnEndTime": "11:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -429,7 +423,7 @@
 											{
 												"ssnStartTime": "11:00:00",
 												"ssnEndTime": "12:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -443,17 +437,16 @@
 								]
 							},
 							{
-								"venueName": "Yuen Wo Road Sports Centre",
+								"venueName": "源禾路體育館",
 								"venueId": 92,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
-								"sessionCount": 0,
+								"sessionCount": 1,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
-										"sessionCount": 0,
-										"faCodeName": "Basketball",
+										"sessionCount": 1,
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 266,
@@ -461,17 +454,17 @@
 											{
 												"ssnStartTime": "07:00:00",
 												"ssnEndTime": "08:00:00",
-												"ssnStartDate": "2026-01-20",
-												"available": false,
+												"ssnStartDate": "2026-01-16",
+												"available": true,
 												"peakHour": false,
 												"sfadFlag": false,
-												"sessionCount": 0,
+												"sessionCount": 1,
 												"monthlyTicketFlag": "N"
 											},
 											{
 												"ssnStartTime": "08:00:00",
 												"ssnEndTime": "09:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -481,7 +474,7 @@
 											{
 												"ssnStartTime": "09:00:00",
 												"ssnEndTime": "10:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -491,7 +484,7 @@
 											{
 												"ssnStartTime": "10:00:00",
 												"ssnEndTime": "11:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -501,7 +494,7 @@
 											{
 												"ssnStartTime": "11:00:00",
 												"ssnEndTime": "12:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -525,20 +518,19 @@
 					{
 						"distCode": "ST",
 						"sessionCount": 0,
-						"distName": "Sha Tin",
+						"distName": "沙田區",
 						"venueList": [
 							{
-								"venueName": "Che Kung Temple Sports Centre",
+								"venueName": "車公廟體育館",
 								"venueId": 70001933,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 0,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 125007375,
@@ -546,7 +538,7 @@
 											{
 												"ssnStartTime": "12:00:00",
 												"ssnEndTime": "13:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -556,7 +548,7 @@
 											{
 												"ssnStartTime": "13:00:00",
 												"ssnEndTime": "14:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -566,7 +558,7 @@
 											{
 												"ssnStartTime": "14:00:00",
 												"ssnEndTime": "15:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -576,7 +568,7 @@
 											{
 												"ssnStartTime": "15:00:00",
 												"ssnEndTime": "16:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -586,7 +578,7 @@
 											{
 												"ssnStartTime": "16:00:00",
 												"ssnEndTime": "17:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -596,7 +588,7 @@
 											{
 												"ssnStartTime": "17:00:00",
 												"ssnEndTime": "18:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -610,17 +602,16 @@
 								]
 							},
 							{
-								"venueName": "Heng On Sports Centre",
+								"venueName": "恆安體育館",
 								"venueId": 67,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 0,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 267,
@@ -628,7 +619,7 @@
 											{
 												"ssnStartTime": "12:00:00",
 												"ssnEndTime": "13:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -638,7 +629,7 @@
 											{
 												"ssnStartTime": "13:00:00",
 												"ssnEndTime": "14:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -648,7 +639,7 @@
 											{
 												"ssnStartTime": "14:00:00",
 												"ssnEndTime": "15:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -658,7 +649,7 @@
 											{
 												"ssnStartTime": "15:00:00",
 												"ssnEndTime": "16:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -668,7 +659,7 @@
 											{
 												"ssnStartTime": "16:00:00",
 												"ssnEndTime": "17:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -678,7 +669,7 @@
 											{
 												"ssnStartTime": "17:00:00",
 												"ssnEndTime": "18:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -692,17 +683,16 @@
 								]
 							},
 							{
-								"venueName": "Hin Keng Sports Centre",
+								"venueName": "顯徑體育館",
 								"venueId": 69,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 0,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 268,
@@ -710,7 +700,7 @@
 											{
 												"ssnStartTime": "12:00:00",
 												"ssnEndTime": "13:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -720,7 +710,7 @@
 											{
 												"ssnStartTime": "13:00:00",
 												"ssnEndTime": "14:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -730,7 +720,7 @@
 											{
 												"ssnStartTime": "14:00:00",
 												"ssnEndTime": "15:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -740,7 +730,7 @@
 											{
 												"ssnStartTime": "15:00:00",
 												"ssnEndTime": "16:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -750,7 +740,7 @@
 											{
 												"ssnStartTime": "16:00:00",
 												"ssnEndTime": "17:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -760,7 +750,7 @@
 											{
 												"ssnStartTime": "17:00:00",
 												"ssnEndTime": "18:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -774,17 +764,16 @@
 								]
 							},
 							{
-								"venueName": "Ma On Shan Sports Centre",
+								"venueName": "馬鞍山體育館",
 								"venueId": 60000514,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 0,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 125005125,
@@ -792,7 +781,7 @@
 											{
 												"ssnStartTime": "12:00:00",
 												"ssnEndTime": "13:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -802,7 +791,7 @@
 											{
 												"ssnStartTime": "13:00:00",
 												"ssnEndTime": "14:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -812,7 +801,7 @@
 											{
 												"ssnStartTime": "14:00:00",
 												"ssnEndTime": "15:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -822,7 +811,7 @@
 											{
 												"ssnStartTime": "15:00:00",
 												"ssnEndTime": "16:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -832,7 +821,7 @@
 											{
 												"ssnStartTime": "16:00:00",
 												"ssnEndTime": "17:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -842,7 +831,7 @@
 											{
 												"ssnStartTime": "17:00:00",
 												"ssnEndTime": "18:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -856,17 +845,16 @@
 								]
 							},
 							{
-								"venueName": "Mei Lam Sports Centre",
+								"venueName": "美林體育館",
 								"venueId": 91,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 0,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 2024102500002293,
@@ -874,7 +862,7 @@
 											{
 												"ssnStartTime": "12:00:00",
 												"ssnEndTime": "13:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -884,7 +872,7 @@
 											{
 												"ssnStartTime": "13:00:00",
 												"ssnEndTime": "14:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -894,7 +882,7 @@
 											{
 												"ssnStartTime": "14:00:00",
 												"ssnEndTime": "15:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -904,7 +892,7 @@
 											{
 												"ssnStartTime": "15:00:00",
 												"ssnEndTime": "16:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -914,7 +902,7 @@
 											{
 												"ssnStartTime": "16:00:00",
 												"ssnEndTime": "17:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -924,7 +912,7 @@
 											{
 												"ssnStartTime": "17:00:00",
 												"ssnEndTime": "18:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -938,17 +926,16 @@
 								]
 							},
 							{
-								"venueName": "Yuen Chau Kok Sports Centre",
+								"venueName": "圓洲角體育館",
 								"venueId": 70001533,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 0,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 125006587,
@@ -956,7 +943,7 @@
 											{
 												"ssnStartTime": "12:00:00",
 												"ssnEndTime": "13:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -966,7 +953,7 @@
 											{
 												"ssnStartTime": "13:00:00",
 												"ssnEndTime": "14:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -976,7 +963,7 @@
 											{
 												"ssnStartTime": "14:00:00",
 												"ssnEndTime": "15:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -986,7 +973,7 @@
 											{
 												"ssnStartTime": "15:00:00",
 												"ssnEndTime": "16:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -996,7 +983,7 @@
 											{
 												"ssnStartTime": "16:00:00",
 												"ssnEndTime": "17:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -1006,7 +993,7 @@
 											{
 												"ssnStartTime": "17:00:00",
 												"ssnEndTime": "18:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -1020,17 +1007,16 @@
 								]
 							},
 							{
-								"venueName": "Yuen Wo Road Sports Centre",
+								"venueName": "源禾路體育館",
 								"venueId": 92,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 0,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 266,
@@ -1038,7 +1024,7 @@
 											{
 												"ssnStartTime": "12:00:00",
 												"ssnEndTime": "13:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -1048,7 +1034,7 @@
 											{
 												"ssnStartTime": "13:00:00",
 												"ssnEndTime": "14:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -1058,7 +1044,7 @@
 											{
 												"ssnStartTime": "14:00:00",
 												"ssnEndTime": "15:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -1068,7 +1054,7 @@
 											{
 												"ssnStartTime": "15:00:00",
 												"ssnEndTime": "16:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -1078,7 +1064,7 @@
 											{
 												"ssnStartTime": "16:00:00",
 												"ssnEndTime": "17:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -1088,7 +1074,7 @@
 											{
 												"ssnStartTime": "17:00:00",
 												"ssnEndTime": "18:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": false,
 												"sfadFlag": false,
@@ -1112,20 +1098,19 @@
 					{
 						"distCode": "ST",
 						"sessionCount": 0,
-						"distName": "Sha Tin",
+						"distName": "沙田區",
 						"venueList": [
 							{
-								"venueName": "Che Kung Temple Sports Centre",
+								"venueName": "車公廟體育館",
 								"venueId": 70001933,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 0,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 125007375,
@@ -1133,7 +1118,7 @@
 											{
 												"ssnStartTime": "18:00:00",
 												"ssnEndTime": "19:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1143,7 +1128,7 @@
 											{
 												"ssnStartTime": "19:00:00",
 												"ssnEndTime": "20:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1153,7 +1138,7 @@
 											{
 												"ssnStartTime": "20:00:00",
 												"ssnEndTime": "21:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1163,7 +1148,7 @@
 											{
 												"ssnStartTime": "21:00:00",
 												"ssnEndTime": "22:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1173,7 +1158,7 @@
 											{
 												"ssnStartTime": "22:00:00",
 												"ssnEndTime": "23:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1187,17 +1172,16 @@
 								]
 							},
 							{
-								"venueName": "Heng On Sports Centre",
+								"venueName": "恆安體育館",
 								"venueId": 67,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 0,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 267,
@@ -1205,7 +1189,7 @@
 											{
 												"ssnStartTime": "18:00:00",
 												"ssnEndTime": "19:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1215,7 +1199,7 @@
 											{
 												"ssnStartTime": "19:00:00",
 												"ssnEndTime": "20:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1225,7 +1209,7 @@
 											{
 												"ssnStartTime": "20:00:00",
 												"ssnEndTime": "21:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1235,7 +1219,7 @@
 											{
 												"ssnStartTime": "21:00:00",
 												"ssnEndTime": "22:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1245,7 +1229,7 @@
 											{
 												"ssnStartTime": "22:00:00",
 												"ssnEndTime": "23:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1259,17 +1243,16 @@
 								]
 							},
 							{
-								"venueName": "Hin Keng Sports Centre",
+								"venueName": "顯徑體育館",
 								"venueId": 69,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 0,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 268,
@@ -1277,7 +1260,7 @@
 											{
 												"ssnStartTime": "18:00:00",
 												"ssnEndTime": "19:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1287,7 +1270,7 @@
 											{
 												"ssnStartTime": "19:00:00",
 												"ssnEndTime": "20:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1297,7 +1280,7 @@
 											{
 												"ssnStartTime": "20:00:00",
 												"ssnEndTime": "21:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1307,7 +1290,7 @@
 											{
 												"ssnStartTime": "21:00:00",
 												"ssnEndTime": "22:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1317,7 +1300,7 @@
 											{
 												"ssnStartTime": "22:00:00",
 												"ssnEndTime": "23:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1331,17 +1314,16 @@
 								]
 							},
 							{
-								"venueName": "Ma On Shan Sports Centre",
+								"venueName": "馬鞍山體育館",
 								"venueId": 60000514,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 0,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 125005125,
@@ -1349,7 +1331,7 @@
 											{
 												"ssnStartTime": "18:00:00",
 												"ssnEndTime": "19:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1359,7 +1341,7 @@
 											{
 												"ssnStartTime": "19:00:00",
 												"ssnEndTime": "20:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1369,7 +1351,7 @@
 											{
 												"ssnStartTime": "20:00:00",
 												"ssnEndTime": "21:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1379,7 +1361,7 @@
 											{
 												"ssnStartTime": "21:00:00",
 												"ssnEndTime": "22:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1389,7 +1371,7 @@
 											{
 												"ssnStartTime": "22:00:00",
 												"ssnEndTime": "23:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1403,17 +1385,16 @@
 								]
 							},
 							{
-								"venueName": "Mei Lam Sports Centre",
+								"venueName": "美林體育館",
 								"venueId": 91,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 0,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 2024102500002293,
@@ -1421,7 +1402,7 @@
 											{
 												"ssnStartTime": "18:00:00",
 												"ssnEndTime": "19:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1431,7 +1412,7 @@
 											{
 												"ssnStartTime": "19:00:00",
 												"ssnEndTime": "20:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1441,7 +1422,7 @@
 											{
 												"ssnStartTime": "20:00:00",
 												"ssnEndTime": "21:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1451,7 +1432,7 @@
 											{
 												"ssnStartTime": "21:00:00",
 												"ssnEndTime": "22:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1461,7 +1442,7 @@
 											{
 												"ssnStartTime": "22:00:00",
 												"ssnEndTime": "23:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1475,17 +1456,16 @@
 								]
 							},
 							{
-								"venueName": "Yuen Chau Kok Sports Centre",
+								"venueName": "圓洲角體育館",
 								"venueId": 70001533,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 0,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 125006587,
@@ -1493,7 +1473,7 @@
 											{
 												"ssnStartTime": "18:00:00",
 												"ssnEndTime": "19:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1503,7 +1483,7 @@
 											{
 												"ssnStartTime": "19:00:00",
 												"ssnEndTime": "20:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1513,7 +1493,7 @@
 											{
 												"ssnStartTime": "20:00:00",
 												"ssnEndTime": "21:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1523,7 +1503,7 @@
 											{
 												"ssnStartTime": "21:00:00",
 												"ssnEndTime": "22:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1533,7 +1513,7 @@
 											{
 												"ssnStartTime": "22:00:00",
 												"ssnEndTime": "23:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1547,17 +1527,16 @@
 								]
 							},
 							{
-								"venueName": "Yuen Wo Road Sports Centre",
+								"venueName": "源禾路體育館",
 								"venueId": 92,
 								"venueImageUrl": "https://lcsd-smartplay.oss-cn-hongkong.aliyuncs.com/pic/default_facility.jpeg",
 								"sessionCount": 0,
 								"fatList": [
 									{
-										"fatName": "Basketball Court (NT)",
+										"fatName": "籃球場 (新界區)",
 										"enFatName": "Basketball Court (NT)",
 										"fatId": 2,
 										"sessionCount": 0,
-										"faCodeName": "Basketball",
 										"faCode": "BASC",
 										"faGroupCode": "BAGM",
 										"fvrId": 266,
@@ -1565,7 +1544,7 @@
 											{
 												"ssnStartTime": "18:00:00",
 												"ssnEndTime": "19:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1575,7 +1554,7 @@
 											{
 												"ssnStartTime": "19:00:00",
 												"ssnEndTime": "20:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1585,7 +1564,7 @@
 											{
 												"ssnStartTime": "20:00:00",
 												"ssnEndTime": "21:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1595,7 +1574,7 @@
 											{
 												"ssnStartTime": "21:00:00",
 												"ssnEndTime": "22:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1605,7 +1584,7 @@
 											{
 												"ssnStartTime": "22:00:00",
 												"ssnEndTime": "23:00:00",
-												"ssnStartDate": "2026-01-20",
+												"ssnStartDate": "2026-01-16",
 												"available": false,
 												"peakHour": true,
 												"sfadFlag": false,
@@ -1659,6 +1638,6 @@
 				}
 			]
 		},
-		"timestamp": 1768469958226
+		"timestamp": 1768469216068
 	}
 ]
