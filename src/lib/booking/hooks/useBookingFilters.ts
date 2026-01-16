@@ -87,31 +87,29 @@ export function useBookingFilters({
 	 */
 	const handleSelectDistrict = useCallback(
 		(districtCode: string) => {
-			setSelectedDistricts((prev) => {
-				let next: string[];
+			let next: string[];
 
-				if (districtCode === "All") {
-					next = ["All"];
+			if (districtCode === "All") {
+				next = ["All"];
+			} else {
+				const withoutAll = selectedDistricts.filter((d) => d !== "All");
+
+				if (withoutAll.includes(districtCode)) {
+					next = withoutAll.filter((d) => d !== districtCode);
+					if (next.length === 0) next = ["All"];
 				} else {
-					const withoutAll = prev.filter((d) => d !== "All");
-
-					if (withoutAll.includes(districtCode)) {
-						next = withoutAll.filter((d) => d !== districtCode);
-						if (next.length === 0) next = ["All"];
-					} else {
-						next = [...withoutAll, districtCode];
-					}
+					next = [...withoutAll, districtCode];
 				}
+			}
 
-				// Update URL
-				onNavigate({
-					districts: next.includes("All") ? undefined : next,
-				});
+			setSelectedDistricts(next);
 
-				return next;
+			// Update URL
+			onNavigate({
+				districts: next.includes("All") ? undefined : next,
 			});
 		},
-		[onNavigate],
+		[onNavigate, selectedDistricts],
 	);
 
 	/**

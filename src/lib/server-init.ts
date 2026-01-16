@@ -9,6 +9,13 @@ import { destroyScheduler } from "@/lib/crawler/scheduler";
 import { healthChecker } from "@/lib/health";
 import { serverLogger } from "@/lib/logger";
 
+// Watch scheduler globals
+let watchEvaluationScheduler:
+	| import("@/lib/watch").WatchEvaluationScheduler
+	| null = null;
+let watchCleanupScheduler: import("@/lib/watch").WatchCleanupScheduler | null =
+	null;
+
 // Initialize the scheduler on server start
 let initialized = false;
 let initPromise: Promise<void> | null = null;
@@ -42,7 +49,7 @@ export async function ensureSchedulerInitialized(): Promise<void> {
 
 		try {
 			// Step 1: Database health check
-			serverLogger.info("📍 Step 1/2: Checking database health...");
+			serverLogger.info("📍 Step 1/3: Checking database health...");
 			const healthStatus = await healthChecker.check({ timeout: 5000 });
 
 			if (!healthStatus.healthy) {
@@ -55,8 +62,8 @@ export async function ensureSchedulerInitialized(): Promise<void> {
 				`✅ Database healthy (latency: ${healthStatus.latency}ms)`,
 			);
 
-			// Step 2: Initialize scheduler
-			serverLogger.info("📍 Step 2/2: Initializing Crawler Scheduler...");
+			// Step 2: Initialize crawler scheduler
+			serverLogger.info("📍 Step 2/3: Initializing Crawler Scheduler...");
 			const { initScheduler: _initScheduler } = await import("@/lib/crawler");
 			const scheduler = _initScheduler();
 
@@ -70,6 +77,10 @@ export async function ensureSchedulerInitialized(): Promise<void> {
 					"⚠️ Crawler Scheduler failed to start (check logs for details)",
 				);
 			}
+
+			// Step 3: Initialize watch schedulers
+			serverLogger.info("📍 Step 3/3: Initializing Watch Schedulers...");
+			await initializeWatchSchedulers();
 
 			initialized = true;
 		} catch (error) {
@@ -86,6 +97,50 @@ export async function ensureSchedulerInitialized(): Promise<void> {
 	})();
 
 	return initPromise;
+}
+
+/**
+ * Initialize watch schedulers (evaluation and cleanup)
+ */
+async function initializeWatchSchedulers(): Promise<void> {
+	const {
+		loadConfig,
+		WatchEvaluator,
+		NotificationService,
+		WatchEvaluationScheduler,
+		WatchCleanupScheduler,
+	} = await import("@/lib/watch");
+
+	const watchConfig = loadConfig();
+
+	// Initialize services
+	const notificationService = new NotificationService({
+		notifications: watchConfig.notifications,
+		webhook: watchConfig.webhook,
+	});
+	const watchEvaluator = new WatchEvaluator(notificationService);
+
+	// Initialize and start evaluation scheduler
+	if (watchConfig.schedule.enabled) {
+		watchEvaluationScheduler = new WatchEvaluationScheduler(
+			watchEvaluator,
+			watchConfig.schedule,
+			watchConfig.evaluation,
+		);
+		watchEvaluationScheduler.start({ runImmediate: false });
+		serverLogger.info("✅ Watch evaluation scheduler started");
+	} else {
+		serverLogger.info("⏸️ Watch evaluation scheduler is disabled");
+	}
+
+	// Initialize and start cleanup scheduler
+	if (watchConfig.cleanup.enabled) {
+		watchCleanupScheduler = new WatchCleanupScheduler(watchConfig.cleanup);
+		watchCleanupScheduler.start();
+		serverLogger.info("✅ Watch cleanup scheduler started");
+	} else {
+		serverLogger.info("⏸️ Watch cleanup scheduler is disabled");
+	}
 }
 
 /**
@@ -109,17 +164,27 @@ export async function gracefulShutdown(
 	}, timeout);
 
 	try {
-		// Step 1: Stop the scheduler gracefully
-		serverLogger.info("📍 Step 1/3: Stopping scheduler gracefully...");
+		// Step 1: Stop the crawler scheduler gracefully
+		serverLogger.info("📍 Step 1/4: Stopping crawler scheduler gracefully...");
 		try {
 			await destroyScheduler(30000); // Wait up to 30 seconds for in-progress crawls
-			serverLogger.info("✅ Scheduler stopped gracefully");
+			serverLogger.info("✅ Crawler scheduler stopped gracefully");
 		} catch (error) {
-			serverLogger.error({ err: error }, "⚠️ Error stopping scheduler");
+			serverLogger.error({ err: error }, "⚠️ Error stopping crawler scheduler");
 		}
 
-		// Step 2: Disconnect from database
-		serverLogger.info("📍 Step 2/3: Disconnecting database...");
+		// Step 2: Stop watch schedulers
+		serverLogger.info("📍 Step 2/4: Stopping watch schedulers...");
+		try {
+			watchEvaluationScheduler?.stop();
+			watchCleanupScheduler?.stop();
+			serverLogger.info("✅ Watch schedulers stopped");
+		} catch (error) {
+			serverLogger.error({ err: error }, "⚠️ Error stopping watch schedulers");
+		}
+
+		// Step 3: Disconnect from database
+		serverLogger.info("📍 Step 3/4: Disconnecting database...");
 		try {
 			await disconnectDatabase();
 			serverLogger.info("✅ Database disconnected");
@@ -127,8 +192,8 @@ export async function gracefulShutdown(
 			serverLogger.error({ err: error }, "⚠️ Error disconnecting database");
 		}
 
-		// Step 3: Additional cleanup (if needed)
-		serverLogger.info("📍 Step 3/3: Performing final cleanup...");
+		// Step 4: Additional cleanup (if needed)
+		serverLogger.info("📍 Step 4/4: Performing final cleanup...");
 		// Add any additional cleanup here (e.g., close HTTP servers, etc.)
 
 		const duration = Date.now() - startTime;
