@@ -44,7 +44,7 @@ export const VenueCard = memo(function VenueCard({
 
 							return (
 								<div key={facKey} className="space-y-3">
-									<div className="flex items-center gap-2 text-sm font-semibold text-primary-800 bg-pacific-blue-50 px-3 py-1.5 rounded-lg w-fit">
+									<div className="flex items-center gap-2 text-sm font-semibold text-pacific-blue-800 bg-pacific-blue-50 px-3 py-1.5 rounded-lg w-fit">
 										<Trophy size={14} className="text-primary" />
 										{resolveLocalizedName(
 											{
@@ -64,7 +64,7 @@ export const VenueCard = memo(function VenueCard({
 													return "bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed grayscale";
 												}
 												if (session.available) {
-													return "bg-white border-pacific-blue-200 text-primary-700 hover:bg-primary hover:text-white hover:border-primary shadow-sm";
+													return "bg-white border-pacific-blue-200 text-pacific-blue-700 hover:bg-primary hover:text-white hover:border-primary shadow-sm";
 												}
 												return "bg-porcelain-50 border-porcelain-100 text-porcelain-300 cursor-not-allowed";
 											};

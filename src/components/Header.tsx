@@ -1,10 +1,47 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { Activity, CalendarDays, Home, Menu } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./LanguageSwitcher";
 import type { NavigationItem } from "./ui";
 import { Button, Drawer, NavigationList } from "./ui";
+
+function HKClock() {
+	const [time, setTime] = useState<string>("");
+
+	useEffect(() => {
+		const update = () => {
+			setTime(
+				new Date().toLocaleTimeString("en-HK", {
+					timeZone: "Asia/Hong_Kong",
+					hour: "2-digit",
+					minute: "2-digit",
+					hour12: true,
+				}),
+			);
+		};
+		update();
+		const interval = setInterval(update, 1000);
+		return () => clearInterval(interval);
+	}, []);
+
+	if (!time) return null;
+
+	return (
+		<div className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 bg-muted/30 rounded-full border border-border/40 backdrop-blur-md">
+			<div className="relative flex h-2 w-2">
+				<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/60 opacity-75" />
+				<span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+			</div>
+			<span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/70">
+				HKT
+			</span>
+			<span className="text-sm font-black tabular-nums text-foreground/90 tracking-tight">
+				{time}
+			</span>
+		</div>
+	);
+}
 
 export default function Header(): React.ReactNode {
 	const { t } = useTranslation("common");
@@ -86,7 +123,10 @@ export default function Header(): React.ReactNode {
 						<span className="text-primary">{currentPageName}</span>
 					</h1>
 				</div>
-				<LanguageSwitcher />
+				<div className="flex items-center gap-4">
+					<HKClock />
+					<LanguageSwitcher />
+				</div>
 			</header>
 
 			<Drawer

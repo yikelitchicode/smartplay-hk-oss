@@ -299,7 +299,7 @@ export function FilterBar({
 							onClick={() => handleRegionClick(region)}
 							className={`flex-1 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all ${
 								selectedRegion === region
-									? "bg-white text-primary-700 shadow-sm"
+									? "bg-white text-pacific-blue-700 shadow-sm"
 									: "text-porcelain-500 hover:text-porcelain-700"
 							}`}
 						>
@@ -391,7 +391,7 @@ export function FilterBar({
 								onClick={() => onSelectPriceType(type)}
 								className={`flex-1 flex items-center justify-center py-2 rounded-lg text-sm font-medium transition-all ${
 									selectedPriceType === type
-										? "bg-white text-primary-700 shadow-sm ring-1 ring-black/5"
+										? "bg-white text-pacific-blue-700 shadow-sm ring-1 ring-black/5"
 										: "text-porcelain-500 hover:text-porcelain-700 hover:bg-white/50"
 								}`}
 							>
