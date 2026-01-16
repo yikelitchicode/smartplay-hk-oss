@@ -139,6 +139,7 @@ model Session {
   crawlJob           CrawlJob     @relation(fields: [crawlJobId], references: [id], onDelete: Cascade)
   facilityType       FacilityType @relation(fields: [facilityCode], references: [code])
   venue              Facility     @relation(fields: [venueId], references: [id])
+  watchers           Watcher[]
 
   @@unique([venueId, facilityCode, date, startTime])
   @@index([crawlJobId])
@@ -191,4 +192,110 @@ enum DLQStatus {
   RETRYING
   RESOLVED
   PERMANENT
+}
+
+// ============================================
+// Browser Session (Anonymous User Tracking)
+// ============================================
+
+model BrowserSession {
+  id        String         @id @default(cuid())
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  expiresAt DateTime       // Cookie expiry (180 days default)
+
+  watchers  Watcher[]
+  settings  UserSettings?
+
+  @@index([expiresAt])
+}
+
+// ============================================
+// Watch Scheduler Models
+// ============================================
+
+model Watcher {
+  id                String         @id @default(cuid())
+  browserSessionId  String         // FK to BrowserSession (anonymous user)
+  targetSessionId   String?        // FK to Session (facility booking being watched, nullable if deleted)
+
+  // Watch criteria (denormalized for query performance)
+  venueId           String
+  facilityCode      String
+  date              DateTime       @db.Date
+  startTime         String
+  endTime           String
+
+  // Status & metadata
+  status            WatchStatus    @default(ACTIVE)
+
+  // Statistics
+  totalHits         Int            @default(0)
+  lastHitAt         DateTime?
+  notifiedAt        DateTime?      // Last notification timestamp
+
+  // Timestamps
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  expiresAt         DateTime       // Auto-expire after date passes (required)
+
+  // Relations
+  browserSession    BrowserSession @relation(fields: [browserSessionId], references: [id], onDelete: Cascade)
+  targetSession     Session?       @relation(fields: [targetSessionId], references: [id], onDelete: SetNull)
+  hits              WatchHit[]
+
+  @@index([browserSessionId, status])
+  @@index([status, expiresAt])
+  @@index([venueId, date])
+  @@index([expiresAt])
+  @@unique([browserSessionId, venueId, facilityCode, date, startTime])
+}
+
+model WatchHit {
+  id                String    @id @default(cuid())
+  watcherId         String
+
+  // Hit details
+  becameAvailable   Boolean   @default(true) // true=became available, false=became unavailable
+  available         Boolean   // Current availability state
+  checkedAt         DateTime  @default(now())
+
+  // Notification status
+  notificationSent  Boolean   @default(false)
+  notificationError String?
+
+  // Relations
+  watcher           Watcher   @relation(fields: [watcherId], references: [id], onDelete: Cascade)
+
+  @@index([watcherId, checkedAt])
+  @@index([checkedAt])
+}
+
+model UserSettings {
+  id                  String         @id @default(cuid())
+  browserSessionId    String         @unique // FK to BrowserSession
+
+  // Webhook configuration
+  webhookUrl          String?
+  webhookEnabled      Boolean        @default(false)
+
+  // Notification preferences
+  notifyOnAvailable   Boolean        @default(true)
+  notifyOnUnavailable Boolean        @default(false)
+  quietHoursStart     String?        // HH:MM format
+  quietHoursEnd       String?        // HH:MM format
+
+  // Timestamps
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  // Relations
+  browserSession      BrowserSession @relation(fields: [browserSessionId], references: [id], onDelete: Cascade)
+}
+
+enum WatchStatus {
+  ACTIVE
+  PAUSED
+  EXPIRED
+  DELETED
 }
