@@ -15,7 +15,7 @@ import { healthChecker } from "@/lib/health";
 import type { DatabaseErrorType } from "@/lib/health/types";
 import {
 	classifyDatabaseError,
-	withDbErrorHandlingEnhanced,
+	withDbErrorHandling,
 } from "@/lib/server-utils/error-handler";
 import {
 	formatDateToYYYYMMDD,
@@ -33,7 +33,7 @@ export async function getAvailableDatesService(): Promise<string[]> {
 		// Pre-flight health check
 		await healthChecker.checkOrThrow({ timeout: 2000 });
 
-		return await withDbErrorHandlingEnhanced(
+		return await withDbErrorHandling(
 			async () => {
 				const today = new Date();
 				today.setHours(0, 0, 0, 0);
@@ -195,7 +195,7 @@ export async function getBookingDataService(
 		// Pre-flight health check
 		await healthChecker.checkOrThrow({ timeout: 2000 });
 
-		return await withDbErrorHandlingEnhanced(
+		return await withDbErrorHandling(
 			async () => {
 				const targetDate = new Date(date);
 
@@ -415,7 +415,7 @@ export async function getDatesAvailabilityService(
 		// Pre-flight health check
 		await healthChecker.checkOrThrow({ timeout: 2000 });
 
-		return await withDbErrorHandlingEnhanced(
+		return await withDbErrorHandling(
 			async () => {
 				const today = new Date();
 				today.setHours(0, 0, 0, 0);
@@ -511,7 +511,7 @@ export async function getLastUpdateTimeService(): Promise<Date | null> {
 		// Pre-flight health check
 		await healthChecker.checkOrThrow({ timeout: 2000 });
 
-		return await withDbErrorHandlingEnhanced(
+		return await withDbErrorHandling(
 			async () => {
 				const lastJob = await prisma.crawlJob.findFirst({
 					where: {
@@ -557,7 +557,7 @@ export async function getMetadataService(): Promise<MetadataResult> {
 		// Pre-flight health check
 		await healthChecker.checkOrThrow({ timeout: 2000 });
 
-		return await withDbErrorHandlingEnhanced(
+		return await withDbErrorHandling(
 			async () => {
 				const [districts, facilityGroups, centers] = await Promise.all([
 					prisma.district.findMany({
