@@ -5,6 +5,8 @@
 	"available_venues": "可用場地",
 	"date": "日期",
 	"location": "地點",
+	"session_time": "場次時間",
+	"booking_request": "預約請求",
 	"all_districts": "所有地區",
 	"price_type": "收費類型",
 	"paid": "收費",
@@ -31,6 +33,7 @@
 	"watcher_added_desc": "當此時段可預訂時，您將收到通知。",
 	"watcher_modal": {
 		"title": "添加場地監控",
+		"availability_watcher": "場地監控器",
 		"desc": "當此時段釋出時，我們會立即通知您。",
 		"confirm": "開始監控"
 	},
@@ -41,5 +44,6 @@
 	"hk_island_short": "港島",
 	"new_terr_short": "新界",
 	"selected": "已選擇",
-	"fully_booked": "已滿"
+	"fully_booked": "已滿",
+	"official_source_disclaimer": "請以官方網站的供應情況為準。"
 }

@@ -5,6 +5,8 @@
 	"available_venues": "Available Venues",
 	"date": "Date",
 	"location": "Location",
+	"session_time": "Session Time",
+	"booking_request": "Booking Request",
 	"all_districts": "All Districts",
 	"price_type": "Price Type",
 	"paid": "Paid",
@@ -18,6 +20,7 @@
 	"watcher_added_desc": "You will be notified when this session becomes available.",
 	"watcher_modal": {
 		"title": "Add Availability Watcher",
+		"availability_watcher": "Availability Watcher",
 		"desc": "We will notify you immediately when this session becomes available.",
 		"confirm": "Start Watching"
 	},
@@ -41,5 +44,6 @@
 	"hk_island_short": "HK Island",
 	"new_terr_short": "New Terr.",
 	"selected": "Selected",
-	"fully_booked": "Fully Booked"
+	"fully_booked": "Fully Booked",
+	"official_source_disclaimer": "Official website is the source of truth for availability."
 }

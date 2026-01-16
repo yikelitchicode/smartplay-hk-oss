@@ -5,6 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import * as i18nModule from "../i18n";
 import i18n, { ensureI18nInitialized } from "../i18n";
 
 describe("i18n.ts", () => {
@@ -40,15 +41,12 @@ describe("i18n.ts", () => {
 			expect(i18n.options.interpolation?.escapeValue).toBe(false);
 		});
 
-		it("should have correct backend configuration", () => {
-			expect(i18n.options.backend).toHaveProperty(
-				"loadPath",
-				"/locales/{{lng}}/{{ns}}.json",
-			);
+		it("should not have backend configuration", () => {
+			expect(i18n.options.backend).toBeUndefined();
 		});
 
-		it("should have react suspense enabled", () => {
-			expect(i18n.options.react?.useSuspense).toBe(true);
+		it("should have react suspense disabled", () => {
+			expect(i18n.options.react?.useSuspense).toBe(false);
 		});
 	});
 
@@ -111,6 +109,33 @@ describe("i18n.ts", () => {
 		it("should export ensureI18nInitialized function", () => {
 			expect(ensureI18nInitialized).toBeDefined();
 			expect(typeof ensureI18nInitialized).toBe("function");
+		});
+	});
+
+	describe("detectLanguage", () => {
+		const { detectLanguage } = i18nModule;
+
+		it("should return 'en' for null/empty accept-language", () => {
+			expect(detectLanguage(null)).toBe("en");
+			expect(detectLanguage("")).toBe("en");
+		});
+
+		it("should detect English", () => {
+			expect(detectLanguage("en-US,en;q=0.9")).toBe("en");
+		});
+
+		it("should detect Traditional Chinese (zh)", () => {
+			expect(detectLanguage("zh-HK,zh;q=0.9,en-US;q=0.8,en;q=0.7")).toBe("zh");
+			expect(detectLanguage("zh-TW,zh;q=0.9")).toBe("zh");
+		});
+
+		it("should detect Simplified Chinese (cn)", () => {
+			expect(detectLanguage("zh-CN,zh;q=0.9,en-US;q=0.8")).toBe("cn");
+		});
+
+		it("should respect preference order", () => {
+			expect(detectLanguage("zh-HK,en-US;q=0.8")).toBe("zh");
+			expect(detectLanguage("en-US,zh-HK;q=0.8")).toBe("en");
 		});
 	});
 });

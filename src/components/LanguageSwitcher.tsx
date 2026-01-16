@@ -16,6 +16,8 @@ export default function LanguageSwitcher(): JSX.Element {
 	const handleLanguageChange = useCallback(
 		(val: string) => {
 			i18n.changeLanguage(val);
+			// biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API not yet widely supported
+			document.cookie = `i18next=${val}; path=/; max-age=31536000; SameSite=Lax`;
 		},
 		[i18n],
 	);
