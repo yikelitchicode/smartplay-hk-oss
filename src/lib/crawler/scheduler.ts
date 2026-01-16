@@ -47,13 +47,18 @@ export class CrawlerScheduler {
 
 		this.task = cron.schedule(
 			this.config.schedule.interval,
-			() => this.triggerCrawl(),
+			() => {
+				console.log(
+					`\n⏰ [Scheduler] Cron job triggered at ${new Date().toLocaleTimeString()} (${this.config.schedule.timezone})`,
+				);
+				this.triggerCrawl();
+			},
 			{
 				timezone: this.config.schedule.timezone,
 			},
 		);
 
-		console.log("✅ Scheduler started successfully");
+		console.log("✅ [Scheduler] Service started successfully");
 	}
 
 	/**
@@ -61,14 +66,18 @@ export class CrawlerScheduler {
 	 */
 	private async triggerCrawl() {
 		if (this.isRunning) {
-			console.log("Previous crawl still running, skipping this scheduled run");
+			console.log(
+				"⚠️ [Scheduler] Previous crawl still running, skipping this scheduled run",
+			);
 			return;
 		}
 
 		this.isRunning = true;
 
 		try {
-			console.log(`[Scheduled Crawl] Started at ${new Date().toISOString()}`);
+			console.log(
+				`🚀 [Scheduler] Starting crawler job at ${new Date().toISOString()}`,
+			);
 
 			let runId: string;
 			let datesToProcess: string[];
@@ -81,7 +90,7 @@ export class CrawlerScheduler {
 
 				if (incompleteRun) {
 					console.log(
-						`[Recovery] Resuming run ${incompleteRun.id} with ${incompleteRun.completedDays.length}/${incompleteRun.totalDays} days complete`,
+						`🔄 [Scheduler] Resuming incomplete run ${incompleteRun.id} (${incompleteRun.completedDays.length}/${incompleteRun.totalDays} days done)`,
 					);
 					runId = incompleteRun.id;
 					datesToProcess = await this.checkpoint.getRemainingDays(runId);
@@ -91,7 +100,7 @@ export class CrawlerScheduler {
 					const run = await this.checkpoint.createRun(datesToProcess);
 					runId = run.id;
 					console.log(
-						`[Scheduled Crawl] Created new run ${runId} for ${datesToProcess.length} days`,
+						`✨ [Scheduler] Created new run ${runId} for ${datesToProcess.length} days`,
 					);
 				}
 			} else {
@@ -104,7 +113,7 @@ export class CrawlerScheduler {
 			for (let i = 0; i < datesToProcess.length; i++) {
 				const dateString = datesToProcess[i];
 				console.log(
-					`[Scheduled Crawl] Processing Day ${dateString} (${i + 1}/${datesToProcess.length})`,
+					`\n📅 [Crawler] Processing Date: ${dateString} (Day ${i + 1}/${datesToProcess.length})`,
 				);
 
 				// Process day with retry

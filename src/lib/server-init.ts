@@ -6,6 +6,8 @@
 
 import { disconnectDatabase } from "@/db";
 import { destroyScheduler } from "@/lib/crawler/scheduler";
+import { healthChecker } from "@/lib/health";
+import { serverLogger } from "@/lib/logger";
 
 // Initialize the scheduler on server start
 let initialized = false;
@@ -24,23 +26,57 @@ export async function ensureSchedulerInitialized(): Promise<void> {
 
 	// Create initialization promise
 	initPromise = (async () => {
-		console.log("🚀 Initializing Crawler Scheduler...");
+		serverLogger.debug(
+			"🔄 Loading server-init.ts (VERSION: PATCHED-WITH-SCHEDULER-START)...",
+		);
+
+		// Check if scheduler is enabled via env/arg
+		const { envConfig } = await import("@/lib/env");
+		if (!envConfig.enableScheduler) {
+			serverLogger.info("⏸️ Crawler Scheduler is disabled via configuration");
+			initialized = true;
+			return;
+		}
+
+		serverLogger.info("🚀 Initializing Crawler Scheduler...");
 
 		try {
+			// Step 1: Database health check
+			serverLogger.info("📍 Step 1/2: Checking database health...");
+			const healthStatus = await healthChecker.check({ timeout: 5000 });
+
+			if (!healthStatus.healthy) {
+				throw new Error(
+					`Database health check failed: ${healthStatus.error || "Unknown error"}`,
+				);
+			}
+
+			serverLogger.info(
+				`✅ Database healthy (latency: ${healthStatus.latency}ms)`,
+			);
+
+			// Step 2: Initialize scheduler
+			serverLogger.info("📍 Step 2/2: Initializing Crawler Scheduler...");
 			const { initScheduler: _initScheduler } = await import("@/lib/crawler");
 			const scheduler = _initScheduler();
 
+			// Start the scheduler
+			scheduler.start();
+
 			if (scheduler.isActive()) {
-				console.log("✅ Crawler Scheduler is running");
+				serverLogger.info("✅ Crawler Scheduler is running");
 			} else {
-				console.log(
-					"⏸️ Crawler Scheduler initialized but not started (disabled in config)",
+				serverLogger.warn(
+					"⚠️ Crawler Scheduler failed to start (check logs for details)",
 				);
 			}
 
 			initialized = true;
 		} catch (error) {
-			console.error("❌ Failed to initialize Crawler Scheduler:", error);
+			serverLogger.error(
+				{ err: error },
+				"❌ Failed to initialize Crawler Scheduler",
+			);
 			// Re-throw for proper error handling upstream
 			throw error;
 		} finally {
@@ -62,11 +98,11 @@ export async function gracefulShutdown(
 ): Promise<void> {
 	const startTime = Date.now();
 
-	console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
+	serverLogger.info(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
 
 	// Set up timeout to force exit if graceful shutdown takes too long
 	const timeoutHandle = setTimeout(() => {
-		console.error(
+		serverLogger.error(
 			`⏰ Graceful shutdown timeout (${timeout}ms) exceeded. Forcing exit.`,
 		);
 		process.exit(1);
@@ -74,34 +110,36 @@ export async function gracefulShutdown(
 
 	try {
 		// Step 1: Stop the scheduler gracefully
-		console.log("📍 Step 1/3: Stopping scheduler gracefully...");
+		serverLogger.info("📍 Step 1/3: Stopping scheduler gracefully...");
 		try {
 			await destroyScheduler(30000); // Wait up to 30 seconds for in-progress crawls
-			console.log("✅ Scheduler stopped gracefully");
+			serverLogger.info("✅ Scheduler stopped gracefully");
 		} catch (error) {
-			console.error("⚠️ Error stopping scheduler:", error);
+			serverLogger.error({ err: error }, "⚠️ Error stopping scheduler");
 		}
 
 		// Step 2: Disconnect from database
-		console.log("📍 Step 2/3: Disconnecting database...");
+		serverLogger.info("📍 Step 2/3: Disconnecting database...");
 		try {
 			await disconnectDatabase();
-			console.log("✅ Database disconnected");
+			serverLogger.info("✅ Database disconnected");
 		} catch (error) {
-			console.error("⚠️ Error disconnecting database:", error);
+			serverLogger.error({ err: error }, "⚠️ Error disconnecting database");
 		}
 
 		// Step 3: Additional cleanup (if needed)
-		console.log("📍 Step 3/3: Performing final cleanup...");
+		serverLogger.info("📍 Step 3/3: Performing final cleanup...");
 		// Add any additional cleanup here (e.g., close HTTP servers, etc.)
 
 		const duration = Date.now() - startTime;
-		console.log(`✅ Graceful shutdown completed in ${duration}ms. Goodbye!`);
+		serverLogger.info(
+			`✅ Graceful shutdown completed in ${duration}ms. Goodbye!`,
+		);
 
 		clearTimeout(timeoutHandle);
 		process.exit(0);
 	} catch (error) {
-		console.error("❌ Error during graceful shutdown:", error);
+		serverLogger.error({ err: error }, "❌ Error during graceful shutdown");
 		clearTimeout(timeoutHandle);
 		process.exit(1);
 	}
@@ -117,13 +155,13 @@ export function setupShutdownHandlers(): void {
 
 	const handleShutdown = (signal: string) => {
 		if (isShuttingDown) {
-			console.warn(`⚠️ Already shutting down. Ignoring ${signal}`);
+			serverLogger.warn(`⚠️ Already shutting down. Ignoring ${signal}`);
 			return;
 		}
 
 		isShuttingDown = true;
 		gracefulShutdown(signal).catch((error) => {
-			console.error("❌ Unexpected error during shutdown:", error);
+			serverLogger.error({ err: error }, "❌ Unexpected error during shutdown");
 			process.exit(1);
 		});
 	};
@@ -134,24 +172,24 @@ export function setupShutdownHandlers(): void {
 
 	// Handle uncaught exceptions
 	process.on("uncaughtException", (error) => {
-		console.error("❌ Uncaught exception:", error);
+		serverLogger.error({ err: error }, "❌ Uncaught exception");
 		handleShutdown("uncaughtException");
 	});
 
 	// Handle unhandled promise rejections
-	process.on("unhandledRejection", (reason, promise) => {
-		console.error("❌ Unhandled rejection at:", promise, "reason:", reason);
+	process.on("unhandledRejection", (reason, _promise) => {
+		serverLogger.error({ err: reason }, "❌ Unhandled rejection");
 		handleShutdown("unhandledRejection");
 	});
 
-	console.log("✅ Shutdown handlers registered");
+	serverLogger.info("✅ Shutdown handlers registered");
 }
 
 // Auto-initialize on import (for server-side)
 // Note: This is fire-and-forget. For critical startup, await ensureSchedulerInitialized() explicitly
 if (typeof window === "undefined") {
 	ensureSchedulerInitialized().catch((error) => {
-		console.error("❌ Server initialization failed:", error);
+		console.error("❌ Server initialization failed:", error); // Keep console.error here as last resort
 		process.exit(1);
 	});
 

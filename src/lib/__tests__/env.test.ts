@@ -101,6 +101,7 @@ describe("env.ts", () => {
 				isDevelopment: true,
 				isProduction: false,
 				isTest: false,
+				enableScheduler: false,
 			};
 
 			const sanitized = sanitizeForLogs(config);
@@ -115,6 +116,7 @@ describe("env.ts", () => {
 				isDevelopment: false,
 				isProduction: true,
 				isTest: false,
+				enableScheduler: false,
 			};
 
 			const sanitized = sanitizeForLogs(config);
@@ -134,6 +136,7 @@ describe("env.ts", () => {
 				isDevelopment: false,
 				isProduction: false,
 				isTest: true,
+				enableScheduler: false,
 			};
 
 			const sanitized = sanitizeForLogs(config);
@@ -148,6 +151,7 @@ describe("env.ts", () => {
 				isDevelopment: true,
 				isProduction: false,
 				isTest: false,
+				enableScheduler: false,
 			};
 
 			const sanitized = sanitizeForLogs(config);
@@ -165,6 +169,7 @@ describe("env.ts", () => {
 				isDevelopment: false,
 				isProduction: true,
 				isTest: false,
+				enableScheduler: false,
 			};
 
 			const sanitized = sanitizeForLogs(config);
