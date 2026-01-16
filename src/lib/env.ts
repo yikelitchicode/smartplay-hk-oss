@@ -70,6 +70,12 @@ const envSchema = z.object({
 	NODE_ENV: z
 		.enum(["development", "production", "test"])
 		.default("development"),
+
+	// Features
+	ENABLE_SCHEDULER: z
+		.string()
+		.default("true")
+		.transform((val) => val.toLowerCase() === "true"),
 });
 
 /**
@@ -143,6 +149,9 @@ export const envConfig = {
 	isDevelopment: env.NODE_ENV === "development",
 	isProduction: env.NODE_ENV === "production",
 	isTest: env.NODE_ENV === "test",
+
+	// Features
+	enableScheduler: env.ENABLE_SCHEDULER,
 } as const;
 
 export type EnvConfig = typeof envConfig;
