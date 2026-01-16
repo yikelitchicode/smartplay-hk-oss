@@ -7,7 +7,14 @@ import type { NavigationItem } from "./ui";
 import { Button, Drawer, NavigationList } from "./ui";
 
 function HKClock() {
-	const [time, setTime] = useState<string>("");
+	const [time, setTime] = useState(() =>
+		new Date().toLocaleTimeString("en-HK", {
+			timeZone: "Asia/Hong_Kong",
+			hour: "2-digit",
+			minute: "2-digit",
+			hour12: true,
+		}),
+	);
 
 	useEffect(() => {
 		const update = () => {
@@ -20,12 +27,9 @@ function HKClock() {
 				}),
 			);
 		};
-		update();
 		const interval = setInterval(update, 1000);
 		return () => clearInterval(interval);
 	}, []);
-
-	if (!time) return null;
 
 	return (
 		<div className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 bg-muted/30 rounded-full border border-border/40 backdrop-blur-md">
@@ -36,7 +40,10 @@ function HKClock() {
 			<span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/70">
 				HKT
 			</span>
-			<span className="text-sm font-black tabular-nums text-foreground/90 tracking-tight">
+			<span
+				className="text-sm font-black tabular-nums text-foreground/90 tracking-tight"
+				suppressHydrationWarning
+			>
 				{time}
 			</span>
 		</div>
