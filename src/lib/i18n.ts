@@ -102,13 +102,6 @@ export async function initializeI18n(lng?: string): Promise<void> {
 	await initPromise;
 }
 
-/**
- * @deprecated Use initializeI18n instead for proper SSR language sync
- */
-export async function ensureI18nInitialized(): Promise<void> {
-	return initializeI18n();
-}
-
 // Client-side: initialize explicitly in app/client.tsx
 // Server-side: defer initialization to beforeLoad to get the correct language
 

@@ -4,12 +4,16 @@
  * @vitest-environment jsdom
  */
 
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import * as i18nModule from "../i18n";
-import i18n, { ensureI18nInitialized } from "../i18n";
+import i18n, { initializeI18n } from "../i18n";
 
 describe("i18n.ts", () => {
 	describe("i18n configuration", () => {
+		beforeAll(async () => {
+			await initializeI18n();
+		});
+
 		it("should have correct fallback language", () => {
 			// fallbackLng can be a string or array
 			const fallbackLng = i18n.options.fallbackLng;
@@ -50,40 +54,36 @@ describe("i18n.ts", () => {
 		});
 	});
 
-	describe("ensureI18nInitialized", () => {
+	describe("initializeI18n", () => {
 		it("should be a function", () => {
-			expect(typeof ensureI18nInitialized).toBe("function");
+			expect(typeof initializeI18n).toBe("function");
 		});
 
 		it("should return a promise", () => {
-			const result = ensureI18nInitialized();
+			const result = initializeI18n();
 			expect(result).toBeInstanceOf(Promise);
 			// Don't wait for it, just check it's a promise
 			// The async tests below will test actual resolution
 		});
 
 		it("should resolve without errors", async () => {
-			await expect(ensureI18nInitialized()).resolves.toBeUndefined();
+			await expect(initializeI18n()).resolves.toBeUndefined();
 		}, 15000); // Increase timeout to 15s for slow initialization
 
 		it("should handle multiple calls", async () => {
 			// Multiple calls should all resolve
-			const promises = [
-				ensureI18nInitialized(),
-				ensureI18nInitialized(),
-				ensureI18nInitialized(),
-			];
+			const promises = [initializeI18n(), initializeI18n(), initializeI18n()];
 
 			await expect(Promise.all(promises)).resolves.toBeTruthy();
 		}, 10000);
 
 		it("should resolve quickly on subsequent calls", async () => {
 			// First call - may take time
-			await ensureI18nInitialized();
+			await initializeI18n();
 
 			// Second call should be fast (already initialized)
 			const startTime = Date.now();
-			await ensureI18nInitialized();
+			await initializeI18n();
 			const endTime = Date.now();
 
 			// Should complete in less than 100ms (already initialized)
@@ -95,7 +95,7 @@ describe("i18n.ts", () => {
 		it("should have error fallback in place", () => {
 			// The module includes try-catch with fallback to 'en'
 			// This test verifies the error handling infrastructure exists
-			expect(ensureI18nInitialized).toBeDefined();
+			expect(initializeI18n).toBeDefined();
 		});
 	});
 
@@ -106,9 +106,9 @@ describe("i18n.ts", () => {
 			expect(typeof i18n.changeLanguage).toBe("function");
 		});
 
-		it("should export ensureI18nInitialized function", () => {
-			expect(ensureI18nInitialized).toBeDefined();
-			expect(typeof ensureI18nInitialized).toBe("function");
+		it("should export initializeI18n function", () => {
+			expect(initializeI18n).toBeDefined();
+			expect(typeof initializeI18n).toBe("function");
 		});
 	});
 
