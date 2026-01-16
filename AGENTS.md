@@ -197,7 +197,7 @@ import { CrawlerOrchestrator } from '@/lib/crawler';
 
 - **Languages**: English (en), Chinese Simplified (cn), Chinese Traditional (zh)
 - **Namespaces**: common, home, booking
-- **Translation files**: `public/locales/{lng}/{ns}.json`
+- **Translation files**: `src/locales/{lng}/{ns}.json`
 - **Usage**: `useTranslation()` hook from `react-i18next`
 - **Initialization**: Async initialization in root route `beforeLoad`
 
