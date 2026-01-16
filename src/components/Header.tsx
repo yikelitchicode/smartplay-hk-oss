@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { CalendarDays, Home, Menu } from "lucide-react";
+import { Activity, CalendarDays, Home, Menu } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./LanguageSwitcher";
@@ -31,6 +31,18 @@ export default function Header(): React.ReactNode {
 				id: "booking",
 				label: t("nav.booking"),
 				to: "/booking",
+				icon: <CalendarDays size={20} />,
+			},
+			{
+				id: "activity",
+				label: t("nav.activity"),
+				to: "/activity",
+				icon: <Activity size={20} />,
+			},
+			{
+				id: "scheduler",
+				label: t("nav.scheduler"),
+				to: "/scheduler",
 				icon: <CalendarDays size={20} />,
 			},
 		],

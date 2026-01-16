@@ -4,3 +4,4 @@ export * from "./DateSelector";
 export * from "./FilterBar";
 export * from "./VenueCard";
 export * from "./VenueListSkeleton";
+export * from "./WatcherModal";

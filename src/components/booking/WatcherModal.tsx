@@ -1,4 +1,4 @@
-import { Calendar, Clock, MapPin } from "lucide-react";
+import { Bell, Calendar, Clock, MapPin } from "lucide-react";
 import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
@@ -6,35 +6,51 @@ import { Modal } from "@/components/ui/Modal";
 import type { NormalizedSession, NormalizedVenue } from "@/lib/booking/types";
 import { resolveLocalizedName } from "@/lib/i18n-utils";
 
-interface BookingModalProps {
+interface WatcherModalProps {
 	session: NormalizedSession | null;
 	venue: NormalizedVenue | null;
 	onClose: () => void;
 	onConfirm: () => void;
 }
 
-export function BookingModal({
+export function WatcherModal({
 	session,
 	venue,
 	onClose,
 	onConfirm,
-}: BookingModalProps): JSX.Element | null {
+}: WatcherModalProps): JSX.Element | null {
 	const { t, i18n } = useTranslation(["booking"]);
 	if (!session || !venue) return null;
 
 	return (
 		<Modal open={true} onClose={onClose} showCloseButton={false} size="md">
 			<div className="-m-6">
-				<div className="relative h-32 bg-primary flex items-center justify-center rounded-t-lg">
-					<h2 className="text-2xl font-bold text-white tracking-tight">
-						{t("booking:confirm_booking")}
-					</h2>
+				{/* Header - Using Meadow Green for distinct look */}
+				<div className="relative h-32 bg-meadow-green-600 flex items-center justify-center rounded-t-lg">
+					<div className="text-center space-y-2">
+						<div className="flex justify-center">
+							<div className="p-2 bg-white/20 rounded-full">
+								<Bell className="w-8 h-8 text-white" />
+							</div>
+						</div>
+						<h2 className="text-2xl font-bold text-white tracking-tight">
+							{t("booking:watcher_modal.title", "Add Availability Watcher")}
+						</h2>
+					</div>
 				</div>
+
 				<div className="p-6 space-y-6">
 					<div className="space-y-4">
+						<p className="text-center text-gray-600">
+							{t(
+								"booking:watcher_modal.desc",
+								"We will notify you immediately when this session becomes available.",
+							)}
+						</p>
+
 						<div className="flex items-start gap-4">
 							<div
-								className="p-2 bg-pacific-blue-100 text-primary rounded-lg"
+								className="p-2 bg-meadow-green-100 text-meadow-green-700 rounded-lg"
 								aria-hidden="true"
 							>
 								<MapPin size={24} />
@@ -62,8 +78,9 @@ export function BookingModal({
 										i18n.language,
 									)}
 								</p>
-								<p className="text-sm text-primary font-medium mt-1">
+								<p className="text-sm text-meadow-green-700 font-medium mt-1">
 									{(() => {
+										// Look up the facility for localized names
 										const facility = Object.values(venue.facilities).find(
 											(f) => f.code === session.facilityId,
 										);
@@ -83,7 +100,7 @@ export function BookingModal({
 							</div>
 						</div>
 
-						<dl className="flex items-center gap-4 p-4 bg-porcelain-50 rounded-xl">
+						<dl className="flex items-center gap-4 p-4 bg-porcelain-50 rounded-xl border border-porcelain-200">
 							<div className="flex-1 text-center border-r border-porcelain-200">
 								<dt className="sr-only">Date</dt>
 								<dd className="flex flex-col items-center gap-1">
@@ -115,18 +132,13 @@ export function BookingModal({
 
 					<div className="space-y-3">
 						<Button
-							variant="primary"
+							variant="primary" // We might want to override the color if primary is blue
 							size="lg"
-							className="w-full"
+							className="w-full bg-meadow-green-600 hover:bg-meadow-green-700 text-white border-transparent"
 							onClick={onConfirm}
 							disabled={session.isPassed}
-							aria-describedby={
-								session.isPassed ? "time-passed-hint" : undefined
-							}
 						>
-							{session.isPassed
-								? t("booking:time_slot_passed")
-								: t("booking:confirm_booking")}
+							{t("booking:watcher_modal.confirm", "Start Watching")}
 						</Button>
 						<Button
 							variant="ghost"
@@ -136,14 +148,6 @@ export function BookingModal({
 						>
 							{t("booking:cancel")}
 						</Button>
-						{session.isPassed && (
-							<p
-								id="time-passed-hint"
-								className="text-sm text-gray-500 text-center"
-							>
-								{t("booking:passed_hint")}
-							</p>
-						)}
 					</div>
 				</div>
 			</div>
