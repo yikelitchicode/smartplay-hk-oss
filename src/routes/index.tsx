@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	Activity,
 	ArrowRight,
+	Bell,
 	CalendarDays,
 	Info,
 	LayoutGrid,
@@ -9,7 +10,6 @@ import {
 import { useTranslation } from "react-i18next";
 import { BackgroundSlideshow } from "@/components/BackgroundSlideshow";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import {
 	Card,
 	CardDescription,
@@ -55,7 +55,7 @@ function App() {
 				</div>
 
 				{/* Feature Cards Grid */}
-				<div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto w-full">
+				<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto w-full">
 					{/* Booking Card - Active */}
 					<Card className="group relative overflow-hidden border-pacific-blue-100 hover:border-pacific-blue-300 transition-all duration-300 hover:shadow-xl hover:shadow-pacific-blue-500/10 bg-white/60 backdrop-blur-md">
 						<div className="absolute top-0 right-0 p-6 pointer-events-none">
@@ -87,20 +87,51 @@ function App() {
 						</CardFooter>
 					</Card>
 
+					{/* Scheduler Card - New */}
+					<Card className="group relative overflow-hidden border-pacific-blue-100 hover:border-pacific-blue-300 transition-all duration-300 hover:shadow-xl hover:shadow-pacific-blue-500/10 bg-white/60 backdrop-blur-md">
+						<div className="absolute top-0 right-0 p-6 pointer-events-none">
+							<Bell className="w-24 h-24 text-meadow-green-500/5 rotate-12 group-hover:rotate-0 group-hover:scale-110 transition-transform duration-500" />
+						</div>
+
+						<CardHeader>
+							<div className="flex justify-between items-start mb-2">
+								<div className="p-3 bg-meadow-green-50 rounded-2xl group-hover:bg-meadow-green-100 transition-colors">
+									<Bell className="w-6 h-6 text-meadow-green-600" />
+								</div>
+								<Badge className="bg-meadow-green-100 text-meadow-green-700 hover:bg-meadow-green-200 border-none">
+									{t("features.scheduler.badge")}
+								</Badge>
+							</div>
+							<CardTitle className="text-2xl">
+								{t("features.scheduler.title")}
+							</CardTitle>
+							<CardDescription className="text-base line-clamp-2">
+								{t("features.scheduler.description")}
+							</CardDescription>
+						</CardHeader>
+
+						<CardFooter className="pt-4">
+							<Link to="/scheduler" className={linkButtonClasses}>
+								{t("features.scheduler.cta")}
+								<ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+							</Link>
+						</CardFooter>
+					</Card>
+
 					{/* Activity Card - Coming Soon */}
-					<Card className="group relative overflow-hidden border-border/50 bg-porcelain-50/50 backdrop-blur-sm grayscale opacity-80 hover:opacity-100 hover:grayscale-0 transition-all duration-500">
+					<Card className="group relative overflow-hidden border-pacific-blue-100 hover:border-pacific-blue-300 transition-all duration-300 hover:shadow-xl hover:shadow-pacific-blue-500/10 bg-white/60 backdrop-blur-md">
 						<div className="absolute top-0 right-0 p-6 pointer-events-none">
 							<Activity className="w-24 h-24 text-gray-500/5 rotate-12" />
 						</div>
 
 						<CardHeader>
 							<div className="flex justify-between items-start mb-2">
-								<div className="p-3 bg-porcelain-100 rounded-2xl">
-									<Activity className="w-6 h-6 text-gray-500" />
+								<div className="p-3 bg-pacific-blue-50 rounded-2xl group-hover:bg-pacific-blue-100 transition-colors">
+									<Activity className="w-6 h-6 text-pacific-blue-600" />
 								</div>
 								<Badge
 									variant="secondary"
-									className="bg-porcelain-200 text-gray-600"
+									className="bg-pacific-blue-100 text-pacific-blue-700 hover:bg-pacific-blue-200 border-none"
 								>
 									{t("features.activity.badge")}
 								</Badge>
@@ -114,13 +145,10 @@ function App() {
 						</CardHeader>
 
 						<CardFooter className="pt-4">
-							<Button
-								variant="ghost"
-								disabled
-								className="w-full justify-start cursor-not-allowed bg-transparent border border-border text-muted-foreground"
-							>
+							<Link to="/activity" className={linkButtonClasses}>
 								{t("features.activity.cta")}
-							</Button>
+								<ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+							</Link>
 						</CardFooter>
 					</Card>
 				</div>

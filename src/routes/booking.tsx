@@ -21,6 +21,7 @@ import {
 	FilterBar,
 	VenueCard,
 	VenueListSkeleton,
+	WatcherModal,
 } from "@/components/booking";
 import {
 	Pagination,
@@ -250,17 +251,17 @@ export const Route = createFileRoute("/booking")({
 			links: [
 				{ rel: "canonical", href: canonical },
 				// English
-				{ rel: "alternate", hreflang: "en", href: `${canonical}?lng=en` },
+				{ rel: "alternate", hrefLang: "en", href: `${canonical}?lng=en` },
 				// Chinese Simplified
-				{ rel: "alternate", hreflang: "zh-Hans", href: `${canonical}?lng=cn` },
+				{ rel: "alternate", hrefLang: "zh-Hans", href: `${canonical}?lng=cn` },
 				// Chinese Traditional
-				{ rel: "alternate", hreflang: "zh-Hant", href: `${canonical}?lng=zh` },
+				{ rel: "alternate", hrefLang: "zh-Hant", href: `${canonical}?lng=zh` },
 				// Hong Kong Chinese (default)
-				{ rel: "alternate", hreflang: "zh-HK", href: canonical },
+				{ rel: "alternate", hrefLang: "zh-HK", href: canonical },
 				// x-default for language negotiation
 				{
 					rel: "alternate",
-					hreflang: "x-default",
+					hrefLang: "x-default",
 					href: `${canonical}?lng=en`,
 				},
 			],
@@ -521,6 +522,14 @@ function BookingPageContent({
 	const [bookingVenue, setBookingVenue] = useState<NormalizedVenue | null>(
 		null,
 	);
+
+	// Modal state for watcher
+	const [watcherSession, setWatcherSession] =
+		useState<NormalizedSession | null>(null);
+	const [watcherVenue, setWatcherVenue] = useState<NormalizedVenue | null>(
+		null,
+	);
+
 	const [showToast, setShowToast] = useState(false);
 
 	// Handle session click to open booking modal
@@ -536,9 +545,41 @@ function BookingPageContent({
 	const confirmBooking = useCallback(() => {
 		setBookingSession(null);
 		setBookingVenue(null);
+		setTitle(t("booking:booking_confirmed"));
+		setMessage(t("booking:booking_confirmed_msg"));
 		setShowToast(true);
 		setTimeout(() => setShowToast(false), 3000);
-	}, []);
+	}, [t]);
+
+	// Handle watch click
+	const [toastTitle, setTitle] = useState("");
+	const [toastMessage, setMessage] = useState("");
+
+	const handleWatchClick = useCallback(
+		(venue: NormalizedVenue, session: NormalizedSession) => {
+			setWatcherVenue(venue);
+			setWatcherSession(session);
+		},
+		[],
+	);
+
+	const confirmWatcher = useCallback(() => {
+		if (!watcherVenue || !watcherSession) return;
+
+		// In production, this would make an API call to save the watcher
+		console.log(
+			"Watcher confirmed",
+			watcherVenue.name,
+			watcherSession.startTime,
+		);
+
+		setTitle(t("booking:watcher_added"));
+		setMessage(t("booking:watcher_added_desc"));
+		setWatcherSession(null);
+		setWatcherVenue(null);
+		setShowToast(true);
+		setTimeout(() => setShowToast(false), 3000);
+	}, [t, watcherVenue, watcherSession]);
 
 	return (
 		<div className="min-h-screen bg-background/50 flex flex-col font-sans">
@@ -637,6 +678,7 @@ function BookingPageContent({
 								key={venue.id}
 								venue={venue}
 								onSessionClick={handleSessionClick}
+								onWatchClick={handleWatchClick}
 							/>
 						))
 					) : (
@@ -742,11 +784,20 @@ function BookingPageContent({
 				/>
 			)}
 
+			{watcherSession && watcherVenue && (
+				<WatcherModal
+					session={watcherSession}
+					venue={watcherVenue}
+					onClose={() => setWatcherSession(null)}
+					onConfirm={confirmWatcher}
+				/>
+			)}
+
 			{/* Toast Notification */}
 			<div
 				className={`fixed bottom-6 right-6 bg-primary-800 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-500 transform ${
 					showToast ? "translate-y-0 opacity-100" : "translate-y-24 opacity-0"
-				}`}
+				} z-50`}
 			>
 				<div className="bg-white/20 p-1 rounded-full">
 					<svg
@@ -767,10 +818,8 @@ function BookingPageContent({
 					</svg>
 				</div>
 				<div>
-					<h4 className="font-bold">{t("booking:booking_confirmed")}</h4>
-					<p className="text-pacific-blue-200 text-sm">
-						{t("booking:booking_confirmed_msg")}
-					</p>
+					<h4 className="font-bold">{toastTitle}</h4>
+					<p className="text-pacific-blue-200 text-sm">{toastMessage}</p>
 				</div>
 			</div>
 		</div>

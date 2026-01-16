@@ -14,6 +14,13 @@ import appCss from "../styles.css?url";
 export const Route = createRootRoute({
 	beforeLoad: async () => {
 		await ensureI18nInitialized();
+		if (typeof window === "undefined") {
+			// Ensure scheduler is initialized on server start
+			const { ensureSchedulerInitialized } = await import("@/lib/server-init");
+			await ensureSchedulerInitialized().catch((err) => {
+				console.error("Failed to initialize scheduler:", err);
+			});
+		}
 	},
 	head: () => ({
 		meta: [
