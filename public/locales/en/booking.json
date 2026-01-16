@@ -14,6 +14,13 @@
 	"confirm_booking": "View on Official Site",
 	"booking_confirmed": "Redirecting to Official Site",
 	"booking_confirmed_msg": "You will be redirected to the LCSD SmartPlay website to complete your booking.",
+	"watcher_added": "Watcher Added",
+	"watcher_added_desc": "You will be notified when this session becomes available.",
+	"watcher_modal": {
+		"title": "Add Availability Watcher",
+		"desc": "We will notify you immediately when this session becomes available.",
+		"confirm": "Start Watching"
+	},
 	"no_venues": "No venues available for this filter.",
 	"no_venues_hint": "Try changing filters or select \"All Facilities\" to see more.",
 	"last_updated": "Last updated: ",

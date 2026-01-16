@@ -5,7 +5,9 @@
 	"nav": {
 		"title": "導航",
 		"home": "首頁",
-		"booking": "場地查詢"
+		"booking": "場地查詢",
+		"activity": "活動",
+		"scheduler": "日程表"
 	},
 	"footer": {
 		"disclaimer": "免責聲明：此為非官方開源工具，與康文署無任何關聯。",
@@ -13,5 +15,26 @@
 		"inquiry_hotline": "熱線",
 		"open_source": "在 GitHub 上查看源碼",
 		"copyright": "由開源社羣用 ❤️ 製作"
+	},
+	"scheduler": {
+		"title": "日程表",
+		"subtitle": "配置自動監測以獲取場地空缺通知。",
+		"notification_settings": "通知設定",
+		"webhook_desc": "通過 Webhook 接收更新 (例如 Discord, Slack)。",
+		"webhook_label": "Webhook URL",
+		"webhook_hint": "您的網址將保存在本機瀏覽器中。",
+		"save_config": "保存配置",
+		"new_watcher": "新增監測",
+		"watcher_desc": "定義新場次的掃描條件。",
+		"active_watchers": "活躍監測",
+		"active_desc": "實時監控場地可用性。",
+		"hits": "命中",
+		"calendar": {
+			"upcoming_activity": "即將到來的活動"
+		},
+		"preview": {
+			"status": "可預訂",
+			"view_details": "查看詳情"
+		}
 	}
 }

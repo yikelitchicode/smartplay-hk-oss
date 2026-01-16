@@ -16,6 +16,12 @@
 			"description": "Browse and monitor activity quotas and enrollment status.",
 			"cta": "Coming Soon",
 			"badge": "Planned"
+		},
+		"scheduler": {
+			"title": "Watcher Scheduler",
+			"description": "Monitor venue availability automatically and receive notifications.",
+			"cta": "Open Scheduler",
+			"badge": "New"
 		}
 	},
 	"disclaimer": "Note: This is an unofficial open-source tool. All bookings must be completed via the official LCSD SmartPlay website."

@@ -5,7 +5,9 @@
 	"nav": {
 		"title": "导航",
 		"home": "首页",
-		"booking": "场地查询"
+		"booking": "场地查询",
+		"activity": "活动",
+		"scheduler": "日程表"
 	},
 	"footer": {
 		"disclaimer": "免责声明：此为非官方开源工具，与康文署无任何关联。",
@@ -13,5 +15,26 @@
 		"inquiry_hotline": "热线",
 		"open_source": "在 GitHub 上查看源码",
 		"copyright": "由开源社区用 ❤️ 制作"
+	},
+	"scheduler": {
+		"title": "日程表",
+		"subtitle": "配置自动监测以获取场地空缺通知。",
+		"notification_settings": "通知设置",
+		"webhook_desc": "通过 Webhook 接收更新 (例如 Discord, Slack)。",
+		"webhook_label": "Webhook URL",
+		"webhook_hint": "您的网址将保存在本地浏览器中。",
+		"save_config": "保存配置",
+		"new_watcher": "新增监测",
+		"watcher_desc": "定义新场次的扫描条件。",
+		"active_watchers": "活跃监测",
+		"active_desc": "实时监控场地可用性。",
+		"hits": "命中",
+		"calendar": {
+			"upcoming_activity": "即将到来的活动"
+		},
+		"preview": {
+			"status": "可预订",
+			"view_details": "查看详情"
+		}
 	}
 }

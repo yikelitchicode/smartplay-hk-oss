@@ -5,7 +5,9 @@
 	"nav": {
 		"title": "Navigation",
 		"home": "Home",
-		"booking": "Facility Availability"
+		"booking": "Facility Availability",
+		"activity": "Activity",
+		"scheduler": "Scheduler"
 	},
 	"footer": {
 		"disclaimer": "Disclaimer: This is an unofficial open-source tool and is not affiliated with or endorsed by the LCSD.",
@@ -13,5 +15,26 @@
 		"inquiry_hotline": "Hotline",
 		"open_source": "View Source on GitHub",
 		"copyright": "Made with ❤️ by the open source community"
+	},
+	"scheduler": {
+		"title": "Scheduler",
+		"subtitle": "Configure auto-fetch watchers for sports facility availability.",
+		"notification_settings": "Notification Settings",
+		"webhook_desc": "Receive updates via Webhook (e.g., Discord, Slack).",
+		"webhook_label": "Webhook URL",
+		"webhook_hint": "Your URL is saved locally in your browser.",
+		"save_config": "Save Configuration",
+		"new_watcher": "New Watcher",
+		"watcher_desc": "Define scan criteria for new sessions.",
+		"active_watchers": "Active Watchers",
+		"active_desc": "Monitoring availability in real-time.",
+		"hits": "Hits",
+		"calendar": {
+			"upcoming_activity": "Upcoming Activity"
+		},
+		"preview": {
+			"status": "Available",
+			"view_details": "View Details"
+		}
 	}
 }
