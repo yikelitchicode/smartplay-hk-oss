@@ -41,7 +41,7 @@ export const NavigationList = ({
 					activeProps={{
 						className: cn(
 							defaultLinkClassName,
-							"bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary-700 shadow-sm ring-1 ring-primary/20",
+							"bg-primary/10 text-primary hover:bg-primary/20 hover:text-pacific-blue-700 shadow-sm ring-1 ring-primary/20",
 							linkClassName,
 						),
 					}}

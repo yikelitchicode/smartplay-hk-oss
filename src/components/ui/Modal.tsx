@@ -10,6 +10,8 @@ export interface ModalProps {
 	children: React.ReactNode;
 	size?: "sm" | "md" | "lg" | "xl" | "full";
 	showCloseButton?: boolean;
+	floatingCloseButton?: boolean;
+	closeButtonClassName?: string;
 	closeOnEscape?: boolean;
 	closeOnOutsideClick?: boolean;
 }
@@ -30,9 +32,13 @@ export const Modal = ({
 	children,
 	size = "md",
 	showCloseButton = true,
+	floatingCloseButton = false,
+	closeButtonClassName,
 	closeOnOutsideClick = true,
 }: ModalProps) => {
 	const modalId = React.useId();
+
+	const shouldRenderHeader = title || (showCloseButton && !floatingCloseButton);
 
 	return (
 		<Dialog.Root
@@ -52,7 +58,7 @@ export const Modal = ({
 					aria-describedby={description ? `${modalId}-description` : undefined}
 					className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${sizeStyles[size]} w-full bg-white rounded-lg shadow-xl z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]`}
 				>
-					{(title || showCloseButton) && (
+					{shouldRenderHeader && (
 						<div className="flex items-center justify-between p-6 border-b border-gray-200">
 							<div className="flex-1">
 								{title && (
@@ -72,17 +78,27 @@ export const Modal = ({
 									</p>
 								)}
 							</div>
-							{showCloseButton && (
+							{showCloseButton && !floatingCloseButton && (
 								<button
 									type="button"
 									onClick={onClose}
-									className="ml-4 inline-flex items-center justify-center rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+									className={`ml-4 inline-flex items-center justify-center rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${closeButtonClassName || ""}`}
 									aria-label="Close modal"
 								>
 									<X className="h-6 w-6" />
 								</button>
 							)}
 						</div>
+					)}
+					{showCloseButton && floatingCloseButton && (
+						<button
+							type="button"
+							onClick={onClose}
+							className={`absolute top-4 right-4 z-10 inline-flex items-center justify-center rounded-full p-1 hover:bg-black/10 focus:outline-none focus:ring-2 focus:ring-primary ${closeButtonClassName || "text-gray-400 hover:text-gray-500"}`}
+							aria-label="Close modal"
+						>
+							<X className="h-6 w-6" />
+						</button>
 					)}
 					<div className="p-6">{children}</div>
 				</Dialog.Popup>
