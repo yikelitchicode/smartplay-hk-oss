@@ -8,6 +8,7 @@ import {
 import { type JSX, useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollArea } from "@/components/ui/ScrollArea";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import {
 	Select,
 	type SelectGroupType,
@@ -130,6 +131,33 @@ export function FilterBar({
 		setSelectedRegion("All");
 		onResetFilters();
 	}, [onResetFilters]);
+
+	// Prepare SegmentedControl Options for Regions
+	const regionOptions = useMemo(
+		() =>
+			(["All", ...REGIONS] as const).map((region) => ({
+				value: region,
+				label:
+					region === "All"
+						? t("booking:all")
+						: region === "Hong Kong Island"
+							? t("booking:hk_island_short")
+							: region === "New Territories"
+								? t("booking:new_terr_short")
+								: t("booking:kowloon"),
+			})),
+		[t],
+	);
+
+	// Prepare SegmentedControl Options for Price Type
+	const priceTypeOptions = useMemo(
+		() =>
+			(["Paid", "Free"] as const).map((type) => ({
+				value: type,
+				label: type === "Paid" ? t("booking:paid") : t("booking:free"),
+			})),
+		[t],
+	);
 
 	// Prepare Select Options for Facilities
 	// Transform FacilityGroups to SelectGroupType[]
@@ -291,28 +319,11 @@ export function FilterBar({
 				</div>
 
 				{/* Region Tabs */}
-				<div className="flex p-1 bg-porcelain-100/80 rounded-xl overflow-hidden">
-					{(["All", ...REGIONS] as const).map((region) => (
-						<button
-							key={region}
-							type="button"
-							onClick={() => handleRegionClick(region)}
-							className={`flex-1 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all ${
-								selectedRegion === region
-									? "bg-white text-pacific-blue-700 shadow-sm"
-									: "text-porcelain-500 hover:text-porcelain-700"
-							}`}
-						>
-							{region === "All"
-								? t("booking:all")
-								: region === "Hong Kong Island"
-									? t("booking:hk_island_short")
-									: region === "New Territories"
-										? t("booking:new_terr_short")
-										: t("booking:kowloon")}
-						</button>
-					))}
-				</div>
+				<SegmentedControl
+					options={regionOptions}
+					value={selectedRegion}
+					onValueChange={handleRegionClick}
+				/>
 
 				{/* District Chips */}
 				<div className="min-h-14 w-full">
@@ -383,22 +394,11 @@ export function FilterBar({
 						<CircleDollarSign size={18} className="text-primary" />
 						<span>{t("booking:price_type")}</span>
 					</div>
-					<div className="flex bg-porcelain-200/50 p-1.5 rounded-xl">
-						{(["Paid", "Free"] as const).map((type) => (
-							<button
-								key={type}
-								type="button"
-								onClick={() => onSelectPriceType(type)}
-								className={`flex-1 flex items-center justify-center py-2 rounded-lg text-sm font-medium transition-all ${
-									selectedPriceType === type
-										? "bg-white text-pacific-blue-700 shadow-sm ring-1 ring-black/5"
-										: "text-porcelain-500 hover:text-porcelain-700 hover:bg-white/50"
-								}`}
-							>
-								{type === "Paid" ? t("booking:paid") : t("booking:free")}
-							</button>
-						))}
-					</div>
+					<SegmentedControl
+						options={priceTypeOptions}
+						value={selectedPriceType}
+						onValueChange={onSelectPriceType}
+					/>
 				</div>
 
 				{/* Center Dropdown */}
@@ -414,8 +414,8 @@ export function FilterBar({
 						placeholder={t("booking:select_center")}
 						triggerClassName={
 							centerStyles[selectedCenter]
-								? `${centerStyles[selectedCenter].bg} ${centerStyles[selectedCenter].text} ${centerStyles[selectedCenter].border}`
-								: ""
+								? `${centerStyles[selectedCenter].bg} ${centerStyles[selectedCenter].text} ${centerStyles[selectedCenter].border} h-12 rounded-xl`
+								: "h-12 rounded-xl"
 						}
 					/>
 				</div>
@@ -433,8 +433,8 @@ export function FilterBar({
 						placeholder={t("booking:select_facility")}
 						triggerClassName={
 							facilityStyles[selectedFacilityType]
-								? `${facilityStyles[selectedFacilityType].bg} ${facilityStyles[selectedFacilityType].text} ${facilityStyles[selectedFacilityType].border}`
-								: ""
+								? `${facilityStyles[selectedFacilityType].bg} ${facilityStyles[selectedFacilityType].text} ${facilityStyles[selectedFacilityType].border} h-12 rounded-xl`
+								: "h-12 rounded-xl"
 						}
 					/>
 				</div>

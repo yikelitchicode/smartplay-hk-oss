@@ -11,13 +11,25 @@ export function BookingPending(): JSX.Element {
 		>
 			{/* Date Selector Skeleton */}
 			<div className="bg-white border-b border-gray-200" aria-hidden="true">
-				<div className="max-w-7xl mx-auto">
-					<div className="flex items-center gap-1 p-2 overflow-hidden">
+				<div className="max-w-7xl mx-auto px-4 py-4">
+					{/* Header Skeleton */}
+					<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 mt-4">
+						<div className="space-y-3">
+							<div className="flex items-center gap-3">
+								<Skeleton className="h-8 w-64 md:w-80 rounded-lg" />
+								<Skeleton className="h-6 w-12 rounded-full" />
+							</div>
+							<Skeleton className="h-5 w-full max-w-xl rounded-md" />
+						</div>
+						<Skeleton className="h-9 w-24 rounded-md shrink-0" />
+					</div>
+
+					<div className="flex items-center gap-3 overflow-hidden pb-1">
 						{Array.from({ length: 7 }, (_, i) => (
 							<Skeleton
 								// biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton items, never reordered
 								key={i}
-								className="h-[74px] w-[66px] rounded-xl shrink-0"
+								className="h-[74px] w-[70px] rounded-xl shrink-0"
 							/>
 						))}
 					</div>

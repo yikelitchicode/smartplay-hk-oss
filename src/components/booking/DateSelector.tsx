@@ -9,6 +9,7 @@ interface DateSelectorProps {
 	selectedDate: string;
 	onSelectDate: (date: string) => void;
 	dateStyles?: Record<string, AvailabilityTheme>;
+	children?: React.ReactNode;
 }
 
 export const DateSelector = memo(function DateSelector({
@@ -16,6 +17,7 @@ export const DateSelector = memo(function DateSelector({
 	selectedDate,
 	onSelectDate,
 	dateStyles,
+	children,
 }: DateSelectorProps) {
 	const { t, i18n } = useTranslation(["booking"]);
 
@@ -44,7 +46,8 @@ export const DateSelector = memo(function DateSelector({
 
 	return (
 		<div className="w-full bg-white border-b border-gray-200 shadow-sm">
-			<div className="max-w-7xl mx-auto px-4 py-3">
+			<div className="max-w-7xl mx-auto px-4 py-4">
+				{children}
 				<div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1">
 					{formattedDates.map(({ dateStr, dayName, dayNumber, month }) => {
 						const isSelected = dateStr === selectedDate;

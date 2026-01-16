@@ -80,7 +80,7 @@ export const VenueCard = memo(function VenueCard({
 														}${session.isPassed ? " (Passed)" : ""}`}
 														className={`w-full flex flex-col items-center justify-center p-2 rounded-lg text-sm font-medium border transition-all ${getSessionStyles()}`}
 													>
-														<span className="text-xs mb-0.5">
+														<span className="text-sm font-bold mb-0.5">
 															{session.startTime}
 														</span>
 														{session.peakHour && session.available && (
