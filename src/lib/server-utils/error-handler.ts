@@ -85,36 +85,6 @@ export function withErrorHandling<T>(
 }
 
 /**
- * Wraps a database operation with error handling
- *
- * @deprecated Use withDbErrorHandlingEnhanced for better error classification and retry logic
- */
-export async function withDbErrorHandling<T>(
-	operation: () => Promise<T>,
-	operationName: string,
-): Promise<T> {
-	try {
-		return await operation();
-	} catch (error) {
-		console.error(`Database error in ${operationName}:`, error);
-
-		if (error instanceof Error) {
-			// Check for common database errors
-			if (error.message.includes("connect")) {
-				throw new Error("Database connection failed. Please try again later.");
-			}
-			if (error.message.includes("timeout")) {
-				throw new Error("Database operation timed out. Please try again.");
-			}
-		}
-
-		throw new Error(
-			`An error occurred while ${operationName}. Please try again later.`,
-		);
-	}
-}
-
-/**
  * Classify database error into specific types
  *
  * Analyzes Prisma errors and determines the appropriate error category
@@ -178,7 +148,7 @@ export function classifyDatabaseError(error: unknown): DatabaseErrorType {
  * @param options - Enhanced error handling options
  * @returns Result of the operation or fallback value
  */
-export async function withDbErrorHandlingEnhanced<T>(
+export async function withDbErrorHandling<T>(
 	operation: () => Promise<T>,
 	options: EnhancedDbErrorHandlingOptions,
 ): Promise<T> {
