@@ -2,13 +2,15 @@ import {
 	Await,
 	createFileRoute,
 	defer,
+	Link,
 	useNavigate,
 } from "@tanstack/react-router";
-import { CalendarDays, Check } from "lucide-react";
+import { ArrowLeft, CalendarDays, Check } from "lucide-react";
 import {
 	Suspense,
 	useCallback,
 	useDeferredValue,
+	useEffect,
 	useMemo,
 	useState,
 } from "react";
@@ -23,6 +25,8 @@ import {
 	VenueListSkeleton,
 	WatcherModal,
 } from "@/components/booking";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import {
 	Pagination,
 	PaginationContent,
@@ -49,7 +53,7 @@ import {
 	getAvailabilityColor,
 	getRegion,
 } from "@/lib/booking/utils";
-import { ensureI18nInitialized } from "@/lib/i18n";
+import { initializeI18n } from "@/lib/i18n";
 import type {
 	ServerError,
 	ServerSuccess,
@@ -169,12 +173,13 @@ export const Route = createFileRoute("/booking")({
 	loaderDeps: ({ search: { date } }) => ({
 		date,
 	}),
-	// Keep loader data fresh indefinitely for the same date
-	// This prevents skeleton loading when only filter params change
-	staleTime: Infinity,
+	// Data refreshes every 30 minutes on the server
+	// Cache for 30 minutes to match server cycle while allowing instant navigation
+	staleTime: 30 * 60 * 1000,
+	gcTime: 60 * 60 * 1000,
 	loader: async ({ deps: { date } }) => {
 		// Ensure translations are loaded before rendering
-		await ensureI18nInitialized();
+		await initializeI18n();
 
 		const defaultDate = new Date().toISOString().split("T")[0];
 
@@ -183,40 +188,74 @@ export const Route = createFileRoute("/booking")({
 			date,
 			priceType: "Paid" as const, // Default for initial load, client state takes over
 			deferredData: defer(
-				Promise.all([
-					getAvailableDates(),
-					getBookingData({
+				(async () => {
+					// 1. Start fetching independent data
+					const metadataPromise = getMetadata();
+					const lastUpdatePromise = getLastUpdateTime();
+					const availabilityPromise = getDatesAvailability({ data: {} });
+
+					// 2. Fetch available dates to determine target date
+					// If date is provided in URL, use it (optimistic).
+					// If not, we must check available dates to avoid fetching empty data for defaultDate if it's not available.
+					let targetDate = date || defaultDate;
+					let datesResult: ServerSuccess<string[]> | ServerError | undefined;
+
+					// If we don't have a date, we MUST fetch dates first to be safe
+					if (!date) {
+						try {
+							datesResult = await getAvailableDates();
+						} catch (e) {
+							console.error("Failed to fetch dates", e);
+						}
+					} else {
+						// If date is provided, we can fetch dates in parallel (fire and forget for now)
+						// But we still need the result for the return value.
+						// To keep it simple, let's just await it always, or optimize later.
+						// For correctness, awaiting is safest.
+						try {
+							datesResult = await getAvailableDates();
+						} catch (e) {
+							console.error("Failed to fetch dates", e);
+						}
+					}
+
+					const availableDates =
+						datesResult?.success && datesResult.data ? datesResult.data : [];
+
+					// Refine targetDate based on availability if no date was specified
+					if (!date && availableDates.length > 0) {
+						// If today is available, prefer it. Otherwise first available.
+						if (availableDates.includes(defaultDate)) {
+							targetDate = defaultDate;
+						} else {
+							targetDate = availableDates[0];
+						}
+					}
+
+					// 3. Fetch Booking Data for the definitive targetDate
+					const bookingData = await getBookingData({
 						data: {
-							date: date || defaultDate,
+							date: targetDate,
 						},
-					}),
-					getDatesAvailability({
-						data: {},
-					}),
-					getLastUpdateTime(),
-					getMetadata(),
-				]).then(
-					([
-						datesData,
+					});
+
+					// 4. Await remaining data
+					const [availabilityData, lastUpdateData, metadataData] =
+						await Promise.all([
+							availabilityPromise,
+							lastUpdatePromise,
+							metadataPromise,
+						]);
+
+					return {
+						availableDates,
+						selectedDate: targetDate,
 						bookingData,
 						availabilityData,
 						lastUpdateData,
 						metadataData,
-					]) => {
-						const availableDates =
-							datesData.success && datesData.data ? datesData.data : [];
-						const selectedDate = date || availableDates[0] || defaultDate;
-
-						return {
-							availableDates,
-							selectedDate,
-							bookingData,
-							availabilityData,
-							lastUpdateData,
-							metadataData,
-						};
-					},
-				),
+					};
+				})(),
 			),
 		};
 	},
@@ -459,9 +498,16 @@ function BookingPageContent({
 	});
 
 	// Reset page when filters change
-	useMemo(() => {
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Reset page when filters change
+	useEffect(() => {
 		setCurrentPage(1);
-	}, []);
+	}, [
+		deferredSearchQuery,
+		deferredDistricts,
+		deferredCenter,
+		deferredFacility,
+		deferredPriceType,
+	]);
 
 	const totalPages = Math.ceil(filteredVenues.length / ITEMS_PER_PAGE);
 	const paginatedVenues = filteredVenues.slice(
@@ -576,17 +622,6 @@ function BookingPageContent({
 
 	return (
 		<div className="min-h-screen bg-background/50 flex flex-col font-sans">
-			{/* Page Header for SEO */}
-			<header className="sr-only">
-				<h1>{t("booking:page_title", "Book Hong Kong Sports Facilities")}</h1>
-				<p>
-					{t(
-						"booking:page_description",
-						"Real-time availability for LCSD sports facilities including tennis, basketball, and badminton courts across Hong Kong",
-					)}
-				</p>
-			</header>
-
 			{/* Date Selector */}
 			<nav aria-label="Date navigation">
 				<DateSelector
@@ -594,7 +629,29 @@ function BookingPageContent({
 					selectedDate={selectedDate}
 					onSelectDate={handleDateSelect}
 					dateStyles={dateStyles}
-				/>
+				>
+					<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 mt-4">
+						<div>
+							<h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+								{t("booking:page_title", "Book Hong Kong Sports Facilities")}
+								<Badge variant="primary" size="sm">
+									Beta
+								</Badge>
+							</h1>
+							<p className="text-muted-foreground mt-1 text-base md:text-lg">
+								{t(
+									"booking:page_description",
+									"Real-time availability for LCSD sports facilities including tennis, basketball, and badminton courts across Hong Kong",
+								)}
+							</p>
+						</div>
+						<Link to="/">
+							<Button variant="ghost" size="sm" className="gap-2 shrink-0">
+								<ArrowLeft size={16} /> {t("common:nav.home", "Home")}
+							</Button>
+						</Link>
+					</div>
+				</DateSelector>
 			</nav>
 
 			{/* Main Content Area */}
