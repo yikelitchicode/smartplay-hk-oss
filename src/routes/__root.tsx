@@ -1,6 +1,11 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import {
+	createRootRoute,
+	HeadContent,
+	Outlet,
+	Scripts,
+} from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { useState } from "react";
 import { I18nextProvider } from "react-i18next";
@@ -8,18 +13,74 @@ import Footer from "../components/Footer";
 import Header from "../components/Header";
 import NotFound from "../components/NotFound";
 import { BackToTop } from "../components/ui/BackToTop";
-import i18n, { ensureI18nInitialized } from "../lib/i18n";
+import i18n, { detectLanguage, initializeI18n } from "../lib/i18n";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
 	beforeLoad: async () => {
-		await ensureI18nInitialized();
 		if (typeof window === "undefined") {
-			// Ensure scheduler is initialized on server start
-			const { ensureSchedulerInitialized } = await import("@/lib/server-init");
-			await ensureSchedulerInitialized().catch((err) => {
-				console.error("Failed to initialize scheduler:", err);
-			});
+			// Server: detect language FIRST, then initialize i18n with it
+			try {
+				let getRequest: (() => Request) | undefined;
+				const serverModule = await import("@tanstack/react-start/server");
+				if (typeof serverModule.getRequest === "function") {
+					getRequest = serverModule.getRequest;
+				}
+
+				if (!getRequest) {
+					throw new Error("getRequest is missing from server module");
+				}
+
+				const request = getRequest();
+				const cookieHeader = request?.headers.get("cookie");
+				let lang: string | undefined;
+
+				// 1. Try to get language from cookie "i18next"
+				if (cookieHeader) {
+					const match = cookieHeader.match(/i18next=([^;]+)/);
+					if (match) {
+						const cookieLang = match[1];
+						// Validate cookie lang
+						if (["en", "zh", "cn"].includes(cookieLang)) {
+							lang = cookieLang;
+						}
+					}
+				}
+
+				// 2. Fallback to Accept-Language header
+				if (!lang) {
+					const acceptLanguage =
+						request?.headers.get("accept-language") ?? null;
+					lang = detectLanguage(acceptLanguage);
+				}
+				await initializeI18n(lang);
+
+				// Ensure scheduler is initialized on server start
+				const { ensureSchedulerInitialized } = await import(
+					"@/lib/server-init"
+				);
+				await ensureSchedulerInitialized().catch((err) => {
+					console.error("Failed to initialize scheduler:", err);
+				});
+
+				return { lang };
+			} catch (err) {
+				console.error("Failed to initialize i18n on server:", err);
+				await initializeI18n("en"); // Fallback
+
+				// Ensure scheduler is initialized even if i18n fails
+				const { ensureSchedulerInitialized } = await import(
+					"@/lib/server-init"
+				);
+				await ensureSchedulerInitialized().catch((err) => {
+					console.error("Failed to initialize scheduler:", err);
+				});
+
+				return { lang: "en" };
+			}
+		} else {
+			// Client: ensure i18n is initialized (will use browser detection)
+			await initializeI18n();
 		}
 	},
 	head: () => ({
@@ -32,12 +93,11 @@ export const Route = createRootRoute({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
-				title: "SmartPlay HK OSS - LCSD Sports Facilities Availability Checker",
+				title: "SmartPlay HK (OSS)",
 			},
 			{
 				name: "description",
-				content:
-					"Open-source availability checker for Hong Kong LCSD sports facilities. Check real-time availability for tennis, basketball, badminton courts across all districts. Booking must be completed on the official LCSD SmartPlay website.",
+				content: "Open Source SmartPlay HK Venue Booking Assistant",
 			},
 			{
 				name: "keywords",
@@ -54,10 +114,7 @@ export const Route = createRootRoute({
 			},
 		],
 		links: [
-			{
-				rel: "stylesheet",
-				href: appCss,
-			},
+			{ rel: "stylesheet", href: appCss },
 			{
 				rel: "manifest",
 				href: "/manifest.json",
@@ -74,12 +131,13 @@ export const Route = createRootRoute({
 		],
 	}),
 
-	shellComponent: RootDocument,
+	component: RootComponent,
 	notFoundComponent: NotFound,
 });
 
-function RootDocument({ children }: { children: React.ReactNode }) {
-	const i18nInstance = i18n;
+function RootComponent() {
+	const context = Route.useRouteContext();
+	const detectedLang = (context as { lang?: string })?.lang || "en";
 
 	// Create QueryClient with optimized caching defaults
 	const [queryClient] = useState(
@@ -87,10 +145,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			new QueryClient({
 				defaultOptions: {
 					queries: {
-						staleTime: 5 * 60 * 1000, // Data fresh for 5 minutes
-						gcTime: 30 * 60 * 1000, // Cache retained for 30 minutes
-						refetchOnWindowFocus: false, // Don't refetch on tab focus
-						retry: 1, // Only retry once on failure
+						staleTime: 5 * 60 * 1000,
+						gcTime: 30 * 60 * 1000,
+						refetchOnWindowFocus: false,
+						retry: 1,
 					},
 				},
 			}),
@@ -99,30 +157,41 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
 		<I18nextProvider i18n={i18n}>
 			<QueryClientProvider client={queryClient}>
-				<html lang={i18nInstance.language}>
-					<head>
-						<HeadContent />
-					</head>
-					<body className="flex flex-col min-h-screen">
-						<Header />
-						<div className="flex-1">{children}</div>
-						<Footer />
-						<BackToTop />
-						<TanStackDevtools
-							config={{
-								position: "bottom-right",
-							}}
-							plugins={[
-								{
-									name: "Tanstack Router",
-									render: <TanStackRouterDevtoolsPanel />,
-								},
-							]}
-						/>
-						<Scripts />
-					</body>
-				</html>
+				<RootDocument detectedLang={detectedLang}>
+					<Outlet />
+				</RootDocument>
 			</QueryClientProvider>
 		</I18nextProvider>
+	);
+}
+
+function RootDocument({
+	children,
+	detectedLang,
+}: {
+	children: React.ReactNode;
+	detectedLang: string;
+}) {
+	return (
+		<html lang={detectedLang} suppressHydrationWarning>
+			<head>
+				<HeadContent />
+			</head>
+			<body className="flex flex-col min-h-screen">
+				<Header />
+				<div className="flex-1">{children}</div>
+				<Footer />
+				<BackToTop />
+				{/* Inject detected language for client-side init */}
+				<script
+					dangerouslySetInnerHTML={{
+						__html: `window.__INITIAL_LANG__ = "${detectedLang}";`,
+					}}
+				/>
+				<TanStackRouterDevtoolsPanel />
+				<TanStackDevtools />
+				<Scripts />
+			</body>
+		</html>
 	);
 }

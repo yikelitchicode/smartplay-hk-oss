@@ -4,7 +4,7 @@ import {
 	defer,
 	useNavigate,
 } from "@tanstack/react-router";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Check } from "lucide-react";
 import {
 	Suspense,
 	useCallback,
@@ -268,7 +268,7 @@ export const Route = createFileRoute("/booking")({
 			scripts: [
 				{
 					type: "application/ld+json",
-					innerHTML: JSON.stringify(getBookingPageStructuredData()),
+					children: JSON.stringify(getBookingPageStructuredData()),
 				},
 			],
 		};
@@ -319,7 +319,7 @@ function BookingPageContent({
 	metadataData: ServerError | ServerSuccess<MetadataResult>;
 	currentPriceType: "Paid" | "Free";
 }) {
-	const { t, i18n } = useTranslation(["booking", "common"]);
+	const { t } = useTranslation(["booking", "common"]);
 
 	// Process raw data
 	const { venues, districts, centers, lastUpdate, metadata } = useMemo(() => {
@@ -566,13 +566,6 @@ function BookingPageContent({
 	const confirmWatcher = useCallback(() => {
 		if (!watcherVenue || !watcherSession) return;
 
-		// In production, this would make an API call to save the watcher
-		console.log(
-			"Watcher confirmed",
-			watcherVenue.name,
-			watcherSession.startTime,
-		);
-
 		setTitle(t("booking:watcher_added"));
 		setMessage(t("booking:watcher_added_desc"));
 		setWatcherSession(null);
@@ -640,30 +633,43 @@ function BookingPageContent({
 				`}</style>
 
 				{/* Results Info */}
-				<div className="flex items-center justify-between">
-					<h2 className="text-lg font-semibold text-gray-800">
-						{t("booking:available_venues")}
-						<span className="ml-2 text-sm font-normal text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200">
-							{filteredVenues.length}
-						</span>
-					</h2>
-					<div className="flex items-center gap-4 text-sm text-gray-500">
+				<div className="flex flex-col gap-3 py-2">
+					<div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+						<div className="space-y-1">
+							<h2 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+								{t("booking:available_venues")}
+								<span className="text-sm font-bold text-pacific-blue-600 bg-pacific-blue-50 px-2.5 py-0.5 rounded-full border border-pacific-blue-100 uppercase tracking-widest cursor-default">
+									{filteredVenues.length}
+								</span>
+							</h2>
+						</div>
+
 						{lastUpdate && (
-							<time dateTime={lastUpdate.toISOString()}>
-								{t("booking:last_updated")}{" "}
-								{new Date(lastUpdate).toLocaleString(
-									i18n.language === "zh" || i18n.language === "cn"
-										? "zh-HK"
-										: "en-HK",
-									{
-										timeZone: "Asia/Hong_Kong",
-										month: "numeric",
-										day: "numeric",
-										hour: "2-digit",
-										minute: "2-digit",
-									},
-								)}
-							</time>
+							<div className="flex items-center gap-3 text-[10px] sm:text-xs font-bold text-gray-500 bg-white px-4 py-2 rounded-2xl border border-gray-100 shadow-sm self-start sm:self-auto">
+								<div className="w-2 h-2 rounded-full bg-meadow-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+								<time
+									dateTime={lastUpdate.toISOString()}
+									className="flex items-center gap-1.5 uppercase tracking-wider"
+								>
+									<span className="opacity-60">
+										{t("booking:last_updated")}
+									</span>
+									<span className="text-gray-900 whitespace-nowrap">
+										{new Date(lastUpdate)
+											.toLocaleString("en-GB", {
+												day: "2-digit",
+												month: "2-digit",
+												hour: "2-digit",
+												minute: "2-digit",
+												hour12: true,
+												timeZone: "Asia/Hong_Kong",
+											})
+											.toLowerCase()
+											.replace(",", "")}{" "}
+										HKT
+									</span>
+								</time>
+							</div>
 						)}
 					</div>
 				</div>
@@ -795,31 +801,27 @@ function BookingPageContent({
 
 			{/* Toast Notification */}
 			<div
-				className={`fixed bottom-6 right-6 bg-primary-800 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-500 transform ${
-					showToast ? "translate-y-0 opacity-100" : "translate-y-24 opacity-0"
-				} z-50`}
+				className={`fixed bottom-8 right-8 bg-pacific-blue-950/95 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-white/10 backdrop-blur-xl transition-all duration-500 transform ${
+					showToast
+						? "translate-y-0 opacity-100 scale-100"
+						: "translate-y-12 opacity-0 scale-95"
+				} z-50 max-w-sm`}
 			>
-				<div className="bg-white/20 p-1 rounded-full">
-					<svg
-						className="w-5 h-5"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
+				<div className="bg-meadow-green-500 p-2 rounded-xl shadow-lg shadow-meadow-green-500/20">
+					<Check
+						className="w-5 h-5 text-white"
+						strokeWidth={3}
 						role="img"
 						aria-label="Success Icon"
-					>
-						<title>Success</title>
-						<path
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							strokeWidth={3}
-							d="M5 13l4 4L19 7"
-						/>
-					</svg>
+					/>
 				</div>
-				<div>
-					<h4 className="font-bold">{toastTitle}</h4>
-					<p className="text-pacific-blue-200 text-sm">{toastMessage}</p>
+				<div className="flex-1">
+					<h4 className="font-black text-sm uppercase tracking-wider text-white">
+						{toastTitle}
+					</h4>
+					<p className="text-pacific-blue-200/90 text-xs font-bold leading-relaxed">
+						{toastMessage}
+					</p>
 				</div>
 			</div>
 		</div>

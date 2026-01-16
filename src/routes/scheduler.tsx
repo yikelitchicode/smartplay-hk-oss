@@ -1,19 +1,19 @@
-import { PreviewCard } from "@base-ui/react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
 	Activity,
 	AlertCircle,
 	ArrowLeft,
-	Bell,
-	Calendar as CalendarIcon,
 	CheckCircle2,
-	ChevronLeft,
-	ChevronRight,
 	Clock,
+	Loader2,
+	Pause,
+	Play,
+	Settings,
 	Trash2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type JSX, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { WatcherHitsModal } from "@/components/booking/WatcherHitsModal";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
@@ -25,8 +25,24 @@ import {
 	CardTitle,
 } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { getWatchers, updateWatcher } from "@/server-functions/watch/watcher";
+import {
+	getWebhookSettings,
+	setWebhookUrl,
+	testWebhook,
+} from "@/server-functions/watch/webhook";
 
 export const Route = createFileRoute("/scheduler")({
+	loader: async () => {
+		const [watchersResult, settingsResult] = await Promise.all([
+			getWatchers({ data: {} }),
+			getWebhookSettings(),
+		]);
+		return {
+			watchersData: watchersResult,
+			settingsData: settingsResult,
+		};
+	},
 	component: SchedulerPage,
 	head: () => ({
 		meta: [
@@ -42,59 +58,102 @@ export const Route = createFileRoute("/scheduler")({
 	}),
 });
 
-interface WatchTask {
-	id: string;
-	venue: string;
-	date: string;
-	timeRange: string;
-	status: "active" | "paused";
-	notifications: number;
-}
+function SchedulerPage(): JSX.Element {
+	const { t } = useTranslation(["common", "scheduler"]);
+	const { watchersData, settingsData } = Route.useLoaderData();
+	const router = useRouter();
 
-function SchedulerPage() {
-	const { t } = useTranslation(["common"]);
+	const [selectedWatcherId, setSelectedWatcherId] = useState<string | null>(
+		null,
+	);
 
-	// Mock state for draft
-	const [webhookUrl, setWebhookUrl] = useState("");
-	const [tasks, _setTasks] = useState<WatchTask[]>([
-		{
-			id: "1",
-			venue: "Victoria Park Tennis Court",
-			date: "2024-02-01",
-			timeRange: "18:00 - 20:00",
-			status: "active",
-			notifications: 2,
-		},
-		{
-			id: "2",
-			venue: "Southorn Playground",
-			date: "2024-02-05",
-			timeRange: "19:00 - 21:00",
-			status: "active",
-			notifications: 5,
-		},
-	]);
+	// Webhook State
+	const [webhookUrlInput, setWebhookUrlInput] = useState("");
+	const [isSavingWebhook, setIsSavingWebhook] = useState(false);
+	const [isTestingWebhook, setIsTestingWebhook] = useState(false);
+	const [webhookStatus, setWebhookStatus] = useState<{
+		success: boolean;
+		message: string;
+	} | null>(null);
 
-	// Load from localStorage (Simulation)
+	// Initialize webhook input from loader data
 	useEffect(() => {
-		const savedUrl = localStorage.getItem("sp_webhook_url");
-		if (savedUrl) setWebhookUrl(savedUrl);
-	}, []);
+		if (settingsData.success && settingsData.data?.webhookUrl) {
+			setWebhookUrlInput(settingsData.data.webhookUrl);
+		}
+	}, [settingsData]);
 
-	// Save to localStorage (Simulation)
-	const handleSaveWebhook = () => {
-		localStorage.setItem("sp_webhook_url", webhookUrl);
-		// Show toast or feedback here
+	const activeWatchers =
+		watchersData.success && watchersData.data ? watchersData.data : [];
+
+	// Actions
+	const handleSaveWebhook = async () => {
+		setIsSavingWebhook(true);
+		setWebhookStatus(null);
+		try {
+			const result = await setWebhookUrl({
+				data: { webhookUrl: webhookUrlInput, enabled: true },
+			});
+			if (result.success) {
+				setWebhookStatus({
+					success: true,
+					message: t("scheduler.config_saved", "Configuration saved"),
+				});
+				router.invalidate();
+			} else {
+				setWebhookStatus({
+					success: false,
+					message: result.error ?? "Failed to save",
+				});
+			}
+		} catch (_e) {
+			setWebhookStatus({ success: false, message: "An error occurred" });
+		} finally {
+			setIsSavingWebhook(false);
+		}
 	};
 
-	// Generate some mock calendar days
-	const days = Array.from({ length: 35 }, (_, i) => {
-		const day = i + 1 - 4; // Offset to start before 1st
-		if (day <= 0 || day > 30) return null;
-		// Mark some days as having activity
-		const hasActivity = [1, 5, 12, 18, 25].includes(day);
-		return { day, hasActivity };
-	});
+	const handleTestWebhook = async () => {
+		setIsTestingWebhook(true);
+		setWebhookStatus(null);
+		try {
+			const result = await testWebhook({
+				data: { webhookUrl: webhookUrlInput },
+			});
+			if (result.success) {
+				setWebhookStatus({
+					success: true,
+					message: t("scheduler.test_sent", "Test notification sent!"),
+				});
+			} else {
+				setWebhookStatus({
+					success: false,
+					message: result.error ?? "Test failed",
+				});
+			}
+		} catch (_e) {
+			setWebhookStatus({ success: false, message: "Test failed" });
+		} finally {
+			setIsTestingWebhook(false);
+		}
+	};
+
+	const handleUpdateWatcher = async (
+		watcherId: string,
+		action: "pause" | "resume" | "delete",
+	) => {
+		try {
+			await updateWatcher({
+				data: {
+					watcherId,
+					action,
+				},
+			});
+			router.invalidate();
+		} catch (error) {
+			console.error("Failed to update watcher", error);
+		}
+	};
 
 	return (
 		<div className="min-h-[calc(100vh-4rem)] bg-background flex flex-col font-sans">
@@ -103,13 +162,13 @@ function SchedulerPage() {
 				<div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
 					<div>
 						<h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
-							{t("scheduler.title")}
+							{t("scheduler.title", "Watch Scheduler")}
 							<Badge variant="primary" size="sm">
-								Public Beta
+								Beta
 							</Badge>
 						</h1>
 						<p className="text-muted-foreground mt-1 text-lg">
-							{t("scheduler.subtitle")}
+							{t("scheduler.subtitle", "Manage your availability watchers")}
 						</p>
 					</div>
 					<Link to="/">
@@ -119,180 +178,8 @@ function SchedulerPage() {
 					</Link>
 				</div>
 
-				{/* 1. Top Section: Activity Calendar */}
-				<Card className="border-border shadow-sm">
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-						<div className="space-y-1">
-							<CardTitle className="text-xl flex items-center gap-2">
-								<CalendarIcon className="w-5 h-5 text-pacific-blue-500" />
-								{t("scheduler.calendar.upcoming_activity", "Upcoming Activity")}
-							</CardTitle>
-							<CardDescription>
-								Sessions found by your active watchers.
-							</CardDescription>
-						</div>
-						<div className="flex items-center gap-2">
-							<Button variant="secondary" size="sm" className="h-8 w-8 p-0">
-								<ChevronLeft className="h-4 w-4" />
-							</Button>
-							<span className="text-sm font-medium w-24 text-center">
-								February 2024
-							</span>
-							<Button variant="secondary" size="sm" className="h-8 w-8 p-0">
-								<ChevronRight className="h-4 w-4" />
-							</Button>
-						</div>
-					</CardHeader>
-					<CardContent>
-						<div className="grid grid-cols-7 gap-px rounded-lg overflow-hidden bg-muted/20 border border-border">
-							{["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-								<div
-									key={d}
-									className="bg-muted/10 p-2 text-center text-xs font-semibold text-muted-foreground"
-								>
-									{d}
-								</div>
-							))}
-							{days.map((item, idx) => (
-								<div
-									key={item?.day ?? `empty-${idx}`}
-									className={`min-h-[100px] p-2 bg-background relative ${
-										!item ? "bg-muted/5" : ""
-									}`}
-								>
-									{item && (
-										<>
-											<span
-												className={`text-sm font-medium ${
-													item.hasActivity
-														? "text-pacific-blue-600"
-														: "text-muted-foreground"
-												}`}
-											>
-												{item.day}
-											</span>
-											{item.hasActivity && (
-												<div className="mt-2 space-y-1">
-													<PreviewCard.Root>
-														<PreviewCard.Trigger className="w-full text-left">
-															<div className="cursor-pointer text-xs bg-pacific-blue-50 text-pacific-blue-700 px-1.5 py-1 rounded truncate border border-pacific-blue-200 hover:bg-pacific-blue-100 hover:border-pacific-blue-300 transition-colors shadow-xs">
-																Tennis • 18:00
-															</div>
-														</PreviewCard.Trigger>
-														<PreviewCard.Portal>
-															<PreviewCard.Positioner
-																sideOffset={8}
-																side="right"
-															>
-																<PreviewCard.Popup className="z-50 rounded-md bg-popover p-4 text-popover-foreground shadow-lg border border-border outline-hidden w-64 animate-in fade-in-0 zoom-in-95">
-																	<PreviewCard.Arrow className="fill-popover stroke-border" />
-																	<div className="space-y-3">
-																		<div className="flex items-center justify-between">
-																			<h4 className="font-semibold text-sm">
-																				Victoria Park
-																			</h4>
-																			<Badge variant="success" size="sm">
-																				{t(
-																					"scheduler.preview.status",
-																					"Available",
-																				)}
-																			</Badge>
-																		</div>
-																		<div className="text-sm text-muted-foreground space-y-1">
-																			<div className="flex items-center gap-2">
-																				<CalendarIcon className="w-3.5 h-3.5" />
-																				<span>Feb {item.day}, 2024</span>
-																			</div>
-																			<div className="flex items-center gap-2">
-																				<Clock className="w-3.5 h-3.5" />
-																				<span>18:00 - 20:00</span>
-																			</div>
-																		</div>
-																		<div className="pt-2 border-t border-border">
-																			<Link
-																				to="/booking"
-																				className="text-xs text-pacific-blue-600 hover:underline flex items-center gap-1"
-																			>
-																				{t(
-																					"scheduler.preview.view_details",
-																					"View Details",
-																				)}
-																				<ChevronRight className="w-3 h-3" />
-																			</Link>
-																		</div>
-																	</div>
-																</PreviewCard.Popup>
-															</PreviewCard.Positioner>
-														</PreviewCard.Portal>
-													</PreviewCard.Root>
-
-													{item.day === 5 && (
-														<PreviewCard.Root>
-															<PreviewCard.Trigger className="w-full text-left">
-																<div className="cursor-pointer text-xs bg-pacific-blue-50 text-pacific-blue-700 px-1.5 py-1 rounded truncate border border-pacific-blue-200 hover:bg-pacific-blue-100 hover:border-pacific-blue-300 transition-colors shadow-xs">
-																	Basket... • 19:00
-																</div>
-															</PreviewCard.Trigger>
-															<PreviewCard.Portal>
-																<PreviewCard.Positioner
-																	sideOffset={8}
-																	side="right"
-																>
-																	<PreviewCard.Popup className="z-50 rounded-md bg-popover p-4 text-popover-foreground shadow-lg border border-border outline-hidden w-64 animate-in fade-in-0 zoom-in-95">
-																		<PreviewCard.Arrow className="fill-popover stroke-border" />
-																		<div className="space-y-3">
-																			<div className="flex items-center justify-between">
-																				<h4 className="font-semibold text-sm">
-																					Southorn Playground
-																				</h4>
-																				<Badge variant="success" size="sm">
-																					{t(
-																						"scheduler.preview.status",
-																						"Available",
-																					)}
-																				</Badge>
-																			</div>
-																			<div className="text-sm text-muted-foreground space-y-1">
-																				<div className="flex items-center gap-2">
-																					<CalendarIcon className="w-3.5 h-3.5" />
-																					<span>Feb {item.day}, 2024</span>
-																				</div>
-																				<div className="flex items-center gap-2">
-																					<Clock className="w-3.5 h-3.5" />
-																					<span>19:00 - 21:00</span>
-																				</div>
-																			</div>
-																			<div className="pt-2 border-t border-border">
-																				<Link
-																					to="/booking"
-																					className="text-xs text-pacific-blue-600 hover:underline flex items-center gap-1"
-																				>
-																					{t(
-																						"scheduler.preview.view_details",
-																						"View Details",
-																					)}
-																					<ChevronRight className="w-3 h-3" />
-																				</Link>
-																			</div>
-																		</div>
-																	</PreviewCard.Popup>
-																</PreviewCard.Positioner>
-															</PreviewCard.Portal>
-														</PreviewCard.Root>
-													)}
-												</div>
-											)}
-										</>
-									)}
-								</div>
-							))}
-						</div>
-					</CardContent>
-				</Card>
-
-				{/* 2. Bottom Section: Watchers & Settings */}
 				<div className="grid lg:grid-cols-3 gap-8">
-					{/* Active Watchers (Takes up more space now) */}
+					{/* Active Watchers Column */}
 					<div className="lg:col-span-2 space-y-6">
 						<Card className="h-full border-border shadow-sm flex flex-col">
 							<CardHeader className="pb-4 border-b border-border/40">
@@ -300,10 +187,13 @@ function SchedulerPage() {
 									<div>
 										<CardTitle className="text-xl flex items-center gap-2">
 											<Activity className="w-5 h-5 text-meadow-green-500" />
-											{t("scheduler.active_watchers")}
+											{t("scheduler.active_watchers", "Active Watchers")}
 										</CardTitle>
 										<CardDescription className="mt-1">
-											{t("scheduler.active_desc")}
+											{t(
+												"scheduler.active_desc",
+												"Monitoring sessions for you",
+											)}
 										</CardDescription>
 									</div>
 									<Badge variant="success" className="animate-pulse">
@@ -313,47 +203,93 @@ function SchedulerPage() {
 							</CardHeader>
 
 							<div className="flex-1 p-0">
-								{tasks.length > 0 ? (
+								{activeWatchers.length > 0 ? (
 									<div className="divide-y divide-border/40">
-										{tasks.map((task) => (
+										{activeWatchers.map((watcher) => (
 											<div
-												key={task.id}
+												key={watcher.id}
 												className="p-4 hover:bg-muted/30 transition-colors flex items-center justify-between group"
 											>
 												<div className="space-y-1">
 													<div className="flex items-center gap-2">
 														<h3 className="font-medium text-foreground">
-															{task.venue}
+															{watcher.targetSession?.venue?.name
+																? `${watcher.targetSession.venue.name} (${watcher.targetSession.facilityTypeName})`
+																: `Session @ ${watcher.venueId}`}
 														</h3>
-														<Badge variant="default" size="sm">
-															{task.status}
+														<Badge
+															variant={
+																watcher.status === "ACTIVE"
+																	? "default"
+																	: "secondary"
+															}
+															size="sm"
+														>
+															{watcher.status}
 														</Badge>
 													</div>
 													<div className="flex items-center gap-4 text-sm text-muted-foreground">
 														<span className="flex items-center gap-1">
-															<CheckCircle2 size={14} /> {task.date}
+															<CheckCircle2 size={14} />{" "}
+															{new Date(watcher.date).toLocaleDateString()}
 														</span>
 														<span className="flex items-center gap-1">
-															<Clock size={14} /> {task.timeRange}
+															<Clock size={14} /> {watcher.startTime} -{" "}
+															{watcher.endTime}
 														</span>
 													</div>
 												</div>
 
-												<div className="flex items-center gap-4">
-													<div className="text-right hidden sm:block">
+												<div className="flex items-center gap-2">
+													<button
+														type="button"
+														className="text-right hidden sm:block mr-4 cursor-pointer hover:bg-muted px-2 py-1 rounded transition-colors bg-transparent border-none appearance-none"
+														onClick={() => setSelectedWatcherId(watcher.id)}
+													>
 														<p className="text-2xl font-semibold text-pacific-blue-600">
-															{task.notifications}
+															{watcher.totalHits}
 														</p>
 														<p className="text-xs text-muted-foreground uppercase tracking-wider">
-															{t("scheduler.hits")}
+															{t("scheduler.hits", "Hits")}
 														</p>
-													</div>
+													</button>
+
+													{watcher.status === "ACTIVE" ? (
+														<Button
+															variant="ghost"
+															size="sm"
+															className="text-amber-500 hover:bg-amber-50 hover:text-amber-600"
+															onClick={() =>
+																handleUpdateWatcher(watcher.id, "pause")
+															}
+															title={t("scheduler.pause", "Pause")}
+														>
+															<Pause size={18} />
+														</Button>
+													) : (
+														<Button
+															variant="ghost"
+															size="sm"
+															className="text-meadow-green-600 hover:bg-meadow-green-50"
+															onClick={() =>
+																handleUpdateWatcher(watcher.id, "resume")
+															}
+															title={t("scheduler.resume", "Resume")}
+														>
+															<Play size={18} />
+														</Button>
+													)}
+
 													<Button
 														variant="ghost"
 														size="sm"
 														className="text-destructive hover:bg-destructive/10"
+														onClick={() =>
+															handleUpdateWatcher(watcher.id, "delete")
+														}
+														title={t("scheduler.delete", "Delete")}
 													>
-														<Trash2 size={16} />
+														<Trash2 size={18} />
 													</Button>
 												</div>
 											</div>
@@ -364,7 +300,7 @@ function SchedulerPage() {
 										<AlertCircle className="w-12 h-12 mb-4 opacity-50" />
 										<p className="text-lg font-medium">No active watchers</p>
 										<p className="text-sm">
-											add a watcher via the Booking page to start monitoring.
+											Add a watcher via the Booking page to start monitoring.
 										</p>
 									</div>
 								)}
@@ -375,13 +311,24 @@ function SchedulerPage() {
 					{/* Settings Column */}
 					<div className="lg:col-span-1 space-y-6">
 						{/* Webhook Configuration */}
-						<Card className="border-pacific-blue-100 shadow-sm">
+						<Card className="border-pacific-blue-100 shadow-sm relative overflow-hidden">
+							{/* Decorative accent */}
+							<div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-pacific-blue-400 to-meadow-green-400" />
+
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2 text-base">
-									<Bell className="w-4 h-4 text-pacific-blue-500" />
-									{t("scheduler.notification_settings")}
+									<Settings className="w-4 h-4 text-pacific-blue-500" />
+									{t(
+										"scheduler.notification_settings",
+										"Notification Settings",
+									)}
 								</CardTitle>
-								<CardDescription>{t("scheduler.webhook_desc")}</CardDescription>
+								<CardDescription>
+									{t(
+										"scheduler.webhook_desc",
+										"Configure where notifications are sent.",
+									)}
+								</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-4">
 								<div className="space-y-2">
@@ -389,33 +336,67 @@ function SchedulerPage() {
 										htmlFor="webhook-url"
 										className="text-sm font-medium text-foreground"
 									>
-										{t("scheduler.webhook_label")}
+										{t("scheduler.webhook_label", "Discord Webhook URL")}
 									</label>
 									<Input
 										id="webhook-url"
 										placeholder="https://discord.com/api/webhooks/..."
-										value={webhookUrl}
-										onChange={(e) => setWebhookUrl(e.target.value)}
+										value={webhookUrlInput}
+										onChange={(e) => setWebhookUrlInput(e.target.value)}
 										className="text-sm"
 									/>
 									<p className="text-xs text-muted-foreground">
-										{t("scheduler.webhook_hint")}
+										{t(
+											"scheduler.webhook_hint",
+											"Paste your Discord Channel Webhook URL here.",
+										)}
 									</p>
 								</div>
+
+								{webhookStatus && (
+									<div
+										className={`text-xs p-2 rounded flex items-center gap-1.5 ${webhookStatus.success ? "bg-meadow-green-50 text-meadow-green-700" : "bg-destructive/10 text-destructive"}`}
+									>
+										{webhookStatus.success ? (
+											<CheckCircle2 size={12} />
+										) : (
+											<AlertCircle size={12} />
+										)}
+										{webhookStatus.message}
+									</div>
+								)}
 							</CardContent>
-							<CardFooter>
+							<CardFooter className="flex gap-2">
 								<Button
 									onClick={handleSaveWebhook}
 									size="sm"
-									variant="secondary"
-									className="w-full"
+									variant="primary"
+									className="flex-1 bg-pacific-blue-600 hover:bg-pacific-blue-700"
+									disabled={isSavingWebhook}
 								>
-									{t("scheduler.save_config")}
+									{isSavingWebhook ? (
+										<Loader2 className="w-4 h-4 animate-spin" />
+									) : (
+										t("scheduler.save", "Save")
+									)}
+								</Button>
+								<Button
+									onClick={handleTestWebhook}
+									size="sm"
+									variant="secondary"
+									className="flex-1"
+									disabled={isTestingWebhook || !webhookUrlInput}
+								>
+									{isTestingWebhook ? (
+										<Loader2 className="w-4 h-4 animate-spin" />
+									) : (
+										t("scheduler.test", "Test")
+									)}
 								</Button>
 							</CardFooter>
 						</Card>
 
-						{/* Info Card (formerly New Watcher placeholder) */}
+						{/* Info Card */}
 						<Card className="bg-muted/30 border-dashed border-2">
 							<CardContent className="pt-6 text-center text-muted-foreground space-y-2">
 								<p className="text-sm">
@@ -423,7 +404,10 @@ function SchedulerPage() {
 									page and select a session to monitor.
 								</p>
 								<Link to="/booking">
-									<Button variant="ghost" className="text-pacific-blue-600">
+									<Button
+										variant="ghost"
+										className="text-pacific-blue-600 hover:bg-pacific-blue-50"
+									>
 										Go to Booking
 									</Button>
 								</Link>
@@ -431,6 +415,12 @@ function SchedulerPage() {
 						</Card>
 					</div>
 				</div>
+
+				<WatcherHitsModal
+					watcherId={selectedWatcherId}
+					open={!!selectedWatcherId}
+					onClose={() => setSelectedWatcherId(null)}
+				/>
 			</div>
 		</div>
 	);
