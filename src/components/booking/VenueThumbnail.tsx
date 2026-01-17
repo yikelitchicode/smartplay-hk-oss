@@ -125,6 +125,14 @@ export const VenueThumbnail = memo(function VenueThumbnail({
 								i18n.language,
 							)}
 						</span>
+						{venue.distance !== undefined && (
+							<>
+								<div className="w-px h-3 bg-white/20 mx-1" />
+								<span className="text-xs font-medium text-white/90">
+									{venue.distance.toFixed(1)} km
+								</span>
+							</>
+						)}
 					</div>
 				</div>
 

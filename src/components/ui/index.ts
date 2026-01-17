@@ -1,4 +1,10 @@
-// UI Components
+export type { AccordionProps } from "./Accordion";
+export {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "./Accordion";
 
 export type { AlertProps } from "./Alert";
 export { Alert } from "./Alert";

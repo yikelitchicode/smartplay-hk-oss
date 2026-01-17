@@ -36,6 +36,7 @@ export interface NormalizedVenue {
 	districtNameSc?: string | null;
 	region: RegionType;
 	imageUrl: string;
+	distance?: number; // Distance in km from user location
 	facilities: {
 		[key: string]: NormalizedFacility;
 	};

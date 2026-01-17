@@ -86,10 +86,10 @@ export function WatcherHitsModal({
 				<div className="border-b border-border/40 pb-4">
 					<h3 className="text-lg font-semibold flex items-center gap-2">
 						<ActivityIcon />
-						{t("scheduler.hits_history", "Hit History")}
+						{t("scheduler:hits_history", "Hit History")}
 					</h3>
 					<p className="text-sm text-muted-foreground">
-						{t("scheduler.hits_desc", "Recent checks for this watcher.")}
+						{t("scheduler:hits_desc", "Recent checks for this watcher.")}
 					</p>
 				</div>
 
@@ -107,13 +107,13 @@ export function WatcherHitsModal({
 								size="sm"
 								onClick={() => watcherId && loadHits(watcherId)}
 							>
-								Retry
+								{t("scheduler:retry", "Retry")}
 							</Button>
 						</div>
 					) : hits.length === 0 ? (
 						<div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
 							<Clock className="w-8 h-8 mb-2 opacity-50" />
-							<p>No hits recorded yet.</p>
+							<p>{t("scheduler:no_hits_yet", "No hits recorded yet.")}</p>
 						</div>
 					) : (
 						<div className="space-y-3">
@@ -133,8 +133,8 @@ export function WatcherHitsModal({
 												className={`font-medium ${hit.available ? "text-meadow-green-700" : "text-muted-foreground"}`}
 											>
 												{hit.available
-													? t("scheduler.status_available", "Available")
-													: t("scheduler.status_unavailable", "Unavailable")}
+													? t("scheduler:status_available", "Available")
+													: t("scheduler:status_unavailable", "Unavailable")}
 											</p>
 											<p className="text-xs text-muted-foreground/70">
 												{formatDate(hit.checkedAt)}
@@ -145,7 +145,7 @@ export function WatcherHitsModal({
 									{hit.notificationSent && (
 										<div className="flex items-center gap-1.5 text-xs text-pacific-blue-600 bg-pacific-blue-50 px-2 py-1 rounded-full">
 											<Bell className="w-3 h-3" />
-											<span>Notified</span>
+											<span>{t("scheduler:status_notified", "Notified")}</span>
 										</div>
 									)}
 									{hit.notificationError && (
@@ -154,7 +154,7 @@ export function WatcherHitsModal({
 											title={hit.notificationError}
 										>
 											<AlertCircle className="w-3 h-3" />
-											<span>Failed</span>
+											<span>{t("scheduler:status_failed", "Failed")}</span>
 										</div>
 									)}
 								</div>

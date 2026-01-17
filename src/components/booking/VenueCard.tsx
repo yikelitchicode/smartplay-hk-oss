@@ -1,5 +1,5 @@
 import { Bell, Trophy } from "lucide-react";
-import { type JSX, memo } from "react";
+import { type JSX, memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { NormalizedSession, NormalizedVenue } from "@/lib/booking/types";
 import { resolveLocalizedName } from "@/lib/i18n-utils";
@@ -17,6 +17,31 @@ export const VenueCard = memo(function VenueCard({
 	onWatchClick,
 }: VenueCardProps): JSX.Element {
 	const { t, i18n } = useTranslation(["booking"]);
+
+	const sortedFacilities = useMemo(() => {
+		return Object.entries(venue.facilities).sort(([, a], [, b]) => {
+			const nameA = resolveLocalizedName(
+				{
+					name: a.name,
+					nameEn: a.nameEn,
+					nameTc: a.nameTc,
+					nameSc: a.nameSc,
+				},
+				i18n.language,
+			);
+			const nameB = resolveLocalizedName(
+				{
+					name: b.name,
+					nameEn: b.nameEn,
+					nameTc: b.nameTc,
+					nameSc: b.nameSc,
+				},
+				i18n.language,
+			);
+			return nameA.localeCompare(nameB);
+		});
+	}, [venue.facilities, i18n.language]);
+
 	return (
 		<div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
 			{/* Venue Header */}
@@ -39,7 +64,7 @@ export const VenueCard = memo(function VenueCard({
 					</h3>
 
 					<div className="mt-4 space-y-6">
-						{Object.entries(venue.facilities).map(([facKey, facility]) => {
+						{sortedFacilities.map(([facKey, facility]) => {
 							if (facility.sessions.length === 0) return null;
 
 							return (

@@ -1,5 +1,7 @@
-import { AlertTriangle, Calendar, Clock, MapPin } from "lucide-react";
+import { useRouter } from "@tanstack/react-router";
+import { AlertTriangle, Calendar, Clock, Loader2, MapPin } from "lucide-react";
 import type { JSX } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -20,7 +22,68 @@ export function BookingModal({
 	onConfirm,
 }: BookingModalProps): JSX.Element | null {
 	const { t, i18n } = useTranslation(["booking"]);
+	const router = useRouter();
+	const [status, setStatus] = useState<
+		"idle" | "checking" | "available" | "unavailable" | "error"
+	>("idle");
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
 	if (!session || !venue) return null;
+
+	const handleConfirm = async () => {
+		if (session.isPassed) return;
+
+		setStatus("checking");
+		setErrorMessage(null);
+
+		try {
+			const { checkSessionAvailability } = await import(
+				"@/server-functions/booking"
+			);
+
+			// Check real-time availability
+			const result = await checkSessionAvailability({
+				data: {
+					venueId: venue.id,
+					facilityCode: session.facilityId,
+					date: session.date, // Already in YYYY-MM-DD format
+					startTime: session.startTime,
+					endTime: session.endTime,
+				},
+			});
+
+			// Always invalidate router cache to refresh data, regardless of result
+			// This ensures database updates (e.g. marking as unavailable) are reflected in UI
+			await router.invalidate();
+
+			if (result.success && result.data?.isAvailable) {
+				setStatus("available");
+				// Proceed to booking after short delay to show success state
+				setTimeout(() => {
+					onConfirm();
+					setStatus("idle");
+				}, 500);
+			} else {
+				setStatus("unavailable");
+				setErrorMessage(
+					t(
+						"booking:availability_check.no_longer_available",
+						"This session is no longer available",
+					),
+				);
+			}
+		} catch (error) {
+			setStatus("error");
+			setErrorMessage(
+				error instanceof Error
+					? error.message
+					: t(
+							"booking:availability_check.failed",
+							"Failed to verify availability. Please try again.",
+						),
+			);
+		}
+	};
 
 	return (
 		<Modal
@@ -175,26 +238,53 @@ export function BookingModal({
 							</p>
 						</div>
 
+						{/* Error Message */}
+						{(status === "unavailable" || status === "error") &&
+							errorMessage && (
+								<div className="p-3 bg-destructive/10 text-destructive text-sm rounded-lg text-center font-medium animate-in slide-in-from-top-1">
+									{errorMessage}
+								</div>
+							)}
+
 						<div className="space-y-3">
 							<Button
 								variant="primary"
 								size="lg"
 								className="w-full text-base font-bold h-14 rounded-xl shadow-lg shadow-primary/20"
-								onClick={onConfirm}
-								disabled={session.isPassed}
+								onClick={handleConfirm}
+								disabled={
+									session.isPassed ||
+									status === "checking" ||
+									status === "unavailable"
+								}
 								aria-describedby={
 									session.isPassed ? "time-passed-hint" : undefined
 								}
 							>
-								{session.isPassed
-									? t("booking:time_slot_passed")
-									: t("booking:confirm_booking")}
+								{status === "checking" ? (
+									<span className="flex items-center gap-2">
+										<Loader2 size={18} className="animate-spin" />
+										{t(
+											"booking:availability_check.checking",
+											"Verifying availability...",
+										)}
+									</span>
+								) : status === "available" ? (
+									<span className="flex items-center gap-2">
+										✓ {t("booking:availability_check.available", "Available!")}
+									</span>
+								) : session.isPassed ? (
+									t("booking:time_slot_passed")
+								) : (
+									t("booking:confirm_booking")
+								)}
 							</Button>
 							<Button
 								variant="ghost"
 								size="lg"
 								className="w-full h-12 text-gray-500 font-medium hover:bg-porcelain-50 rounded-xl"
 								onClick={onClose}
+								disabled={status === "checking"}
 							>
 								{t("booking:cancel")}
 							</Button>

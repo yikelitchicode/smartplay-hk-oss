@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Activity, CalendarDays, Home, Menu } from "lucide-react";
+import { Activity, CalendarDays, Code, Home, Info, Menu } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./LanguageSwitcher";
@@ -60,10 +60,11 @@ export default function Header(): React.ReactNode {
 		const path = location.pathname;
 		if (path === "/") return t("nav.home");
 		if (path === "/booking") return t("nav.booking");
+		if (path === "/docs/webhooks") return t("nav.developer");
 		return t("nav.home"); // Default fallback
 	}, [location.pathname, t]);
 
-	const navigationItems = useMemo<NavigationItem[]>(
+	const mainNavigationItems = useMemo<NavigationItem[]>(
 		() => [
 			{
 				id: "home",
@@ -89,6 +90,24 @@ export default function Header(): React.ReactNode {
 				to: "/scheduler",
 				icon: <CalendarDays size={20} />,
 			},
+			{
+				id: "about",
+				label: t("nav.about"),
+				to: "/about",
+				icon: <Info size={20} />,
+			},
+		],
+		[t],
+	);
+
+	const footerNavigationItems = useMemo<NavigationItem[]>(
+		() => [
+			{
+				id: "developer",
+				label: t("nav.developer"),
+				to: "/docs/webhooks",
+				icon: <Code size={20} />,
+			},
 		],
 		[t],
 	);
@@ -107,7 +126,10 @@ export default function Header(): React.ReactNode {
 
 	return (
 		<>
-			<header className="p-4 flex items-center justify-between bg-card border-b border-border shadow-lg z-40 sticky top-0">
+			<header
+				className="h-[70px] px-4 flex items-center justify-between bg-card border-b border-border shadow-lg z-40 sticky top-0"
+				style={{ "--header-height": "70px" } as React.CSSProperties}
+			>
 				<div className="flex items-center">
 					<Button
 						variant="ghost"
@@ -143,11 +165,22 @@ export default function Header(): React.ReactNode {
 				size="lg"
 				title={t("nav.title")}
 			>
-				<NavigationList
-					items={navigationItems}
-					onItemClick={handleItemClick}
-					className="p-4"
-				/>
+				<div className="flex flex-col h-full min-h-[calc(100vh-65px)]">
+					<div className="flex-1">
+						<NavigationList
+							items={mainNavigationItems}
+							onItemClick={handleItemClick}
+							className="p-4"
+						/>
+					</div>
+					<div className="mt-auto border-t border-border/50 bg-muted/5">
+						<NavigationList
+							items={footerNavigationItems}
+							onItemClick={handleItemClick}
+							className="p-4"
+						/>
+					</div>
+				</div>
 			</Drawer>
 		</>
 	);

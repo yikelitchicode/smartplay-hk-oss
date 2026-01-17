@@ -4,9 +4,11 @@ import {
 	MapPin,
 	RotateCcw,
 	Search,
+	Target,
 } from "lucide-react";
 import { type JSX, useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/Button";
 import { ScrollArea } from "@/components/ui/ScrollArea";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import {
@@ -14,6 +16,7 @@ import {
 	type SelectGroupType,
 	type SelectOptionType,
 } from "@/components/ui/Select";
+import { DISTRICT_COORDINATES, type DistrictCoords } from "@/data/districts";
 import type { FacilityGroup, PriceType, RegionType } from "@/lib/booking/types";
 import {
 	type AvailabilityTheme,
@@ -21,6 +24,7 @@ import {
 } from "@/lib/booking/utils";
 import { resolveLocalizedName } from "@/lib/i18n-utils";
 import type { MetadataResult } from "@/services/booking.service";
+import { getDistance } from "@/utils/location";
 
 interface FilterBarProps {
 	// Search Data
@@ -74,6 +78,11 @@ interface FilterBarProps {
 
 	// Metadata
 	metadata: MetadataResult;
+
+	// GPS
+	onLocate: () => void;
+	isLocating: boolean;
+	userLocation: DistrictCoords | null;
 }
 
 const REGIONS: RegionType[] = [
@@ -101,6 +110,9 @@ export function FilterBar({
 	facilityStyles,
 	onResetFilters,
 	metadata,
+	onLocate,
+	isLocating,
+	userLocation,
 }: FilterBarProps): JSX.Element {
 	const { t, i18n } = useTranslation(["booking"]);
 	const lang = i18n.language;
@@ -112,11 +124,37 @@ export function FilterBar({
 		"All",
 	);
 
-	// Filter districts based on selected region
+	// Filter districts based on selected region and sort by distance if location available
 	const filteredDistricts = useMemo(() => {
-		if (selectedRegion === "All") return availableDistricts;
-		return availableDistricts.filter((d) => d.region === selectedRegion);
-	}, [selectedRegion, availableDistricts]);
+		let districts = availableDistricts;
+
+		// 1. Filter by Region
+		if (selectedRegion !== "All") {
+			districts = districts.filter((d) => d.region === selectedRegion);
+		}
+
+		// 2. Sort by Distance (if GPS enabled)
+		if (userLocation) {
+			return [...districts].sort((a, b) => {
+				const coordsA =
+					DISTRICT_COORDINATES[a.code as keyof typeof DISTRICT_COORDINATES];
+				const coordsB =
+					DISTRICT_COORDINATES[b.code as keyof typeof DISTRICT_COORDINATES];
+
+				// If coordinates missing, push to end
+				if (!coordsA && !coordsB) return 0;
+				if (!coordsA) return 1;
+				if (!coordsB) return -1;
+
+				const distA = getDistance(userLocation, coordsA);
+				const distB = getDistance(userLocation, coordsB);
+
+				return distA - distB;
+			});
+		}
+
+		return districts;
+	}, [selectedRegion, availableDistricts, userLocation]);
 
 	// Handle Region Click
 	const handleRegionClick = useCallback(
@@ -316,6 +354,21 @@ export function FilterBar({
 						<MapPin size={18} className="text-primary" />
 						<span>{t("booking:location")}</span>
 					</div>
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={onLocate}
+						disabled={isLocating}
+						className={`h-8 gap-2 border border-gray-200 ${userLocation ? "border-primary/50 text-primary bg-primary/5" : ""}`}
+						title={t("Locate nearby districts")}
+					>
+						<Target
+							className={`w-3.5 h-3.5 ${isLocating ? "animate-spin" : ""}`}
+						/>
+						<span className="text-xs">
+							{isLocating ? "Locating..." : userLocation ? "Nearby" : "GPS"}
+						</span>
+					</Button>
 				</div>
 
 				{/* Region Tabs */}
