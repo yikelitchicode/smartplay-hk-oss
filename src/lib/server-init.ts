@@ -37,18 +37,23 @@ export async function ensureSchedulerInitialized(): Promise<void> {
 			"🔄 Loading server-init.ts (VERSION: PATCHED-WITH-SCHEDULER-START)...",
 		);
 
-		// Check if scheduler is enabled via env/arg
+		// Check if any features are enabled
 		const { envConfig } = await import("@/lib/env");
-		if (!envConfig.enableScheduler) {
-			serverLogger.info("⏸️ Crawler Scheduler is disabled via configuration");
+		const schedulerEnabled = envConfig.enableScheduler;
+		const watcherEnabled = envConfig.enableWatcher;
+
+		if (!schedulerEnabled && !watcherEnabled) {
+			serverLogger.info(
+				"⏸️ Both Crawler Scheduler and Watcher are disabled via configuration",
+			);
 			initialized = true;
 			return;
 		}
 
-		serverLogger.info("🚀 Initializing Crawler Scheduler...");
+		serverLogger.info("🚀 Initializing Server Components...");
 
 		try {
-			// Step 1: Database health check
+			// Step 1: Database health check (required for both)
 			serverLogger.info("📍 Step 1/3: Checking database health...");
 			const healthStatus = await healthChecker.check({ timeout: 5000 });
 
@@ -62,31 +67,39 @@ export async function ensureSchedulerInitialized(): Promise<void> {
 				`✅ Database healthy (latency: ${healthStatus.latency}ms)`,
 			);
 
-			// Step 2: Initialize crawler scheduler
-			serverLogger.info("📍 Step 2/3: Initializing Crawler Scheduler...");
-			const { initScheduler: _initScheduler } = await import("@/lib/crawler");
-			const scheduler = _initScheduler();
+			// Step 2: Initialize crawler scheduler (if enabled)
+			if (schedulerEnabled) {
+				serverLogger.info("📍 Step 2/3: Initializing Crawler Scheduler...");
+				const { initScheduler: _initScheduler } = await import("@/lib/crawler");
+				const scheduler = _initScheduler();
 
-			// Start the scheduler
-			scheduler.start();
+				// Start the scheduler
+				scheduler.start();
 
-			if (scheduler.isActive()) {
-				serverLogger.info("✅ Crawler Scheduler is running");
+				if (scheduler.isActive()) {
+					serverLogger.info("✅ Crawler Scheduler is running");
+				} else {
+					serverLogger.warn(
+						"⚠️ Crawler Scheduler failed to start (check logs for details)",
+					);
+				}
 			} else {
-				serverLogger.warn(
-					"⚠️ Crawler Scheduler failed to start (check logs for details)",
-				);
+				serverLogger.info("⏸️ Crawler Scheduler is disabled via configuration");
 			}
 
-			// Step 3: Initialize watch schedulers
-			serverLogger.info("📍 Step 3/3: Initializing Watch Schedulers...");
-			await initializeWatchSchedulers();
+			// Step 3: Initialize watch schedulers (if enabled)
+			if (watcherEnabled) {
+				serverLogger.info("📍 Step 3/3: Initializing Watch Schedulers...");
+				await initializeWatchSchedulers();
+			} else {
+				serverLogger.info("⏸️ Watch Schedulers are disabled via configuration");
+			}
 
 			initialized = true;
 		} catch (error) {
 			serverLogger.error(
 				{ err: error },
-				"❌ Failed to initialize Crawler Scheduler",
+				"❌ Failed to initialize server components",
 			);
 			// Re-throw for proper error handling upstream
 			throw error;
@@ -118,7 +131,16 @@ async function initializeWatchSchedulers(): Promise<void> {
 		notifications: watchConfig.notifications,
 		webhook: watchConfig.webhook,
 	});
-	const watchEvaluator = new WatchEvaluator(notificationService);
+	const { RefreshStrategyResolver } = await import(
+		"@/lib/watch/services/refresh-strategy-resolver"
+	);
+	const strategyResolver = new RefreshStrategyResolver(
+		watchConfig.refreshStrategy,
+	);
+	const watchEvaluator = new WatchEvaluator(
+		notificationService,
+		strategyResolver,
+	);
 
 	// Initialize and start evaluation scheduler
 	if (watchConfig.schedule.enabled) {

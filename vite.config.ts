@@ -80,7 +80,6 @@ function serverOnlyStubsPlugin(): Plugin {
 			// 1. Stub npm packages
 			for (const pkg of serverOnlyPackages) {
 				if (id === pkg || id.startsWith(`${pkg}/`)) {
-					console.warn(`[server-only-stubs] Intercepted package: ${id}`);
 					return `\0virtual:server-only-stub:${id}`;
 				}
 			}
@@ -92,7 +91,6 @@ function serverOnlyStubsPlugin(): Plugin {
 				normalizedId.includes("generated/prisma") ||
 				normalizedId === "@/db"
 			) {
-				console.warn(`[server-only-stubs] Intercepted local module: ${id}`);
 				return `\0virtual:server-only-stub:${id}`;
 			}
 
@@ -100,8 +98,6 @@ function serverOnlyStubsPlugin(): Plugin {
 		},
 		load(id) {
 			if (id.startsWith("\0virtual:server-only-stub:")) {
-				const name = id.replace("\0virtual:server-only-stub:", "");
-				console.warn(`[server-only-stubs] Loading stub for: ${name}`);
 				return stubContent;
 			}
 			return null;
@@ -114,7 +110,6 @@ function serverOnlyStubsPlugin(): Plugin {
 				normalizedId.includes("src/db.ts") ||
 				normalizedId.includes("generated/prisma/")
 			) {
-				console.warn(`[server-only-stubs] Neutralizing file content: ${id}`);
 				return {
 					code: stubContent,
 					map: null,

@@ -76,6 +76,10 @@ const envSchema = z.object({
 		.string()
 		.default("true")
 		.transform((val) => val.toLowerCase() === "true"),
+	ENABLE_WATCHER: z
+		.string()
+		.default("true")
+		.transform((val) => val.toLowerCase() === "true"),
 });
 
 /**
@@ -152,6 +156,7 @@ export const envConfig = {
 
 	// Features
 	enableScheduler: env.ENABLE_SCHEDULER,
+	enableWatcher: env.ENABLE_WATCHER,
 } as const;
 
 export type EnvConfig = typeof envConfig;
