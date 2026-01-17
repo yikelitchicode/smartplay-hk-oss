@@ -136,6 +136,12 @@ model Session {
   createdAt          DateTime     @default(now())
   facilityTypeNameSc String?
   facilityTypeNameTc String?
+
+  // Verification tracking fields
+  lastVerifiedAt     DateTime?    // Last time availability was verified
+  verifiedBy         VerificationSource? // Source of last verification (CRAWL or USER)
+  lastAvailableAt    DateTime?    // Last time session was confirmed available
+
   crawlJob           CrawlJob     @relation(fields: [crawlJobId], references: [id], onDelete: Cascade)
   facilityType       FacilityType @relation(fields: [facilityCode], references: [code])
   venue              Facility     @relation(fields: [venueId], references: [id])
@@ -148,6 +154,8 @@ model Session {
   @@index([venueId, date])
   @@index([date, available])
   @@index([date, facilityCode])
+  @@index([lastVerifiedAt])
+  @@index([available, lastVerifiedAt])
 }
 
 model DeadLetterEntry {
@@ -194,6 +202,11 @@ enum DLQStatus {
   PERMANENT
 }
 
+enum VerificationSource {
+  CRAWL
+  USER
+}
+
 // ============================================
 // Browser Session (Anonymous User Tracking)
 // ============================================
@@ -218,6 +231,7 @@ model Watcher {
   id                String         @id @default(cuid())
   browserSessionId  String         // FK to BrowserSession (anonymous user)
   targetSessionId   String?        // FK to Session (facility booking being watched, nullable if deleted)
+  webhookUrl        String?        // User's callback webhook URL (required for new watchers)
 
   // Watch criteria (denormalized for query performance)
   venueId           String
