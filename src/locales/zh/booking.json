@@ -27,6 +27,7 @@
 	"all_centers": "所有場地",
 	"passed": "已過時",
 	"cancel": "取消",
+	"close": "關閉",
 	"time_slot_passed": "場次已過時",
 	"passed_hint": "此場次已過時，無法預訂。",
 	"watcher_added": "監控器已添加",
@@ -35,7 +36,23 @@
 		"title": "添加場地監控",
 		"availability_watcher": "場地監控器",
 		"desc": "當此時段釋出時，我們會立即通知您。",
-		"confirm": "開始監控"
+		"confirm": "開始監控",
+		"webhook_url_label": "Webhook 網址",
+		"webhook_url_placeholder": "https://discord.com/api/webhooks/...",
+		"webhook_url_invalid": "請輸入有效的 HTTPS webhook 網址（Discord/Slack）",
+		"webhook_url_help": "當時段可供預訂時，我們會向此網址發送通知。",
+		"success": "監控器已啟動！",
+		"success_desc": "當此時段可供預訂時，您將立即收到通知。",
+		"security_check": "安全驗證",
+		"error_webhook_url": "請輸入有效的 webhook 網址",
+		"error_create_failed": "建立監控器失敗，請重試。",
+		"error_security_check": "安全驗證失敗，請重試。",
+		"activating": "正在啟動監控器...",
+		"configure": "設定",
+		"using_configured_webhook": "使用 Scheduler 中設定的 Webhook",
+		"no_webhook_configured": "未設定 Webhook",
+		"configure_webhook_hint": "您需要在 Scheduler 中設定通知 Webhook 才能使用此功能。",
+		"go_to_scheduler": "前往 Scheduler"
 	},
 	"all": "全部",
 	"hong_kong_island": "香港島",
@@ -45,5 +62,11 @@
 	"new_terr_short": "新界",
 	"selected": "已選擇",
 	"fully_booked": "已滿",
-	"official_source_disclaimer": "請以官方網站的供應情況為準。"
+	"official_source_disclaimer": "請以官方網站的供應情況為準。",
+	"availability_check": {
+		"checking": "正在確認供應情況...",
+		"available": "可預訂！",
+		"no_longer_available": "此時段已不可預訂",
+		"failed": "確認供應情況失敗，請重試。"
+	}
 }

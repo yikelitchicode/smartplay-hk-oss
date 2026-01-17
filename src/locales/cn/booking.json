@@ -27,15 +27,32 @@
 	"all_centers": "所有场地",
 	"passed": "已过时",
 	"cancel": "取消",
+	"close": "关闭",
 	"time_slot_passed": "场次已过时",
 	"passed_hint": "此场次已过时，无法预订。",
 	"watcher_added": "监控器已添加",
 	"watcher_added_desc": "当此时段可预订时，您将收到通知。",
 	"watcher_modal": {
 		"title": "添加场地监控",
-		"availability_watcher": "場地監控器",
-		"desc": "當此時段釋出時，我們會立即通知您。",
-		"confirm": "开始监控"
+		"availability_watcher": "场地监控器",
+		"desc": "当此时段释放出时，我们会立即通知您。",
+		"confirm": "开始监控",
+		"webhook_url_label": "Webhook 网址",
+		"webhook_url_placeholder": "https://discord.com/api/webhooks/...",
+		"webhook_url_invalid": "请输入有效的 HTTPS webhook 网址（Discord/Slack）",
+		"webhook_url_help": "当时段可供预订时，我们会向此网址发送通知。",
+		"success": "监控器已启动！",
+		"success_desc": "当此时段可供预订时，您将立即收到通知。",
+		"security_check": "安全验证",
+		"error_webhook_url": "请输入有效的 webhook 网址",
+		"error_create_failed": "创建监控器失败，请重试。",
+		"error_security_check": "安全验证失败，请重试。",
+		"activating": "正在启动监控器...",
+		"configure": "设置",
+		"using_configured_webhook": "使用 Scheduler 中设置的 Webhook",
+		"no_webhook_configured": "未设置 Webhook",
+		"configure_webhook_hint": "您需要在 Scheduler 中设置通知 Webhook 才能使用此功能。",
+		"go_to_scheduler": "前往 Scheduler"
 	},
 	"all": "全部",
 	"hong_kong_island": "香港岛",
@@ -45,5 +62,11 @@
 	"new_terr_short": "新界",
 	"selected": "已选择",
 	"fully_booked": "已满",
-	"official_source_disclaimer": "请以官方网站的供应情况为准。"
+	"official_source_disclaimer": "请以官方网站的供应情况为准。",
+	"availability_check": {
+		"checking": "正在确认供应情况...",
+		"available": "可预订！",
+		"no_longer_available": "此时段已不可预订",
+		"failed": "确认供应情况失败，请重试。"
+	}
 }

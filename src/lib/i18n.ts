@@ -79,7 +79,7 @@ export async function initializeI18n(lng?: string): Promise<void> {
 		lng, // Use provided lang (from server or undefined for detection)
 		fallbackLng: "en",
 		supportedLngs: ["en", "zh", "cn"],
-		ns: ["common", "home", "booking"],
+		ns: ["common", "home", "booking", "scheduler"],
 		defaultNS: "common",
 		interpolation: {
 			escapeValue: false,

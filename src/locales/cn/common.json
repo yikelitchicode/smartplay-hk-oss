@@ -7,7 +7,9 @@
 		"home": "首页",
 		"booking": "场地查询",
 		"activity": "活动",
-		"scheduler": "日程表"
+		"scheduler": "日程表",
+		"developer": "开发者",
+		"about": "关于"
 	},
 	"footer": {
 		"disclaimer": "免责声明：此为非官方开源工具，与康文署无任何关联。",
@@ -16,25 +18,49 @@
 		"open_source": "在 GitHub 上查看源码",
 		"copyright": "由开源社区用 ❤️ 制作"
 	},
-	"scheduler": {
-		"title": "日程表",
-		"subtitle": "配置自动监测以获取场地空缺通知。",
-		"notification_settings": "通知设置",
-		"webhook_desc": "通过 Webhook 接收更新 (例如 Discord, Slack)。",
-		"webhook_label": "Webhook URL",
-		"webhook_hint": "您的网址将保存在本地浏览器中。",
-		"save_config": "保存配置",
-		"new_watcher": "新增监测",
-		"watcher_desc": "定义新场次的扫描条件。",
-		"active_watchers": "活跃监测",
-		"active_desc": "实时监控场地可用性。",
-		"hits": "命中",
-		"calendar": {
-			"upcoming_activity": "即将到来的活动"
+	"about": {
+		"title": "关于 SmartPlay HK OSS",
+		"subtitle": "以开放技术赋能香港体育社群",
+		"mission": {
+			"title": "我们的使命",
+			"description": "SmartPlay HK OSS 的成立是因为官方网站难以阅读和导航，施加了不必要的限制（如 5 个地区限制），且缺乏某些功能。我们旨在让所有人都能轻松获取体育场地资讯。"
 		},
-		"preview": {
-			"status": "可预订",
-			"view_details": "查看详情"
+		"mechanism": {
+			"title": "运作原理",
+			"description": "此工具作为一个专门的浏览器，高效地扫描官方康文署 SmartPlay 系统为空缺时段。它实时聚合这些数据，为您提供跨所有区域的统一概览。"
+		},
+		"qa": {
+			"title": "常见问题",
+			"items": [
+				{
+					"q": "这是政府官方网站吗？",
+					"a": "不是，这是一个由社群创建的开源项目。它与康乐及文化事务署（LCSD）没有任何关联。"
+				},
+				{
+					"q": "我可以在这里直接预订场地吗？",
+					"a": "不能。本网站仅供查询可用性。您必须前往官方 SmartPlay 网站进行实际预订。"
+				},
+				{
+					"q": "数据是实时的吗？",
+					"a": "是的，但可能会有轻微延迟，因为我们会定期获取数据以避免令官方服务器过载。"
+				},
+				{
+					"q": "你们会存储我的 SmartPlay 登录凭证吗？",
+					"a": "我们不会储存您的任何 SmartPlay 登入凭证。所有数据处理都在您的浏览器本地或通过我们透明的开源后端进行。"
+				},
+				{
+					"q": "什么是 Webhook？如何使用？",
+					"a": "Webhook 让您能在 Discord 或 Slack 等外部平台接收实时通知。只需提供您平台设置中的 Webhook 网址，一旦有场地空缺，我们就会立即发送提示。"
+				},
+				{
+					"q": "监测功能 (Watcher) 如何运作？",
+					"a": "监测器会定期自动扫描您指定的场地时段。当可用状态发生变化（例如从已满变为可预订）时，它会触发通知，让您可以立即进行预订。"
+				},
+				{
+					"q": "支持哪些通知平台？",
+					"a": "我们原生支持 Discord 和 Slack 的格式化信息。您也可以使用通用端点接收原始 JSON 自定义集成数据。"
+				}
+			]
 		}
 	}
 }

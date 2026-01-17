@@ -16,6 +16,12 @@
 			"description": "浏览并监控活动名额及报名状态。",
 			"cta": "即将推出",
 			"badge": "计划中"
+		},
+		"scheduler": {
+			"title": "监测调度器",
+			"description": "自动监控场地可用性并接收通知。",
+			"cta": "开启调度器",
+			"badge": "新功能"
 		}
 	},
 	"disclaimer": "注意：此为非官方开源工具。所有预订必须透过康文署 SmartPlay 官方网站完成。"

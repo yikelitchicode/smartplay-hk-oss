@@ -22,7 +22,23 @@
 		"title": "Add Availability Watcher",
 		"availability_watcher": "Availability Watcher",
 		"desc": "We will notify you immediately when this session becomes available.",
-		"confirm": "Start Watching"
+		"confirm": "Start Watching",
+		"webhook_url_label": "Webhook URL",
+		"webhook_url_placeholder": "https://discord.com/api/webhooks/...",
+		"webhook_url_invalid": "Please enter a valid HTTPS webhook URL (Discord/Slack)",
+		"webhook_url_help": "We'll send notifications to this URL when the session becomes available.",
+		"success": "Watcher Activated!",
+		"success_desc": "You will receive a notification as soon as this session becomes available.",
+		"security_check": "Security Verification",
+		"error_webhook_url": "Please enter a valid webhook URL",
+		"error_create_failed": "Failed to create watcher. Please try again.",
+		"error_security_check": "Security check failed. Please try again.",
+		"activating": "ACTIVATING WATCHER...",
+		"configure": "Configure",
+		"using_configured_webhook": "Using configured webhook from Scheduler",
+		"no_webhook_configured": "No webhook configured",
+		"configure_webhook_hint": "You need to set up a notification webhook in the Scheduler to use this feature.",
+		"go_to_scheduler": "Go to Scheduler"
 	},
 	"no_venues": "No venues available for this filter.",
 	"no_venues_hint": "Try changing filters or select \"All Facilities\" to see more.",
@@ -35,6 +51,7 @@
 	"all_centers": "All Centers",
 	"passed": "Passed",
 	"cancel": "Cancel",
+	"close": "Close",
 	"time_slot_passed": "Time Slot Passed",
 	"passed_hint": "This time slot has already passed and cannot be booked.",
 	"all": "All",
@@ -45,5 +62,11 @@
 	"new_terr_short": "New Terr.",
 	"selected": "Selected",
 	"fully_booked": "Fully Booked",
-	"official_source_disclaimer": "Official website is the source of truth for availability."
+	"official_source_disclaimer": "Official website is the source of truth for availability.",
+	"availability_check": {
+		"checking": "Verifying availability...",
+		"available": "Available!",
+		"no_longer_available": "This session is no longer available",
+		"failed": "Failed to verify availability. Please try again."
+	}
 }

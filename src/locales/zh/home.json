@@ -16,6 +16,12 @@
 			"description": "瀏覽並監控活動名額及報名狀態。",
 			"cta": "即將推出",
 			"badge": "計劃中"
+		},
+		"scheduler": {
+			"title": "監測排程器",
+			"description": "自動監控場地可用性並接收通知。",
+			"cta": "開啟排程器",
+			"badge": "新功能"
 		}
 	},
 	"disclaimer": "注意：此為非官方開源工具。所有預訂必須透過康文署 SmartPlay 官方網站完成。"
