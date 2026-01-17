@@ -1,0 +1,95 @@
+openapi: 3.1.0
+info:
+  title: SmartPlay HK OSS Webhooks
+  version: 1.0.0
+  description: |
+    Documentation for webhooks sent by the SmartPlay HK OSS automation system.
+    These webhooks notify external systems about session availability changes.
+
+webhooks:
+  sessionUpdate:
+    post:
+      summary: Session Status Update
+      description: Triggered when a watched session becomes available or unavailable.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericWebhookPayload'
+      responses:
+        '200':
+          description: Webhook received successfully
+
+components:
+  schemas:
+    GenericWebhookPayload:
+      type: object
+      properties:
+        version:
+          type: string
+          enum: ['1.0']
+          description: API version of the payload
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for this event
+        event:
+          type: string
+          enum: ['session.available', 'session.unavailable']
+          description: Type of the event
+        created_at:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of when the event occurred
+        data:
+          type: object
+          properties:
+            watcher_id:
+              type: string
+              description: ID of the watcher that triggered this event
+            venue:
+              type: object
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+            facility:
+              type: object
+              properties:
+                code:
+                  type: string
+                name:
+                  type: string
+            session:
+              type: object
+              properties:
+                date:
+                  type: string
+                  format: date
+                  description: YYYY-MM-DD
+                start_time:
+                  type: string
+                  description: HH:MM
+                end_time:
+                  type: string
+                  description: HH:MM
+            availability:
+              type: object
+              properties:
+                previous_state:
+                  type: boolean
+                  description: True if available, False if unavailable
+                current_state:
+                  type: boolean
+                  description: True if available, False if unavailable
+            booking_url:
+              type: string
+              format: uri
+              description: Direct URL to book the session
+      required:
+        - version
+        - id
+        - event
+        - created_at
+        - data
