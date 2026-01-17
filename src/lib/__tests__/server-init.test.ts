@@ -68,7 +68,7 @@ describe("server-init.ts", () => {
 			// Verify try-catch error handling
 			expect(content).toMatch(/try\s*{/);
 			expect(content).toMatch(/}\s*catch\s*\(/);
-			expect(content).toContain("console.error");
+			expect(content).toContain("serverLogger.error");
 		});
 
 		it("should have auto-initialization for server-side", () => {
@@ -95,16 +95,14 @@ describe("server-init.ts", () => {
 	});
 
 	describe("implementation details", () => {
-		it("should import initScheduler from crawler", () => {
+		it("should use dynamic import for crawler", () => {
 			const fs = require("node:fs");
 			const path =
 				"/Users/lst97/Desktop/Work/Code/Projects/smartplay-hk-oss/src/lib/server-init.ts";
 			const content = fs.readFileSync(path, "utf-8");
 
-			// Verify correct import
-			expect(content).toContain(
-				'import { initScheduler } from "@/lib/crawler"',
-			);
+			// Verify dynamic import
+			expect(content).toContain('await import("@/lib/crawler")');
 		});
 
 		it("should log initialization messages", () => {
@@ -114,7 +112,7 @@ describe("server-init.ts", () => {
 			const content = fs.readFileSync(path, "utf-8");
 
 			// Verify logging
-			expect(content).toContain("console.log");
+			expect(content).toContain("serverLogger.info");
 			expect(content).toContain("Initializing Crawler Scheduler");
 		});
 

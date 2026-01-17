@@ -142,6 +142,10 @@ export class MockSessionRepository implements ISessionRepository {
 				const updated: Session = {
 					...existing,
 					available: sessionData.availableSessions > 0,
+					// Preserve verification tracking fields
+					lastVerifiedAt: existing.lastVerifiedAt,
+					verifiedBy: existing.verifiedBy,
+					lastAvailableAt: existing.lastAvailableAt,
 				};
 				this.sessions.set(key, updated);
 			} else {
@@ -164,6 +168,10 @@ export class MockSessionRepository implements ISessionRepository {
 					isPeakHour: false,
 					isOpen: true,
 					createdAt: new Date(),
+					// New verification tracking fields
+					lastVerifiedAt: null,
+					verifiedBy: null,
+					lastAvailableAt: null,
 				};
 				this.sessions.set(key, session);
 			}
