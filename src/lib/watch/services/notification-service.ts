@@ -14,6 +14,7 @@ import type {
 	WebhookConfig,
 	WebhookPayload,
 } from "../types";
+import { formatPayload } from "./payload-formatters";
 
 const logger = createLogger({ module: "notification-service" });
 
@@ -43,41 +44,44 @@ export class NotificationService {
 		browserSessionId: string,
 	): Promise<boolean> {
 		try {
-			// Get user settings
+			// Get user settings for quiet hours and preferences
 			const settings = await db.userSettings.findUnique({
 				where: { browserSessionId },
 			});
 
-			if (!settings || !settings.webhookEnabled || !settings.webhookUrl) {
-				logger.debug(
-					{ watcherId },
-					"Webhook not configured or disabled, skipping notification",
-				);
-				return false;
-			}
+			// Check notification preferences (global switch still applies if desired, or per-watcher)
+			// For now, we respect the global notifyONAvailable/Unavailable flags if they exist
+			// But webhookUrl comes from the watcher
 
-			// Check notification preferences
 			const eventType: "available" | "unavailable" = result.becameAvailable
 				? "available"
 				: "unavailable";
 
-			if (eventType === "available" && !settings.notifyOnAvailable) {
-				logger.debug({ watcherId }, "Notify on available disabled, skipping");
-				return false;
+			if (settings) {
+				if (eventType === "available" && !settings.notifyOnAvailable) {
+					logger.debug({ watcherId }, "Notify on available disabled, skipping");
+					return false;
+				}
+
+				if (eventType === "unavailable" && !settings.notifyOnUnavailable) {
+					logger.debug(
+						{ watcherId },
+						"Notify on unavailable disabled, skipping",
+					);
+					return false;
+				}
+
+				// Check quiet hours
+				if (!(await this.shouldNotify(settings))) {
+					logger.info(
+						{ watcherId },
+						"Quiet hours active, skipping notification",
+					);
+					return false;
+				}
 			}
 
-			if (eventType === "unavailable" && !settings.notifyOnUnavailable) {
-				logger.debug({ watcherId }, "Notify on unavailable disabled, skipping");
-				return false;
-			}
-
-			// Check quiet hours
-			if (!(await this.shouldNotify(settings))) {
-				logger.info({ watcherId }, "Quiet hours active, skipping notification");
-				return false;
-			}
-
-			// Get watcher details for payload
+			// Get watcher details for payload (including local webhookUrl)
 			const watcher = await db.watcher.findUnique({
 				where: { id: watcherId },
 				include: {
@@ -92,6 +96,14 @@ export class NotificationService {
 
 			if (!watcher || !watcher.targetSession) {
 				logger.error({ watcherId }, "Watcher or target session not found");
+				return false;
+			}
+
+			const webhookUrl = watcher.webhookUrl;
+
+			if (!webhookUrl) {
+				// Should not happen if required, but safe check
+				logger.error({ watcherId }, "Watcher has no webhook URL");
 				return false;
 			}
 
@@ -110,10 +122,16 @@ export class NotificationService {
 			};
 
 			// Send webhook with retry logic
-			const success = await this.sendWebhookWithRetry(
-				settings.webhookUrl,
-				payload,
-			);
+			// Pass metadata for enhanced generic payloads
+			// Send webhook with retry logic
+			// Pass metadata for enhanced generic payloads
+			const success = await this.sendWebhookWithRetry(webhookUrl, payload, {
+				watcherId,
+				venueId: venue.id,
+				facilityCode: watcher.facilityCode,
+				previousState: result.previousState,
+				currentState: result.currentState,
+			});
 
 			if (success) {
 				// Update watcher notification timestamp
@@ -151,7 +169,16 @@ export class NotificationService {
 			timestamp: new Date().toISOString(),
 		};
 
-		return this.sendWebhookWithRetry(webhookUrl, payload);
+		// Mock metadata for test
+		const mockMeta = {
+			watcherId: "test-watcher-id",
+			venueId: "test-venue-id",
+			facilityCode: "TENNIS",
+			previousState: false,
+			currentState: true,
+		};
+
+		return this.sendWebhookWithRetry(webhookUrl, payload, mockMeta);
 	}
 
 	/**
@@ -190,12 +217,20 @@ export class NotificationService {
 	 * Send webhook with retry logic
 	 *
 	 * @param webhookUrl - Webhook URL
-	 * @param payload - Webhook payload
+	 * @param payload - Base payload
+	 * @param meta - Additional metadata for standardized payloads
 	 * @returns true if successful
 	 */
 	private async sendWebhookWithRetry(
 		webhookUrl: string,
 		payload: WebhookPayload,
+		meta?: {
+			watcherId?: string;
+			venueId?: string;
+			facilityCode?: string;
+			previousState?: boolean;
+			currentState?: boolean;
+		},
 	): Promise<boolean> {
 		// Validate webhook URL
 		if (!this.validateWebhookUrl(webhookUrl)) {
@@ -204,7 +239,7 @@ export class NotificationService {
 		}
 
 		// Detect webhook type and format payload
-		const formattedPayload = this.formatPayload(webhookUrl, payload);
+		const formattedPayload = formatPayload(webhookUrl, payload, meta);
 
 		let lastError: Error | null = null;
 
@@ -218,6 +253,7 @@ export class NotificationService {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
+						"Bypass-Tunnel-Reminder": "true",
 					},
 					body: JSON.stringify(formattedPayload),
 					signal: AbortSignal.timeout(this.notificationConfig.timeoutMs),
@@ -281,8 +317,11 @@ export class NotificationService {
 		try {
 			const parsed = new URL(url);
 
-			// Must be HTTPS
-			if (parsed.protocol !== "https:") {
+			// Must be HTTPS (except for local testing)
+			const isLocal =
+				parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+
+			if (parsed.protocol !== "https:" && !isLocal) {
 				logger.warn({ protocol: parsed.protocol }, "Webhook must use HTTPS");
 				return false;
 			}
@@ -315,112 +354,6 @@ export class NotificationService {
 			logger.error({ error, url }, "Invalid webhook URL format");
 			return false;
 		}
-	}
-
-	/**
-	 * Format webhook payload based on URL (Discord/Slack/Generic)
-	 *
-	 * @param webhookUrl - Webhook URL
-	 * @param payload - Base payload
-	 * @returns Formatted payload
-	 */
-	private formatPayload(webhookUrl: string, payload: WebhookPayload): unknown {
-		const hostname = new URL(webhookUrl).hostname;
-
-		// Discord webhook
-		if (hostname.includes("discord")) {
-			return {
-				username: "SmartPlay HK Bot",
-				avatar_url: "https://smartplay-hk.oss/logo.png",
-				embeds: [
-					{
-						title:
-							payload.eventType === "available"
-								? "🎾 Facility Available!"
-								: "❌ Facility No Longer Available",
-						color: payload.eventType === "available" ? 5814783 : 16007990,
-						fields: [
-							{
-								name: "Venue",
-								value: payload.venue,
-								inline: true,
-							},
-							{
-								name: "Date",
-								value: payload.date,
-								inline: true,
-							},
-							{
-								name: "Time",
-								value: payload.timeRange,
-								inline: true,
-							},
-							{
-								name: "Facility",
-								value: payload.facility,
-								inline: true,
-							},
-						],
-						url: payload.bookingUrl,
-						timestamp: payload.timestamp,
-					},
-				],
-			};
-		}
-
-		// Slack webhook
-		if (hostname.includes("slack")) {
-			return {
-				text:
-					payload.eventType === "available"
-						? "🎾 Facility Available!"
-						: "❌ Facility No Longer Available",
-				attachments: [
-					{
-						color: payload.eventType === "available" ? "#00BCD4" : "#FF5722",
-						fields: [
-							{
-								title: "Venue",
-								value: payload.venue,
-								short: true,
-							},
-							{
-								title: "Date & Time",
-								value: `${payload.date} ${payload.timeRange}`,
-								short: true,
-							},
-							{
-								title: "Facility",
-								value: payload.facility,
-								short: true,
-							},
-						],
-						actions: [
-							{
-								type: "button",
-								text: "Book Now",
-								url: payload.bookingUrl,
-								style: "primary",
-							},
-						],
-					},
-				],
-			};
-		}
-
-		// Generic webhook
-		return {
-			event: `session.${payload.eventType}`,
-			timestamp: payload.timestamp,
-			data: {
-				venue: payload.venue,
-				facility: payload.facility,
-				date: payload.date,
-				startTime: payload.timeRange.split(" - ")[0],
-				endTime: payload.timeRange.split(" - ")[1],
-				bookingUrl: payload.bookingUrl,
-			},
-		};
 	}
 
 	/**

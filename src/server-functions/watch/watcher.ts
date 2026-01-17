@@ -14,9 +14,11 @@ import {
 } from "@/lib/server-utils/error-handler";
 import { loadConfig } from "@/lib/watch/config";
 import { NotificationService } from "@/lib/watch/services/notification-service";
+import { RefreshStrategyResolver } from "@/lib/watch/services/refresh-strategy-resolver";
 import { TurnstileVerifier } from "@/lib/watch/services/turnstile-verifier";
 import { WatchEvaluator } from "@/lib/watch/services/watch-evaluator";
 import { WatchManager } from "@/lib/watch/services/watch-manager";
+import { verifyWebhookConnectivity } from "@/lib/watch/services/webhook-validator";
 
 // ============================================
 // Initialize Services
@@ -30,27 +32,16 @@ const notificationService = new NotificationService({
 	webhook: watchConfig.webhook,
 });
 // Watch evaluator not used in server functions but initialized for future use
-const watchEvaluator = new WatchEvaluator(notificationService);
+const strategyResolver = new RefreshStrategyResolver(
+	watchConfig.refreshStrategy,
+);
+const watchEvaluator = new WatchEvaluator(
+	notificationService,
+	strategyResolver,
+);
 void watchEvaluator;
 
-// ============================================
-// Browser Session Management
-// ============================================
-
-/**
- * Get or create browser session from HTTP request
- */
-async function getOrCreateBrowserSessionId(): Promise<string> {
-	// In a real implementation, this would read from HTTP-only cookie
-	// For now, create a new session each time
-	const session = await db.browserSession.create({
-		data: {
-			expiresAt: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000), // 180 days
-		},
-	});
-
-	return session.id;
-}
+import { getOrCreateBrowserSessionId } from "@/lib/server-utils/session";
 
 // ============================================
 // Create Watcher
@@ -63,6 +54,7 @@ export const createWatcher = createServerFn({
 		z.object({
 			targetSessionId: z.string().min(1),
 			turnstileToken: z.string().min(1),
+			webhookUrl: z.string().url(),
 		}),
 	)
 	.handler(async ({ data }) => {
@@ -79,6 +71,15 @@ export const createWatcher = createServerFn({
 			// Get or create browser session
 			const browserSessionId = await getOrCreateBrowserSessionId();
 
+			// Verify webhook connectivity before creation
+			const verification = await verifyWebhookConnectivity(data.webhookUrl);
+			if (!verification.success) {
+				return createErrorResponse(
+					verification.error || "Webhook unreachable",
+					"WEBHOOK_UNREACHABLE",
+				);
+			}
+
 			// Create watcher with criteria
 			const watcher = await watchManager.createWatcher({
 				browserSessionId,
@@ -91,6 +92,7 @@ export const createWatcher = createServerFn({
 					startTime: targetSession.startTime,
 					endTime: targetSession.endTime,
 				},
+				webhookUrl: data.webhookUrl,
 			});
 
 			return createSuccessResponse(

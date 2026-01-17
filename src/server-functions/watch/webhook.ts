@@ -25,24 +25,7 @@ const notificationService = new NotificationService({
 	webhook: watchConfig.webhook,
 });
 
-// ============================================
-// Browser Session Management
-// ============================================
-
-/**
- * Get or create browser session from HTTP request
- */
-async function getOrCreateBrowserSessionId(): Promise<string> {
-	// In a real implementation, this would read from HTTP-only cookie
-	// For now, create a new session each time
-	const session = await db.browserSession.create({
-		data: {
-			expiresAt: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000), // 180 days
-		},
-	});
-
-	return session.id;
-}
+import { getOrCreateBrowserSessionId } from "@/lib/server-utils/session";
 
 // ============================================
 // Set Webhook URL

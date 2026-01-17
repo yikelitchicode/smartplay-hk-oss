@@ -30,8 +30,9 @@ export class WatchManager {
 		browserSessionId: string;
 		turnstileToken: string;
 		criteria: WatchCriteria;
+		webhookUrl: string;
 	}): Promise<Watcher> {
-		const { browserSessionId, turnstileToken, criteria } = options;
+		const { browserSessionId, turnstileToken, criteria, webhookUrl } = options;
 
 		// Verify Turnstile token
 		const verification =
@@ -54,6 +55,7 @@ export class WatchManager {
 			data: {
 				browserSessionId,
 				targetSessionId: criteria.targetSessionId,
+				webhookUrl,
 				venueId: criteria.venueId,
 				facilityCode: criteria.facilityCode,
 				date: criteria.date,

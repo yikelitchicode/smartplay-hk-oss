@@ -58,7 +58,7 @@ const _baseConfig: WatchConfig = {
 	// Scheduler settings
 	schedule: {
 		enabled: true,
-		interval: "*/5 * * * *", // Every 5 minutes
+		interval: "* * * * *", // Every minute (managed by RefreshStrategy)
 		timezone: "Asia/Hong_Kong",
 	},
 
@@ -93,7 +93,7 @@ const _baseConfig: WatchConfig = {
 		verifyUrl: "https://challenges.cloudflare.com/turnstile/v0/siteverify",
 		siteKey: process.env.CLOUDFLARE_TURNSTILE_SITE_KEY,
 		secretKey: process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY,
-		minScore: 0.5, // Minimum score to pass (0.0 - 1.0)
+		minScore: 0.8, // Minimum score to pass (0.0 - 1.0)
 	},
 
 	// Webhook validation
@@ -103,8 +103,22 @@ const _baseConfig: WatchConfig = {
 			"discordapp.com",
 			"hooks.slack.com",
 			"api.slack.com",
+			"loca.lt",
+			"ngrok-free.app",
+			"ngrok.io",
+			"localhost",
+			"127.0.0.1",
 		],
 		maxUrlLength: 2048,
+	},
+
+	// Refresh strategy settings
+	refreshStrategy: {
+		activeIntervalMs: 3 * 60 * 1000, // 3 minutes
+		pendingIntervalMs: 60 * 60 * 1000, // 1 hour
+		dormantIntervalMs: 24 * 60 * 60 * 1000, // 24 hours
+		bookingWindowDays: 7, // LCSD booking window
+		pendingWindowDays: 14, // Transition to Pending tier
 	},
 };
 
@@ -198,6 +212,22 @@ export function validateConfig(config: WatchConfig): {
 	}
 	if (config.turnstile.minScore < 0 || config.turnstile.minScore > 1) {
 		errors.push("turnstile.minScore must be between 0 and 1");
+	}
+
+	// Validate Refresh Strategy
+	if (config.refreshStrategy.activeIntervalMs < 1000) {
+		errors.push("refreshStrategy.activeIntervalMs must be at least 1000ms");
+	}
+	if (
+		config.refreshStrategy.pendingIntervalMs <
+		config.refreshStrategy.activeIntervalMs
+	) {
+		errors.push(
+			"refreshStrategy.pendingIntervalMs must be greater than activeIntervalMs",
+		);
+	}
+	if (config.refreshStrategy.bookingWindowDays < 1) {
+		errors.push("refreshStrategy.bookingWindowDays must be at least 1 day");
 	}
 
 	return {
