@@ -13,6 +13,7 @@ import {
 	getLastUpdateTimeService,
 	getMetadataService,
 } from "@/services/booking.service";
+import { checkSessionAvailabilityService } from "@/services/check-availability.service";
 
 // ============================================
 // Get Available Dates
@@ -121,3 +122,35 @@ export const getMetadata = createServerFn({
 		}
 	}),
 );
+
+// ============================================
+// Check Real-time Session Availability
+// ============================================
+
+export const checkSessionAvailability = createServerFn({
+	method: "POST",
+})
+	.inputValidator(
+		z.object({
+			venueId: z.string(),
+			facilityCode: z.string(),
+			date: dateSchema,
+			startTime: z.string(),
+			endTime: z.string(),
+		}),
+	)
+	.handler(
+		withLogging("checkSessionAvailability", async ({ data }) => {
+			try {
+				const isAvailable = await checkSessionAvailabilityService(data);
+				return createSuccessResponse({ isAvailable });
+			} catch (error) {
+				return createErrorResponse(
+					error instanceof Error
+						? error.message
+						: "Failed to check availability",
+					"CHECK_AVAILABILITY_ERROR",
+				);
+			}
+		}),
+	);

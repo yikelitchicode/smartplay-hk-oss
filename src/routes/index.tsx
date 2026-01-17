@@ -57,12 +57,12 @@ function App() {
 				{/* Feature Cards Grid */}
 				<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto w-full">
 					{/* Booking Card - Active */}
-					<Card className="group relative overflow-hidden border-pacific-blue-100 hover:border-pacific-blue-300 transition-all duration-300 hover:shadow-xl hover:shadow-pacific-blue-500/10 bg-white/60 backdrop-blur-md">
+					<Card className="group relative overflow-hidden border-pacific-blue-100 hover:border-pacific-blue-300 transition-all duration-300 hover:shadow-xl hover:shadow-pacific-blue-500/10 bg-white/60 backdrop-blur-md flex flex-col h-full">
 						<div className="absolute top-0 right-0 p-6 pointer-events-none">
 							<CalendarDays className="w-24 h-24 text-pacific-blue-500/5 rotate-12 group-hover:rotate-0 group-hover:scale-110 transition-transform duration-500" />
 						</div>
 
-						<CardHeader>
+						<CardHeader className="flex-1">
 							<div className="flex justify-between items-start mb-2">
 								<div className="p-3 bg-pacific-blue-50 rounded-2xl group-hover:bg-pacific-blue-100 transition-colors">
 									<LayoutGrid className="w-6 h-6 text-pacific-blue-600" />
@@ -88,12 +88,12 @@ function App() {
 					</Card>
 
 					{/* Scheduler Card - New */}
-					<Card className="group relative overflow-hidden border-pacific-blue-100 hover:border-pacific-blue-300 transition-all duration-300 hover:shadow-xl hover:shadow-pacific-blue-500/10 bg-white/60 backdrop-blur-md">
+					<Card className="group relative overflow-hidden border-pacific-blue-100 hover:border-pacific-blue-300 transition-all duration-300 hover:shadow-xl hover:shadow-pacific-blue-500/10 bg-white/60 backdrop-blur-md flex flex-col h-full">
 						<div className="absolute top-0 right-0 p-6 pointer-events-none">
 							<Bell className="w-24 h-24 text-meadow-green-500/5 rotate-12 group-hover:rotate-0 group-hover:scale-110 transition-transform duration-500" />
 						</div>
 
-						<CardHeader>
+						<CardHeader className="flex-1">
 							<div className="flex justify-between items-start mb-2">
 								<div className="p-3 bg-meadow-green-50 rounded-2xl group-hover:bg-meadow-green-100 transition-colors">
 									<Bell className="w-6 h-6 text-meadow-green-600" />
@@ -119,12 +119,12 @@ function App() {
 					</Card>
 
 					{/* Activity Card - Coming Soon */}
-					<Card className="group relative overflow-hidden border-pacific-blue-100 hover:border-pacific-blue-300 transition-all duration-300 hover:shadow-xl hover:shadow-pacific-blue-500/10 bg-white/60 backdrop-blur-md">
+					<Card className="group relative overflow-hidden border-pacific-blue-100 hover:border-pacific-blue-300 transition-all duration-300 hover:shadow-xl hover:shadow-pacific-blue-500/10 bg-white/60 backdrop-blur-md flex flex-col h-full">
 						<div className="absolute top-0 right-0 p-6 pointer-events-none">
 							<Activity className="w-24 h-24 text-gray-500/5 rotate-12" />
 						</div>
 
-						<CardHeader>
+						<CardHeader className="flex-1">
 							<div className="flex justify-between items-start mb-2">
 								<div className="p-3 bg-pacific-blue-50 rounded-2xl group-hover:bg-pacific-blue-100 transition-colors">
 									<Activity className="w-6 h-6 text-pacific-blue-600" />

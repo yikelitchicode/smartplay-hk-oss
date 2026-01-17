@@ -5,6 +5,7 @@ import {
 	HeadContent,
 	Outlet,
 	Scripts,
+	useLocation,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { useState } from "react";
@@ -172,6 +173,9 @@ function RootDocument({
 	children: React.ReactNode;
 	detectedLang: string;
 }) {
+	const location = useLocation();
+	const isDocsPage = location.pathname.startsWith("/docs");
+
 	return (
 		<html lang={detectedLang} suppressHydrationWarning>
 			<head>
@@ -180,16 +184,16 @@ function RootDocument({
 			<body className="flex flex-col min-h-screen">
 				<Header />
 				<div className="flex-1">{children}</div>
-				<Footer />
-				<BackToTop />
+				{!isDocsPage && <Footer />}
+				{!isDocsPage && <BackToTop />}
 				{/* Inject detected language for client-side init */}
 				<script
 					dangerouslySetInnerHTML={{
 						__html: `window.__INITIAL_LANG__ = "${detectedLang}";`,
 					}}
 				/>
-				<TanStackRouterDevtoolsPanel />
-				<TanStackDevtools />
+				{!isDocsPage && <TanStackRouterDevtoolsPanel />}
+				{!isDocsPage && <TanStackDevtools />}
 				<Scripts />
 			</body>
 		</html>

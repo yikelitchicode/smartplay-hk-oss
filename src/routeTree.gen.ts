@@ -12,7 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SchedulerRouteImport } from './routes/scheduler'
 import { Route as BookingRouteImport } from './routes/booking'
 import { Route as ActivityRouteImport } from './routes/activity'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DocsWebhooksRouteImport } from './routes/docs/webhooks'
+import { Route as ApiWatchTestWebhookRouteImport } from './routes/api/watch/test-webhook'
 
 const SchedulerRoute = SchedulerRouteImport.update({
   id: '/scheduler',
@@ -29,44 +32,93 @@ const ActivityRoute = ActivityRouteImport.update({
   path: '/activity',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DocsWebhooksRoute = DocsWebhooksRouteImport.update({
+  id: '/docs/webhooks',
+  path: '/docs/webhooks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWatchTestWebhookRoute = ApiWatchTestWebhookRouteImport.update({
+  id: '/api/watch/test-webhook',
+  path: '/api/watch/test-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/activity': typeof ActivityRoute
   '/booking': typeof BookingRoute
   '/scheduler': typeof SchedulerRoute
+  '/docs/webhooks': typeof DocsWebhooksRoute
+  '/api/watch/test-webhook': typeof ApiWatchTestWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/activity': typeof ActivityRoute
   '/booking': typeof BookingRoute
   '/scheduler': typeof SchedulerRoute
+  '/docs/webhooks': typeof DocsWebhooksRoute
+  '/api/watch/test-webhook': typeof ApiWatchTestWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/activity': typeof ActivityRoute
   '/booking': typeof BookingRoute
   '/scheduler': typeof SchedulerRoute
+  '/docs/webhooks': typeof DocsWebhooksRoute
+  '/api/watch/test-webhook': typeof ApiWatchTestWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/activity' | '/booking' | '/scheduler'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/activity'
+    | '/booking'
+    | '/scheduler'
+    | '/docs/webhooks'
+    | '/api/watch/test-webhook'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/activity' | '/booking' | '/scheduler'
-  id: '__root__' | '/' | '/activity' | '/booking' | '/scheduler'
+  to:
+    | '/'
+    | '/about'
+    | '/activity'
+    | '/booking'
+    | '/scheduler'
+    | '/docs/webhooks'
+    | '/api/watch/test-webhook'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/activity'
+    | '/booking'
+    | '/scheduler'
+    | '/docs/webhooks'
+    | '/api/watch/test-webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
   ActivityRoute: typeof ActivityRoute
   BookingRoute: typeof BookingRoute
   SchedulerRoute: typeof SchedulerRoute
+  DocsWebhooksRoute: typeof DocsWebhooksRoute
+  ApiWatchTestWebhookRoute: typeof ApiWatchTestWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -92,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ActivityRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -99,14 +158,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/docs/webhooks': {
+      id: '/docs/webhooks'
+      path: '/docs/webhooks'
+      fullPath: '/docs/webhooks'
+      preLoaderRoute: typeof DocsWebhooksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/watch/test-webhook': {
+      id: '/api/watch/test-webhook'
+      path: '/api/watch/test-webhook'
+      fullPath: '/api/watch/test-webhook'
+      preLoaderRoute: typeof ApiWatchTestWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
   ActivityRoute: ActivityRoute,
   BookingRoute: BookingRoute,
   SchedulerRoute: SchedulerRoute,
+  DocsWebhooksRoute: DocsWebhooksRoute,
+  ApiWatchTestWebhookRoute: ApiWatchTestWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

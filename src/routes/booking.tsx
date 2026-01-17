@@ -36,6 +36,7 @@ import {
 	PaginationNext,
 	PaginationPrevious,
 } from "@/components/ui/Pagination";
+import type { DistrictCoords } from "@/data/districts";
 import { parsePriceType } from "@/lib/booking";
 import {
 	useBookingFilters,
@@ -325,15 +326,125 @@ export const Route = createFileRoute("/booking")({
  */
 function BookingPage() {
 	const { deferredData, priceType } = Route.useLoaderData();
+	const { t } = useTranslation(["booking"]);
+
+	// Modal state for booking
+	const [bookingSession, setBookingSession] =
+		useState<NormalizedSession | null>(null);
+	const [bookingVenue, setBookingVenue] = useState<NormalizedVenue | null>(
+		null,
+	);
+
+	// Modal state for watcher
+	const [watcherSession, setWatcherSession] =
+		useState<NormalizedSession | null>(null);
+	const [watcherVenue, setWatcherVenue] = useState<NormalizedVenue | null>(
+		null,
+	);
+
+	const [showToast, setShowToast] = useState(false);
+	const [toastTitle, setTitle] = useState("");
+	const [toastMessage, setMessage] = useState("");
+
+	// Handle session click to open booking modal
+	const handleSessionClick = useCallback(
+		(venue: NormalizedVenue, session: NormalizedSession) => {
+			setBookingVenue(venue);
+			setBookingSession(session);
+		},
+		[],
+	);
+
+	// Handle booking confirmation
+	const confirmBooking = useCallback(() => {
+		setBookingSession(null);
+		setBookingVenue(null);
+		setTitle(t("booking:booking_confirmed"));
+		setMessage(t("booking:booking_confirmed_msg"));
+		setShowToast(true);
+		setTimeout(() => setShowToast(false), 3000);
+	}, [t]);
+
+	// Handle watch click
+	const handleWatchClick = useCallback(
+		(venue: NormalizedVenue, session: NormalizedSession) => {
+			setWatcherVenue(venue);
+			setWatcherSession(session);
+		},
+		[],
+	);
+
+	const confirmWatcher = useCallback(() => {
+		if (!watcherVenue || !watcherSession) return;
+
+		setTitle(t("booking:watcher_added"));
+		setMessage(t("booking:watcher_added_desc"));
+		setWatcherSession(null);
+		setWatcherVenue(null);
+		setShowToast(true);
+		setTimeout(() => setShowToast(false), 3000);
+	}, [t, watcherVenue, watcherSession]);
 
 	return (
-		<Suspense fallback={<BookingPending />}>
-			<Await promise={deferredData}>
-				{(resolved) => (
-					<BookingPageContent {...resolved} currentPriceType={priceType} />
-				)}
-			</Await>
-		</Suspense>
+		<>
+			<Suspense fallback={<BookingPending />}>
+				<Await promise={deferredData}>
+					{(resolved) => (
+						<BookingPageContent
+							{...resolved}
+							currentPriceType={priceType}
+							onSessionClick={handleSessionClick}
+							onWatchClick={handleWatchClick}
+						/>
+					)}
+				</Await>
+			</Suspense>
+
+			{/* Modals */}
+			{bookingSession && bookingVenue && (
+				<BookingModal
+					session={bookingSession}
+					venue={bookingVenue}
+					onClose={() => setBookingSession(null)}
+					onConfirm={confirmBooking}
+				/>
+			)}
+
+			{watcherSession && watcherVenue && (
+				<WatcherModal
+					session={watcherSession}
+					venue={watcherVenue}
+					onClose={() => setWatcherSession(null)}
+					onConfirm={confirmWatcher}
+				/>
+			)}
+
+			{/* Toast Notification */}
+			<div
+				className={`fixed bottom-8 right-8 bg-pacific-blue-950/95 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-white/10 backdrop-blur-xl transition-all duration-500 transform ${
+					showToast
+						? "translate-y-0 opacity-100 scale-100"
+						: "translate-y-12 opacity-0 scale-95"
+				} z-50 max-w-sm`}
+			>
+				<div className="bg-meadow-green-500 p-2 rounded-xl shadow-lg shadow-meadow-green-500/20">
+					<Check
+						className="w-5 h-5 text-white"
+						strokeWidth={3}
+						role="img"
+						aria-label="Success Icon"
+					/>
+				</div>
+				<div className="flex-1">
+					<h4 className="font-black text-sm uppercase tracking-wider text-white">
+						{toastTitle}
+					</h4>
+					<p className="text-pacific-blue-200/90 text-xs font-bold leading-relaxed">
+						{toastMessage}
+					</p>
+				</div>
+			</div>
+		</>
 	);
 }
 
@@ -347,6 +458,8 @@ function BookingPageContent({
 	lastUpdateData,
 	metadataData,
 	currentPriceType,
+	onSessionClick,
+	onWatchClick,
 }: {
 	availableDates: string[];
 	selectedDate: string;
@@ -357,6 +470,8 @@ function BookingPageContent({
 	lastUpdateData: ServerError | ServerSuccess<{ lastUpdate: Date | null }>;
 	metadataData: ServerError | ServerSuccess<MetadataResult>;
 	currentPriceType: "Paid" | "Free";
+	onSessionClick: (venue: NormalizedVenue, session: NormalizedSession) => void;
+	onWatchClick: (venue: NormalizedVenue, session: NormalizedSession) => void;
 }) {
 	const { t } = useTranslation(["booking", "common"]);
 
@@ -484,6 +599,32 @@ function BookingPageContent({
 		selectedFacilityCode !== deferredFacility ||
 		selectedPriceType !== deferredPriceType;
 
+	// User Location State
+	const [userLocation, setUserLocation] = useState<DistrictCoords | null>(null);
+	const [isLocating, setIsLocating] = useState(false);
+
+	const handleLocate = useCallback(() => {
+		if (!navigator.geolocation) {
+			alert("Geolocation is not supported by your browser");
+			return;
+		}
+
+		setIsLocating(true);
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				setUserLocation({
+					lat: position.coords.latitude,
+					lng: position.coords.longitude,
+				});
+				setIsLocating(false);
+			},
+			(error) => {
+				console.error("Error getting location:", error);
+				setIsLocating(false);
+			},
+		);
+	}, []);
+
 	// Pagination State
 	const [currentPage, setCurrentPage] = useState(1);
 	const ITEMS_PER_PAGE = 6;
@@ -495,6 +636,7 @@ function BookingPageContent({
 		selectedCenter: deferredCenter,
 		selectedFacilityCode: deferredFacility,
 		selectedPriceType: deferredPriceType,
+		userLocation,
 	});
 
 	// Reset page when filters change
@@ -562,63 +704,7 @@ function BookingPageContent({
 			}));
 	}, [selectedPriceType, metadata.facilityGroups]);
 
-	// Modal state for booking
-	const [bookingSession, setBookingSession] =
-		useState<NormalizedSession | null>(null);
-	const [bookingVenue, setBookingVenue] = useState<NormalizedVenue | null>(
-		null,
-	);
-
-	// Modal state for watcher
-	const [watcherSession, setWatcherSession] =
-		useState<NormalizedSession | null>(null);
-	const [watcherVenue, setWatcherVenue] = useState<NormalizedVenue | null>(
-		null,
-	);
-
-	const [showToast, setShowToast] = useState(false);
-
-	// Handle session click to open booking modal
-	const handleSessionClick = useCallback(
-		(venue: NormalizedVenue, session: NormalizedSession) => {
-			setBookingVenue(venue);
-			setBookingSession(session);
-		},
-		[],
-	);
-
-	// Handle booking confirmation
-	const confirmBooking = useCallback(() => {
-		setBookingSession(null);
-		setBookingVenue(null);
-		setTitle(t("booking:booking_confirmed"));
-		setMessage(t("booking:booking_confirmed_msg"));
-		setShowToast(true);
-		setTimeout(() => setShowToast(false), 3000);
-	}, [t]);
-
-	// Handle watch click
-	const [toastTitle, setTitle] = useState("");
-	const [toastMessage, setMessage] = useState("");
-
-	const handleWatchClick = useCallback(
-		(venue: NormalizedVenue, session: NormalizedSession) => {
-			setWatcherVenue(venue);
-			setWatcherSession(session);
-		},
-		[],
-	);
-
-	const confirmWatcher = useCallback(() => {
-		if (!watcherVenue || !watcherSession) return;
-
-		setTitle(t("booking:watcher_added"));
-		setMessage(t("booking:watcher_added_desc"));
-		setWatcherSession(null);
-		setWatcherVenue(null);
-		setShowToast(true);
-		setTimeout(() => setShowToast(false), 3000);
-	}, [t, watcherVenue, watcherSession]);
+	// Modal state removed (lifted to parent)
 
 	return (
 		<div className="min-h-screen bg-background/50 flex flex-col font-sans">
@@ -678,8 +764,14 @@ function BookingPageContent({
 						districtStyles={districtStyles}
 						centerStyles={centerStyles}
 						facilityStyles={facilityStyles}
-						onResetFilters={handleResetFilters}
+						onResetFilters={() => {
+							handleResetFilters();
+							setUserLocation(null);
+						}}
 						metadata={metadata}
+						onLocate={handleLocate}
+						isLocating={isLocating}
+						userLocation={userLocation}
 					/>
 				</aside>
 				<style>{`
@@ -740,8 +832,8 @@ function BookingPageContent({
 							<VenueCard
 								key={venue.id}
 								venue={venue}
-								onSessionClick={handleSessionClick}
-								onWatchClick={handleWatchClick}
+								onSessionClick={onSessionClick}
+								onWatchClick={onWatchClick}
 							/>
 						))
 					) : (
@@ -837,50 +929,7 @@ function BookingPageContent({
 				)}
 			</main>
 
-			{/* Modals */}
-			{bookingSession && bookingVenue && (
-				<BookingModal
-					session={bookingSession}
-					venue={bookingVenue}
-					onClose={() => setBookingSession(null)}
-					onConfirm={confirmBooking}
-				/>
-			)}
-
-			{watcherSession && watcherVenue && (
-				<WatcherModal
-					session={watcherSession}
-					venue={watcherVenue}
-					onClose={() => setWatcherSession(null)}
-					onConfirm={confirmWatcher}
-				/>
-			)}
-
-			{/* Toast Notification */}
-			<div
-				className={`fixed bottom-8 right-8 bg-pacific-blue-950/95 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-white/10 backdrop-blur-xl transition-all duration-500 transform ${
-					showToast
-						? "translate-y-0 opacity-100 scale-100"
-						: "translate-y-12 opacity-0 scale-95"
-				} z-50 max-w-sm`}
-			>
-				<div className="bg-meadow-green-500 p-2 rounded-xl shadow-lg shadow-meadow-green-500/20">
-					<Check
-						className="w-5 h-5 text-white"
-						strokeWidth={3}
-						role="img"
-						aria-label="Success Icon"
-					/>
-				</div>
-				<div className="flex-1">
-					<h4 className="font-black text-sm uppercase tracking-wider text-white">
-						{toastTitle}
-					</h4>
-					<p className="text-pacific-blue-200/90 text-xs font-bold leading-relaxed">
-						{toastMessage}
-					</p>
-				</div>
-			</div>
+			{/* Modals and Toast moved to parent */}
 		</div>
 	);
 }
