@@ -91,7 +91,17 @@ export class WatchManager {
 					select: {
 						available: true;
 						facilityTypeName: true;
-						venue: { select: { name: true } };
+						facilityTypeNameEn: true;
+						facilityTypeNameTc: true;
+						facilityTypeNameSc: true;
+						venue: {
+							select: {
+								name: true;
+								nameEn: true;
+								nameTc: true;
+								nameSc: true;
+							};
+						};
 					};
 				};
 			};
@@ -112,9 +122,15 @@ export class WatchManager {
 					select: {
 						available: true,
 						facilityTypeName: true,
+						facilityTypeNameEn: true,
+						facilityTypeNameTc: true,
+						facilityTypeNameSc: true,
 						venue: {
 							select: {
 								name: true,
+								nameEn: true,
+								nameTc: true,
+								nameSc: true,
 							},
 						},
 					},

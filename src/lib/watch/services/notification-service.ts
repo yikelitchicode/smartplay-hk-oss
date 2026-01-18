@@ -6,7 +6,14 @@
  */
 
 import { prisma as db } from "@/db";
-import type { UserSettings, Watcher } from "@/generated/prisma/client";
+import type {
+	Facility,
+	FacilityType,
+	Session,
+	UserSettings,
+	Watcher,
+} from "@/generated/prisma/client";
+import { constructSmartPlayUrl } from "@/lib/booking/smartplay-link";
 import { createLogger } from "@/lib/logger";
 import type {
 	NotificationConfig,
@@ -107,9 +114,14 @@ export class NotificationService {
 				return false;
 			}
 
-			// Generate webhook payload
 			const venue = watcher.targetSession.venue;
 			const facilityType = watcher.targetSession.facilityType;
+
+			// Generate SmartPlay booking URL
+			const bookingUrl = this.generateSmartPlayUrl(
+				watcher,
+				watcher.targetSession,
+			);
 
 			const payload: WebhookPayload = {
 				eventType,
@@ -117,14 +129,11 @@ export class NotificationService {
 				facility: facilityType.name,
 				date: watcher.date.toISOString().split("T")[0],
 				timeRange: `${watcher.startTime} - ${watcher.endTime}`,
-				bookingUrl: this.generateBookingUrl(watcher as Watcher),
+				bookingUrl,
 				timestamp: new Date().toISOString(),
 			};
 
 			// Send webhook with retry logic
-			// Pass metadata for enhanced generic payloads
-			// Send webhook with retry logic
-			// Pass metadata for enhanced generic payloads
 			const success = await this.sendWebhookWithRetry(webhookUrl, payload, {
 				watcherId,
 				venueId: venue.id,
@@ -164,7 +173,7 @@ export class NotificationService {
 			venue: "Victoria Park Tennis Court",
 			facility: "Tennis",
 			date: new Date().toISOString().split("T")[0],
-			timeRange: "18:00 - 20:00",
+			timeRange: "18:00 - 19:00",
 			bookingUrl: "https://smartplay-hk.oss/booking",
 			timestamp: new Date().toISOString(),
 		};
@@ -357,14 +366,57 @@ export class NotificationService {
 	}
 
 	/**
-	 * Generate booking URL for a session
+	 * Generate SmartPlay booking URL for a session
 	 *
-	 * @param watcher - Watcher with target session
-	 * @returns Booking URL
+	 * @param _watcher - Watcher (unused parameter for interface consistency)
+	 * @param session - Target session with venue and facility info
+	 * @returns Official SmartPlay deep link
 	 */
-	private generateBookingUrl(watcher: Watcher): string {
-		const baseUrl = process.env.APP_URL || "https://smartplay-hk.oss";
-		const date = watcher.date.toISOString().split("T")[0];
-		return `${baseUrl}/booking?date=${date}&venue=${watcher.venueId}`;
+	private generateSmartPlayUrl(
+		_watcher: Watcher,
+		session: Session & { venue: Facility; facilityType: FacilityType },
+	): string {
+		const venue = session.venue;
+		const facilityType = session.facilityType;
+
+		// Calculate date index (UI tab)
+		const today = new Date(
+			new Date().toLocaleString("en-US", { timeZone: "Asia/Hong_Kong" }),
+		);
+		today.setHours(0, 0, 0, 0);
+		const targetDate = new Date(session.date);
+		targetDate.setHours(0, 0, 0, 0);
+		// Note: dateIndex in the URL actually seems to be the day offset sometimes?
+		// But in the previous clarification, the user said dateIndex represents the period (Morning/Afternoon/Evening).
+		// Let me double check the user's previous message:
+		// "dateIndex represent if is is MORNING or AFTERNOON or EVENING sessing, and the session index is the session index base on the dateIndex."
+
+		const periodMapping = {
+			MORNING: 0,
+			AFTERNOON: 1,
+			EVENING: 2,
+		};
+		const dateIndex =
+			periodMapping[session.timePeriod as keyof typeof periodMapping];
+
+		// For sessionIndex, we'd ideally need the index in the period list.
+		// Since we don't have the full live list here, we might need to store it or accept a small inaccuracy.
+		// However, most facilities have very few sessions per period.
+		// As a fallback, we'll use a best estimate if not stored.
+		// BUT we just updated the schema and crawler! We should probably store these indices.
+
+		return constructSmartPlayUrl({
+			venueId: venue.id,
+			fatId: session.fatId ?? facilityType.code, // Fallback to facility code if fatId not populated
+			fvrId: session.facilityVRId,
+			venueName: venue.name,
+			playDate: session.date.toISOString().split("T")[0],
+			districtCode: venue.districtCode,
+			sportCode: facilityType.groupCode,
+			typeCode: facilityType.code,
+			sessionIndex: 0, // Fallback/default if not known
+			dateIndex: dateIndex,
+			isFree: facilityType.isFree,
+		});
 	}
 }

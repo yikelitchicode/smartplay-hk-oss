@@ -66,6 +66,7 @@ import {
 	getCalendarStats as getCalendarStatsFn,
 	getDetailedStats as getDetailedStatsFn,
 } from "@/server-functions/stats";
+import { getWatchers } from "@/server-functions/watch/watcher";
 import type {
 	BookingDataPaginatedResult,
 	MetadataResult,
@@ -554,6 +555,35 @@ function BookingPageContent({
 	const [userLocation, setUserLocation] = useState<DistrictCoords | null>(null);
 	const [isLocating, setIsLocating] = useState(false);
 
+	// Watched Sessions State - Track which sessions are being watched
+	const [watchedSessionIds, setWatchedSessionIds] = useState<Set<string>>(
+		new Set(),
+	);
+
+	// Fetch watchers on component mount
+	useEffect(() => {
+		let active = true;
+		const fetchWatchers = async () => {
+			try {
+				const result = await getWatchers({ data: {} });
+				if (active && result?.success && result.data) {
+					const ids = new Set(
+						result.data
+							.map((w) => w.targetSessionId)
+							.filter((id): id is string => id !== null),
+					);
+					setWatchedSessionIds(ids);
+				}
+			} catch (error) {
+				console.error("Failed to fetch watchers:", error);
+			}
+		};
+		fetchWatchers();
+		return () => {
+			active = false;
+		};
+	}, []);
+
 	const handleLocate = useCallback(() => {
 		if (!navigator.geolocation) {
 			alert("Geolocation is not supported by your browser");
@@ -958,6 +988,7 @@ function BookingPageContent({
 								venue={venue}
 								onSessionClick={onSessionClick}
 								onWatchClick={onWatchClick}
+								watchedSessionIds={watchedSessionIds}
 							/>
 						))
 					) : (
