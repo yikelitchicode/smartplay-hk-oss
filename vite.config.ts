@@ -3,8 +3,9 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
-import { defineConfig, type Plugin } from "vite";
+import type { Plugin } from "vite";
 import viteTsConfigPaths from "vite-tsconfig-paths";
+import { defineConfig } from "vitest/config";
 
 /**
  * Node.js-only packages that should not be bundled on the client.
@@ -145,14 +146,26 @@ const config = defineConfig({
 		// Apply server-only stubs early but after tanstackStart
 		serverOnlyStubsPlugin(),
 		// devtools(),
-		nitro(),
+		!process.env.VITEST && nitro(),
 		// this is the plugin that enables path aliases
 		viteTsConfigPaths({
 			projects: ["./tsconfig.json"],
 		}),
 		tailwindcss(),
 		viteReact(),
-	],
+	].filter(Boolean) as Plugin[],
+	test: {
+		globals: true,
+		environment: "jsdom",
+		exclude: [
+			"**/node_modules/**",
+			"**/dist/**",
+			"**/cypress/**",
+			"**/.{idea,git,cache,output,temp}/**",
+			"**/{karma,rollup,webpack,vite,vitest,jest,conf,config}.{js,ts}",
+			"src/e2e/**",
+		],
+	},
 });
 
 export default config;
