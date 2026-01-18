@@ -370,27 +370,33 @@ export class CrawlerScheduler {
 }
 
 // Global scheduler instance
-let globalScheduler: CrawlerScheduler | null = null;
+declare global {
+	var __globalCrawlerScheduler: CrawlerScheduler | null;
+}
+
+if (globalThis.__globalCrawlerScheduler === undefined) {
+	globalThis.__globalCrawlerScheduler = null;
+}
 
 /**
  * Initialize or get the global scheduler instance
  */
 export function initScheduler(config?: CrawlerConfig): CrawlerScheduler {
-	if (!globalScheduler) {
+	if (!globalThis.__globalCrawlerScheduler) {
 		const crawlerConfig = config || loadConfig();
-		globalScheduler = new CrawlerScheduler(crawlerConfig);
+		globalThis.__globalCrawlerScheduler = new CrawlerScheduler(crawlerConfig);
 	}
-	return globalScheduler;
+	return globalThis.__globalCrawlerScheduler;
 }
 
 /**
  * Get the global scheduler instance (must be initialized first)
  */
 export function getScheduler(): CrawlerScheduler {
-	if (!globalScheduler) {
+	if (!globalThis.__globalCrawlerScheduler) {
 		throw new Error("Scheduler not initialized. Call initScheduler() first.");
 	}
-	return globalScheduler;
+	return globalThis.__globalCrawlerScheduler;
 }
 
 /**
@@ -399,9 +405,9 @@ export function getScheduler(): CrawlerScheduler {
  * @param timeout Maximum time to wait for crawls to complete (ms)
  */
 export async function destroyScheduler(timeout: number = 30000): Promise<void> {
-	if (globalScheduler) {
-		await globalScheduler.gracefulStop(timeout);
-		globalScheduler = null;
+	if (globalThis.__globalCrawlerScheduler) {
+		await globalThis.__globalCrawlerScheduler.gracefulStop(timeout);
+		globalThis.__globalCrawlerScheduler = null;
 		console.log("✅ Scheduler destroyed and cleaned up");
 	}
 }
@@ -411,9 +417,9 @@ export async function destroyScheduler(timeout: number = 30000): Promise<void> {
  * Does not wait for in-progress crawls to complete
  */
 export function destroySchedulerImmediately(): void {
-	if (globalScheduler) {
-		globalScheduler.stop();
-		globalScheduler = null;
+	if (globalThis.__globalCrawlerScheduler) {
+		globalThis.__globalCrawlerScheduler.stop();
+		globalThis.__globalCrawlerScheduler = null;
 		console.log("⏹️ Scheduler destroyed immediately");
 	}
 }

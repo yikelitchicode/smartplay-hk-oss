@@ -118,37 +118,39 @@ function App() {
 						</CardFooter>
 					</Card>
 
-					{/* Activity Card - Coming Soon */}
-					<Card className="group relative overflow-hidden border-pacific-blue-100 hover:border-pacific-blue-300 transition-all duration-300 hover:shadow-xl hover:shadow-pacific-blue-500/10 bg-white/60 backdrop-blur-md flex flex-col h-full">
+					{/* Activity Card - Disabled */}
+					<Card className="group relative overflow-hidden border-gray-200 bg-gray-50/60 backdrop-blur-md flex flex-col h-full opacity-60 cursor-not-allowed">
 						<div className="absolute top-0 right-0 p-6 pointer-events-none">
-							<Activity className="w-24 h-24 text-gray-500/5 rotate-12" />
+							<Activity className="w-24 h-24 text-gray-400/5 rotate-12" />
 						</div>
 
 						<CardHeader className="flex-1">
 							<div className="flex justify-between items-start mb-2">
-								<div className="p-3 bg-pacific-blue-50 rounded-2xl group-hover:bg-pacific-blue-100 transition-colors">
-									<Activity className="w-6 h-6 text-pacific-blue-600" />
+								<div className="p-3 bg-gray-100 rounded-2xl">
+									<Activity className="w-6 h-6 text-gray-400" />
 								</div>
 								<Badge
 									variant="secondary"
-									className="bg-pacific-blue-100 text-pacific-blue-700 hover:bg-pacific-blue-200 border-none"
+									className="bg-gray-200 text-gray-500 border-none cursor-default"
 								>
 									{t("features.activity.badge")}
 								</Badge>
 							</div>
-							<CardTitle className="text-2xl text-gray-700">
+							<CardTitle className="text-2xl text-gray-500">
 								{t("features.activity.title")}
 							</CardTitle>
-							<CardDescription className="text-base">
+							<CardDescription className="text-base text-gray-400">
 								{t("features.activity.description")}
 							</CardDescription>
 						</CardHeader>
 
 						<CardFooter className="pt-4">
-							<Link to="/activity" className={linkButtonClasses}>
+							<div
+								className={`${linkButtonClasses} bg-gray-200 text-gray-400 cursor-not-allowed hover:bg-gray-200`}
+							>
 								{t("features.activity.cta")}
-								<ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-							</Link>
+								<ArrowRight className="w-4 h-4 ml-2" />
+							</div>
 						</CardFooter>
 					</Card>
 				</div>

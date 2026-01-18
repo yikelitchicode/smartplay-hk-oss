@@ -160,6 +160,7 @@ export interface SessionInsert {
 	facilityTypeNameSc?: string;
 	facilityCode: string;
 	facilityVRId: string;
+	fatId?: string;
 	date: Date;
 	startTime: string;
 	endTime: string;

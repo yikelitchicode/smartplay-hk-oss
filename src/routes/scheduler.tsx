@@ -59,7 +59,7 @@ export const Route = createFileRoute("/scheduler")({
 });
 
 function SchedulerPage(): JSX.Element {
-	const { t, ready } = useTranslation(["common", "scheduler"]);
+	const { t, i18n, ready } = useTranslation(["common", "scheduler"]);
 	const { watchersData, settingsData } = Route.useLoaderData();
 	const router = useRouter();
 
@@ -95,6 +95,18 @@ function SchedulerPage(): JSX.Element {
 		watchersData.success && watchersData.data
 			? watchersData.data.filter((w) => w.status !== "DELETED")
 			: [];
+
+	const getLocalizedValue = (
+		base: string,
+		en: string | null | undefined,
+		tc: string | null | undefined,
+		sc: string | null | undefined,
+	) => {
+		if (i18n.language === "zh" && tc) return tc;
+		if (i18n.language === "cn" && sc) return sc;
+		if (i18n.language === "en" && en) return en;
+		return base;
+	};
 
 	// Actions
 	const handleSaveWebhook = async () => {
@@ -229,98 +241,118 @@ function SchedulerPage(): JSX.Element {
 							<div className="flex-1 p-0">
 								{activeWatchers.length > 0 ? (
 									<div className="divide-y divide-border/40">
-										{activeWatchers.map((watcher) => (
-											<div
-												key={watcher.id}
-												className="p-4 hover:bg-muted/30 transition-colors flex items-center justify-between group"
-											>
-												<div className="space-y-1">
+										{activeWatchers.map((watcher) => {
+											const venueName = watcher.targetSession?.venue?.name
+												? getLocalizedValue(
+														watcher.targetSession.venue.name,
+														watcher.targetSession.venue.nameEn ?? null,
+														watcher.targetSession.venue.nameTc ?? null,
+														watcher.targetSession.venue.nameSc ?? null,
+													)
+												: null;
+
+											const facilityName = watcher.targetSession
+												? getLocalizedValue(
+														watcher.targetSession.facilityTypeName,
+														watcher.targetSession.facilityTypeNameEn ?? null,
+														watcher.targetSession.facilityTypeNameTc ?? null,
+														watcher.targetSession.facilityTypeNameSc ?? null,
+													)
+												: null;
+
+											return (
+												<div
+													key={watcher.id}
+													className="p-4 hover:bg-muted/30 transition-colors flex items-center justify-between group"
+												>
+													<div className="space-y-1">
+														<div className="flex items-center gap-2">
+															<h3 className="font-medium text-foreground">
+																{venueName
+																	? `${venueName} (${facilityName})`
+																	: `Session @ ${watcher.venueId}`}
+															</h3>
+															<Badge
+																variant={
+																	watcher.status === "ACTIVE"
+																		? "default"
+																		: "secondary"
+																}
+																size="sm"
+															>
+																{t(
+																	`scheduler:status_${watcher.status.toLowerCase()}`,
+																	watcher.status,
+																)}
+															</Badge>
+														</div>
+														<div className="flex items-center gap-4 text-sm text-muted-foreground">
+															<span className="flex items-center gap-1">
+																<CheckCircle2 size={14} />{" "}
+																{new Date(watcher.date).toLocaleDateString()}
+															</span>
+															<span className="flex items-center gap-1">
+																<Clock size={14} /> {watcher.startTime} -{" "}
+																{watcher.endTime}
+															</span>
+														</div>
+													</div>
+
 													<div className="flex items-center gap-2">
-														<h3 className="font-medium text-foreground">
-															{watcher.targetSession?.venue?.name
-																? `${watcher.targetSession.venue.name} (${watcher.targetSession.facilityTypeName})`
-																: `Session @ ${watcher.venueId}`}
-														</h3>
-														<Badge
-															variant={
-																watcher.status === "ACTIVE"
-																	? "default"
-																	: "secondary"
-															}
-															size="sm"
+														<button
+															type="button"
+															className="text-right hidden sm:block mr-4 cursor-pointer hover:bg-muted px-2 py-1 rounded transition-colors bg-transparent border-none appearance-none"
+															onClick={() => setSelectedWatcherId(watcher.id)}
 														>
-															{t(
-																`scheduler:status_${watcher.status.toLowerCase()}`,
-																watcher.status,
-															)}
-														</Badge>
-													</div>
-													<div className="flex items-center gap-4 text-sm text-muted-foreground">
-														<span className="flex items-center gap-1">
-															<CheckCircle2 size={14} />{" "}
-															{new Date(watcher.date).toLocaleDateString()}
-														</span>
-														<span className="flex items-center gap-1">
-															<Clock size={14} /> {watcher.startTime} -{" "}
-															{watcher.endTime}
-														</span>
-													</div>
-												</div>
+															<p className="text-2xl font-semibold text-pacific-blue-600">
+																{watcher.totalHits}
+															</p>
+															<p className="text-xs text-muted-foreground uppercase tracking-wider">
+																{t("scheduler:hits", "Hits")}
+															</p>
+														</button>
 
-												<div className="flex items-center gap-2">
-													<button
-														type="button"
-														className="text-right hidden sm:block mr-4 cursor-pointer hover:bg-muted px-2 py-1 rounded transition-colors bg-transparent border-none appearance-none"
-														onClick={() => setSelectedWatcherId(watcher.id)}
-													>
-														<p className="text-2xl font-semibold text-pacific-blue-600">
-															{watcher.totalHits}
-														</p>
-														<p className="text-xs text-muted-foreground uppercase tracking-wider">
-															{t("scheduler:hits", "Hits")}
-														</p>
-													</button>
+														{watcher.status === "ACTIVE" ? (
+															<Button
+																variant="ghost"
+																size="sm"
+																className="text-amber-500 hover:bg-amber-50 hover:text-amber-600"
+																onClick={() =>
+																	handleUpdateWatcher(watcher.id, "pause")
+																}
+																title={t("scheduler:pause", "Pause")}
+															>
+																<Pause size={18} />
+															</Button>
+														) : (
+															<Button
+																variant="ghost"
+																size="sm"
+																className="text-meadow-green-600 hover:bg-meadow-green-50"
+																onClick={() =>
+																	handleUpdateWatcher(watcher.id, "resume")
+																}
+																title={t("scheduler:resume", "Resume")}
+															>
+																<Play size={18} />
+															</Button>
+														)}
 
-													{watcher.status === "ACTIVE" ? (
 														<Button
 															variant="ghost"
 															size="sm"
-															className="text-amber-500 hover:bg-amber-50 hover:text-amber-600"
+															className="text-destructive hover:bg-destructive/10"
 															onClick={() =>
-																handleUpdateWatcher(watcher.id, "pause")
+																handleUpdateWatcher(watcher.id, "delete")
 															}
-															title={t("scheduler:pause", "Pause")}
+															title={t("scheduler:delete", "Delete")}
 														>
-															<Pause size={18} />
+															<Trash2 size={18} />
 														</Button>
-													) : (
-														<Button
-															variant="ghost"
-															size="sm"
-															className="text-meadow-green-600 hover:bg-meadow-green-50"
-															onClick={() =>
-																handleUpdateWatcher(watcher.id, "resume")
-															}
-															title={t("scheduler:resume", "Resume")}
-														>
-															<Play size={18} />
-														</Button>
-													)}
-
-													<Button
-														variant="ghost"
-														size="sm"
-														className="text-destructive hover:bg-destructive/10"
-														onClick={() =>
-															handleUpdateWatcher(watcher.id, "delete")
-														}
-														title={t("scheduler:delete", "Delete")}
-													>
-														<Trash2 size={18} />
-													</Button>
+													</div>
 												</div>
-											</div>
-										))}
+											);
+										})}
 									</div>
 								) : (
 									<div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
