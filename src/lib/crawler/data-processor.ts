@@ -189,6 +189,7 @@ export class CrawlerDataProcessor {
 				facilityTypeNameTc: data.facilityTypeNameTc,
 				facilityTypeNameSc: data.facilityTypeNameSc,
 				facilityVRId: data.facilityVRId,
+				fatId: String(data.facilityTypeId),
 				date: new Date(data.sessionStartDate),
 				startTime: data.startTime,
 				endTime: data.endTime,

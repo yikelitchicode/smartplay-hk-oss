@@ -160,6 +160,7 @@ export class MockSessionRepository implements ISessionRepository {
 					facilityTypeNameTc: null,
 					facilityTypeNameSc: null,
 					facilityVRId: "mock-vrid",
+					fatId: null, // Optional field not populated in mock
 					date: new Date(sessionData.playDate),
 					startTime: sessionData.startTime,
 					endTime: sessionData.endTime,

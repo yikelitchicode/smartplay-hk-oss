@@ -259,7 +259,7 @@ const _baseConfig: CrawlerConfig = {
 		distCode: [...VALID_DISTRICTS], // Monitor all 18 districts by default
 		faCode: [...VALID_FACILITY_TYPES], // Monitor all facility types
 		playDate: new Date().toISOString().split("T")[0], // Today's date
-		daysToCrawl: 7, // Fetch current date + next 6 days
+		daysToCrawl: 8, // Fetch current date + next 7 days
 	},
 	schedule: {
 		enabled: true,
