@@ -106,6 +106,8 @@ const _baseConfig: WatchConfig = {
 			"loca.lt",
 			"ngrok-free.app",
 			"ngrok.io",
+			"serveo.net",
+			"serveousercontent.com",
 			"localhost",
 			"127.0.0.1",
 		],

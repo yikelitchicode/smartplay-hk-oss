@@ -17,9 +17,8 @@ vi.mock("./orchestrator", () => {
 });
 
 vi.mock("./checkpoint", () => {
-	const { vi } = require("vitest");
 	return {
-		SchedulerCheckpointService: vi.fn(),
+		SchedulerCheckpointService: vi.fn().mockImplementation(() => ({})),
 	};
 });
 
@@ -62,9 +61,9 @@ describe("CrawlerScheduler Recovery", () => {
 			}),
 		};
 
-		vi.mocked(CrawlerOrchestrator).mockImplementation(function () {
-			return mockOrchestrator as any;
-		});
+		vi.mocked(CrawlerOrchestrator).mockImplementation(
+			() => mockOrchestrator as any,
+		);
 
 		mockCheckpoint = {
 			createRun: vi.fn().mockResolvedValue({ id: "run-123" }),
@@ -76,9 +75,9 @@ describe("CrawlerScheduler Recovery", () => {
 			completeRun: vi.fn().mockResolvedValue(undefined),
 		};
 
-		vi.mocked(SchedulerCheckpointService).mockImplementation(function () {
-			return mockCheckpoint as any;
-		});
+		vi.mocked(SchedulerCheckpointService).mockImplementation(
+			() => mockCheckpoint as any,
+		);
 
 		config = {
 			...defaultConfig,
