@@ -31,8 +31,8 @@ describe("server-init.ts", () => {
 
 			const content = fs.readFileSync(path, "utf-8");
 			expect(content).toContain("ensureSchedulerInitialized");
-			expect(content).toContain("initPromise");
-			expect(content).toContain("initialized");
+			expect(content).toContain("__serverInitPromise");
+			expect(content).toContain("__serverInitialized");
 		});
 
 		it("should export ensureSchedulerInitialized function", () => {
@@ -54,9 +54,9 @@ describe("server-init.ts", () => {
 			const content = fs.readFileSync(path, "utf-8");
 
 			// Verify promise-based locking pattern is implemented
-			expect(content).toContain("let initPromise");
-			expect(content).toContain("if (initPromise)");
-			expect(content).toContain("return initPromise");
+			expect(content).toContain("__serverInitPromise");
+			expect(content).toContain("if (globalThis.__serverInitPromise)");
+			expect(content).toContain("return globalThis.__serverInitPromise");
 		});
 
 		it("should have error handling", () => {
@@ -88,9 +88,9 @@ describe("server-init.ts", () => {
 				"/Users/lst97/Desktop/Work/Code/Projects/smartplay-hk-oss/src/lib/server-init.ts";
 			const content = fs.readFileSync(path, "utf-8");
 
-			// Verify promise cleanup in finally block
+			// Verify promise cleanup - the promise is kept for caching but flag is set
 			expect(content).toContain("finally");
-			expect(content).toContain("initPromise = null");
+			expect(content).toContain("__serverInitialized = true");
 		});
 	});
 

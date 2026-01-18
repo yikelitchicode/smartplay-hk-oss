@@ -10,29 +10,38 @@ import { healthChecker } from "@/lib/health";
 import { serverLogger } from "@/lib/logger";
 
 // Watch scheduler globals
-let watchEvaluationScheduler:
-	| import("@/lib/watch").WatchEvaluationScheduler
-	| null = null;
-let watchCleanupScheduler: import("@/lib/watch").WatchCleanupScheduler | null =
-	null;
+declare global {
+	var __watchEvaluationScheduler:
+		| import("@/lib/watch").WatchEvaluationScheduler
+		| null;
+	var __watchCleanupScheduler:
+		| import("@/lib/watch").WatchCleanupScheduler
+		| null;
+	var __serverInitPromise: Promise<void> | null;
+	var __serverInitialized: boolean;
+}
 
 // Initialize the scheduler on server start
-let initialized = false;
-let initPromise: Promise<void> | null = null;
+if (globalThis.__serverInitialized === undefined) {
+	globalThis.__serverInitialized = false;
+	globalThis.__serverInitPromise = null;
+	globalThis.__watchEvaluationScheduler = null;
+	globalThis.__watchCleanupScheduler = null;
+}
 
 export async function ensureSchedulerInitialized(): Promise<void> {
 	// Return existing promise if initialization is in progress
-	if (initPromise) {
-		return initPromise;
+	if (globalThis.__serverInitPromise) {
+		return globalThis.__serverInitPromise;
 	}
 
 	// Return immediately if already initialized
-	if (initialized) {
+	if (globalThis.__serverInitialized) {
 		return;
 	}
 
 	// Create initialization promise
-	initPromise = (async () => {
+	globalThis.__serverInitPromise = (async () => {
 		serverLogger.debug(
 			"🔄 Loading server-init.ts (VERSION: PATCHED-WITH-SCHEDULER-START)...",
 		);
@@ -46,7 +55,7 @@ export async function ensureSchedulerInitialized(): Promise<void> {
 			serverLogger.info(
 				"⏸️ Both Crawler Scheduler and Watcher are disabled via configuration",
 			);
-			initialized = true;
+			globalThis.__serverInitialized = true;
 			return;
 		}
 
@@ -95,7 +104,7 @@ export async function ensureSchedulerInitialized(): Promise<void> {
 				serverLogger.info("⏸️ Watch Schedulers are disabled via configuration");
 			}
 
-			initialized = true;
+			globalThis.__serverInitialized = true;
 		} catch (error) {
 			serverLogger.error(
 				{ err: error },
@@ -105,11 +114,11 @@ export async function ensureSchedulerInitialized(): Promise<void> {
 			throw error;
 		} finally {
 			// Clear promise after completion (success or failure)
-			initPromise = null;
+			globalThis.__serverInitPromise = null;
 		}
 	})();
 
-	return initPromise;
+	return globalThis.__serverInitPromise;
 }
 
 /**
@@ -144,12 +153,12 @@ async function initializeWatchSchedulers(): Promise<void> {
 
 	// Initialize and start evaluation scheduler
 	if (watchConfig.schedule.enabled) {
-		watchEvaluationScheduler = new WatchEvaluationScheduler(
+		globalThis.__watchEvaluationScheduler = new WatchEvaluationScheduler(
 			watchEvaluator,
 			watchConfig.schedule,
 			watchConfig.evaluation,
 		);
-		watchEvaluationScheduler.start({ runImmediate: false });
+		globalThis.__watchEvaluationScheduler.start({ runImmediate: false });
 		serverLogger.info("✅ Watch evaluation scheduler started");
 	} else {
 		serverLogger.info("⏸️ Watch evaluation scheduler is disabled");
@@ -157,8 +166,10 @@ async function initializeWatchSchedulers(): Promise<void> {
 
 	// Initialize and start cleanup scheduler
 	if (watchConfig.cleanup.enabled) {
-		watchCleanupScheduler = new WatchCleanupScheduler(watchConfig.cleanup);
-		watchCleanupScheduler.start();
+		globalThis.__watchCleanupScheduler = new WatchCleanupScheduler(
+			watchConfig.cleanup,
+		);
+		globalThis.__watchCleanupScheduler.start();
 		serverLogger.info("✅ Watch cleanup scheduler started");
 	} else {
 		serverLogger.info("⏸️ Watch cleanup scheduler is disabled");
@@ -198,8 +209,8 @@ export async function gracefulShutdown(
 		// Step 2: Stop watch schedulers
 		serverLogger.info("📍 Step 2/4: Stopping watch schedulers...");
 		try {
-			watchEvaluationScheduler?.stop();
-			watchCleanupScheduler?.stop();
+			globalThis.__watchEvaluationScheduler?.stop();
+			globalThis.__watchCleanupScheduler?.stop();
 			serverLogger.info("✅ Watch schedulers stopped");
 		} catch (error) {
 			serverLogger.error({ err: error }, "⚠️ Error stopping watch schedulers");
