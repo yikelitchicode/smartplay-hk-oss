@@ -39,6 +39,9 @@ interface FilterBarProps {
 		nameTc?: string | null;
 		nameSc?: string | null;
 		region: RegionType;
+		hasData?: boolean;
+		totalSessions: number;
+		availableSessions: number;
 	}[];
 	selectedDistricts: string[]; // ['All'] or list of District Names
 	onSelectDistrict: (district: string) => void;
@@ -136,20 +139,41 @@ export function FilterBar({
 		// 2. Sort by Distance (if GPS enabled)
 		if (userLocation) {
 			return [...districts].sort((a, b) => {
+				const aActive = a.hasData !== false && a.availableSessions > 0;
+				const bActive = b.hasData !== false && b.availableSessions > 0;
+
+				// 1. Prioritize Active Districts (sessions > 0)
+				if (aActive && !bActive) return -1;
+				if (!aActive && bActive) return 1;
+
+				// Both are active or both are inactive
+				const aHasData = a.hasData !== false;
+				const bHasData = b.hasData !== false;
+				if (aHasData && !bHasData) return -1;
+				if (!aHasData && bHasData) return 1;
+
+				// 2. Sort by Distance
 				const coordsA =
 					DISTRICT_COORDINATES[a.code as keyof typeof DISTRICT_COORDINATES];
 				const coordsB =
 					DISTRICT_COORDINATES[b.code as keyof typeof DISTRICT_COORDINATES];
 
-				// If coordinates missing, push to end
-				if (!coordsA && !coordsB) return 0;
-				if (!coordsA) return 1;
-				if (!coordsB) return -1;
+				if (coordsA && coordsB) {
+					const distA = getDistance(userLocation, coordsA);
+					const distB = getDistance(userLocation, coordsB);
 
-				const distA = getDistance(userLocation, coordsA);
-				const distB = getDistance(userLocation, coordsB);
+					if (Math.abs(distA - distB) > 0.1) {
+						// Significant distance difference
+						return distA - distB;
+					}
+				} else if (coordsA) {
+					return -1;
+				} else if (coordsB) {
+					return 1;
+				}
 
-				return distA - distB;
+				// 3. Tie-breaker: Availability
+				return b.availableSessions - a.availableSessions;
 			});
 		}
 

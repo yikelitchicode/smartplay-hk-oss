@@ -149,6 +149,7 @@ export function calculateAllStats(params: {
 	selectedFacilityCode: string;
 	serverDistrictStats?: Record<string, AvailabilityStats>;
 	serverCenterStats?: Record<string, AvailabilityStats>;
+	serverFacilityStats?: Record<string, AvailabilityStats>;
 	districts: Array<{ code: string }>;
 	centers: Array<{ id: string }>;
 }): {
@@ -157,6 +158,7 @@ export function calculateAllStats(params: {
 	facilityStyles: Record<string, AvailabilityTheme>;
 	districtStats: Record<string, AvailabilityStats>;
 	centerStats: Record<string, AvailabilityStats>;
+	facilityStats: Record<string, AvailabilityStats>;
 } {
 	const {
 		venues,
@@ -216,11 +218,16 @@ export function calculateAllStats(params: {
 		});
 	}
 
-	// Calculate facility stats
-	const facilityStats = calculateFacilityStatsFromVenues(
-		venues,
-		selectedPriceType,
-	);
+	// Calculate or use server facility stats
+	let facilityStats: Record<string, AvailabilityStats> = {};
+	if (
+		params.serverFacilityStats &&
+		Object.keys(params.serverFacilityStats).length > 0
+	) {
+		facilityStats = params.serverFacilityStats;
+	} else {
+		facilityStats = calculateFacilityStatsFromVenues(venues, selectedPriceType);
+	}
 
 	return {
 		districtStyles: mapStatsToStyles(districtStats),
@@ -228,6 +235,7 @@ export function calculateAllStats(params: {
 		facilityStyles: mapStatsToStyles(facilityStats),
 		districtStats, // Return raw stats for sorting
 		centerStats, // Return raw stats for sorting
+		facilityStats,
 	};
 }
 

@@ -1,5 +1,4 @@
 import {
-	Await,
 	createFileRoute,
 	defer,
 	Link,
@@ -7,7 +6,6 @@ import {
 } from "@tanstack/react-router";
 import { ArrowLeft, CalendarDays, Check } from "lucide-react";
 import {
-	Suspense,
 	useCallback,
 	useDeferredValue,
 	useEffect,
@@ -36,13 +34,12 @@ import {
 	PaginationNext,
 	PaginationPrevious,
 } from "@/components/ui/Pagination";
-import type { DistrictCoords } from "@/data/districts";
+import { DISTRICT_COORDINATES, type DistrictCoords } from "@/data/districts";
 import { parsePriceType } from "@/lib/booking";
 import {
 	useBookingFilters,
 	useBookingNavigation,
 	useBookingStats,
-	useVenueFilters,
 } from "@/lib/booking/hooks";
 import type {
 	NormalizedSession,
@@ -62,14 +59,18 @@ import type {
 import {
 	getAvailableDates,
 	getBookingData,
-	getDatesAvailability,
 	getLastUpdateTime,
 	getMetadata,
 } from "@/server-functions/booking";
+import {
+	getCalendarStats as getCalendarStatsFn,
+	getDetailedStats as getDetailedStatsFn,
+} from "@/server-functions/stats";
 import type {
-	BookingDataResult,
+	BookingDataPaginatedResult,
 	MetadataResult,
 } from "@/services/booking.service";
+import { getDistance } from "@/utils/location";
 
 // Search Params Schema
 const searchSchema = z.object({
@@ -78,7 +79,23 @@ const searchSchema = z.object({
 	center: z.string().optional(),
 	facility: z.string().optional(),
 	priceType: z.enum(["Paid", "Free"]).optional(),
+	page: z.number().optional().default(1),
 });
+
+interface BookingDeferredResult {
+	bookingData: ServerError | ServerSuccess<BookingDataPaginatedResult>;
+	detailedStats:
+		| ServerError
+		| ServerSuccess<{
+				dateStats: Record<string, { t: number; a: number }>;
+				districtStats: Record<string, { t: number; a: number }>;
+				centerStats: Record<string, { t: number; a: number }>;
+				facilityStats: Record<string, { t: number; a: number }>;
+		  }>;
+	availabilityData:
+		| ServerError
+		| ServerSuccess<Record<string, { t: number; a: number }>>;
+}
 
 /**
  * Generate dynamic meta tags for the booking page
@@ -171,93 +188,113 @@ function getBookingPageStructuredData() {
 
 export const Route = createFileRoute("/booking")({
 	validateSearch: searchSchema,
-	loaderDeps: ({ search: { date } }) => ({
-		date,
+	loaderDeps: ({ search }) => ({
+		date: search.date,
+		districts: search.districts,
+		center: search.center,
+		facility: search.facility,
+		priceType: search.priceType,
+		page: search.page,
 	}),
 	// Data refreshes every 30 minutes on the server
 	// Cache for 30 minutes to match server cycle while allowing instant navigation
 	staleTime: 30 * 60 * 1000,
 	gcTime: 60 * 60 * 1000,
-	loader: async ({ deps: { date } }) => {
+	loader: async ({ deps }) => {
 		// Ensure translations are loaded before rendering
 		await initializeI18n();
 
 		const defaultDate = new Date().toISOString().split("T")[0];
+		const { date, districts, center, facility, priceType, page } = deps;
 
-		// Defer everything to show skeleton immediately
+		// 1. Start fetching data
+		// We await static/fast data to render the shell immediately
+		// We defer heavy data (booking list, stats) to show a partial skeleton
+		const metadataPromise = getMetadata();
+		const lastUpdatePromise = getLastUpdateTime();
+		const datesPromise = getAvailableDates();
+
+		// Use new stats endpoint for calendar - DEFERRED
+		// Pass all filters so availability reflects current selection
+		const availabilityPromise = getCalendarStatsFn({
+			data: {
+				data: {
+					districts: districts,
+					venueId: center === "All" ? undefined : center,
+					facilityCode: facility === "All" ? undefined : facility,
+					priceType: parsePriceType(priceType || "Paid", "Paid"),
+				},
+			},
+		});
+
+		// 2. Resolve static data first
+		const [metadataData, lastUpdateData, datesResult] = await Promise.all([
+			metadataPromise,
+			lastUpdatePromise,
+			datesPromise,
+		]);
+
+		// 3. Determine Selected Date
+		const availableDates =
+			datesResult?.success && datesResult.data ? datesResult.data : [];
+
+		let targetDate = date || defaultDate;
+		// Refine targetDate based on availability if no date was specified
+		if (!date && availableDates.length > 0) {
+			if (availableDates.includes(defaultDate)) {
+				targetDate = defaultDate;
+			} else {
+				targetDate = availableDates[0];
+			}
+		}
+
+		// 4. Create Deferred Promise for Dynamic Data
+		const deferredData = (async () => {
+			const normalizedPriceType = parsePriceType(priceType, "Paid");
+
+			// Prepare filters
+			const filters = {
+				districts: districts,
+				venueId: center === "All" ? undefined : center,
+				facilityCode: facility === "All" ? undefined : facility,
+				priceType: normalizedPriceType,
+			};
+
+			const [bookingData, detailedStats, availabilityData] = await Promise.all([
+				getBookingData({
+					data: {
+						date: targetDate,
+						filters,
+						page: page || 1,
+						pageSize: 6,
+					},
+				}),
+				getDetailedStatsFn({
+					data: {
+						date: targetDate,
+						priceType: normalizedPriceType,
+					},
+				}),
+				availabilityPromise,
+			]);
+
+			return {
+				bookingData,
+				detailedStats,
+				availabilityData,
+			};
+		})();
+
 		return {
-			date,
-			priceType: "Paid" as const, // Default for initial load, client state takes over
-			deferredData: defer(
-				(async () => {
-					// 1. Start fetching independent data
-					const metadataPromise = getMetadata();
-					const lastUpdatePromise = getLastUpdateTime();
-					const availabilityPromise = getDatesAvailability({ data: {} });
-
-					// 2. Fetch available dates to determine target date
-					// If date is provided in URL, use it (optimistic).
-					// If not, we must check available dates to avoid fetching empty data for defaultDate if it's not available.
-					let targetDate = date || defaultDate;
-					let datesResult: ServerSuccess<string[]> | ServerError | undefined;
-
-					// If we don't have a date, we MUST fetch dates first to be safe
-					if (!date) {
-						try {
-							datesResult = await getAvailableDates();
-						} catch (e) {
-							console.error("Failed to fetch dates", e);
-						}
-					} else {
-						// If date is provided, we can fetch dates in parallel (fire and forget for now)
-						// But we still need the result for the return value.
-						// To keep it simple, let's just await it always, or optimize later.
-						// For correctness, awaiting is safest.
-						try {
-							datesResult = await getAvailableDates();
-						} catch (e) {
-							console.error("Failed to fetch dates", e);
-						}
-					}
-
-					const availableDates =
-						datesResult?.success && datesResult.data ? datesResult.data : [];
-
-					// Refine targetDate based on availability if no date was specified
-					if (!date && availableDates.length > 0) {
-						// If today is available, prefer it. Otherwise first available.
-						if (availableDates.includes(defaultDate)) {
-							targetDate = defaultDate;
-						} else {
-							targetDate = availableDates[0];
-						}
-					}
-
-					// 3. Fetch Booking Data for the definitive targetDate
-					const bookingData = await getBookingData({
-						data: {
-							date: targetDate,
-						},
-					});
-
-					// 4. Await remaining data
-					const [availabilityData, lastUpdateData, metadataData] =
-						await Promise.all([
-							availabilityPromise,
-							lastUpdatePromise,
-							metadataPromise,
-						]);
-
-					return {
-						availableDates,
-						selectedDate: targetDate,
-						bookingData,
-						availabilityData,
-						lastUpdateData,
-						metadataData,
-					};
-				})(),
-			),
+			...deps,
+			priceType: "Paid" as const, // Default, client state takes over
+			// Static Data (Available Immediately)
+			availableDates,
+			selectedDate: targetDate,
+			metadataData,
+			lastUpdateData,
+			// Dynamic Data (Deferred)
+			deferredData: defer(deferredData),
 		};
 	},
 	component: BookingPage,
@@ -325,7 +362,14 @@ export const Route = createFileRoute("/booking")({
  * - Statistics calculation (useBookingStats)
  */
 function BookingPage() {
-	const { deferredData, priceType } = Route.useLoaderData();
+	const {
+		deferredData,
+		priceType,
+		availableDates,
+		selectedDate,
+		metadataData,
+		lastUpdateData,
+	} = Route.useLoaderData();
 	const { t } = useTranslation(["booking"]);
 
 	// Modal state for booking
@@ -387,18 +431,17 @@ function BookingPage() {
 
 	return (
 		<>
-			<Suspense fallback={<BookingPending />}>
-				<Await promise={deferredData}>
-					{(resolved) => (
-						<BookingPageContent
-							{...resolved}
-							currentPriceType={priceType}
-							onSessionClick={handleSessionClick}
-							onWatchClick={handleWatchClick}
-						/>
-					)}
-				</Await>
-			</Suspense>
+			{/* No Suspense/Await here - passed directly to content */}
+			<BookingPageContent
+				availableDates={availableDates}
+				selectedDate={selectedDate}
+				deferredDataPromise={deferredData}
+				lastUpdateData={lastUpdateData}
+				metadataData={metadataData}
+				currentPriceType={priceType}
+				onSessionClick={handleSessionClick}
+				onWatchClick={handleWatchClick}
+			/>
 
 			{/* Modals */}
 			{bookingSession && bookingVenue && (
@@ -453,8 +496,7 @@ interface Metadata extends MetadataResult {}
 function BookingPageContent({
 	availableDates,
 	selectedDate,
-	bookingData,
-	availabilityData,
+	deferredDataPromise,
 	lastUpdateData,
 	metadataData,
 	currentPriceType,
@@ -463,10 +505,7 @@ function BookingPageContent({
 }: {
 	availableDates: string[];
 	selectedDate: string;
-	bookingData: ServerError | ServerSuccess<BookingDataResult>;
-	availabilityData:
-		| ServerError
-		| ServerSuccess<Record<string, { t: number; a: number }>>;
+	deferredDataPromise: Promise<BookingDeferredResult>;
 	lastUpdateData: ServerError | ServerSuccess<{ lastUpdate: Date | null }>;
 	metadataData: ServerError | ServerSuccess<MetadataResult>;
 	currentPriceType: "Paid" | "Free";
@@ -475,64 +514,190 @@ function BookingPageContent({
 }) {
 	const { t } = useTranslation(["booking", "common"]);
 
-	// Process raw data
-	const { venues, districts, centers, lastUpdate, metadata } = useMemo(() => {
-		let venues: NormalizedVenue[] = [];
-		let districtsList: {
-			code: string;
-			name: string;
-			region: RegionType;
-			nameEn?: string | null;
-			nameTc?: string | null;
-			nameSc?: string | null;
-		}[] = [];
-		let centersList: {
-			id: string;
-			name: string;
-			nameEn?: string | null;
-			nameTc?: string | null;
-			nameSc?: string | null;
-			districtName: string;
-			districtNameEn?: string | null;
-			districtNameTc?: string | null;
-			districtNameSc?: string | null;
-			districtCode: string;
-		}[] = [];
+	// Resolve the deferred promise
+	const [dynamicData, setDynamicData] = useState<BookingDeferredResult | null>(
+		null,
+	);
+	// We need to track if we are loading new data
+	const [isLoading, setIsLoading] = useState(true);
 
-		if (bookingData.success && bookingData.data) {
-			venues = bookingData.data.venues;
-			districtsList = bookingData.data.districts.map((d) => ({
-				...d,
-				region: getRegion(d.code),
-			}));
-			centersList = bookingData.data.centers.map((c) => ({
-				...c,
-				districtName: c.districtName || "",
-				districtCode: c.districtCode || "",
-			}));
+	useEffect(() => {
+		let active = true;
+		setIsLoading(true);
+		// Reset data to show skeleton, or keep stale?
+		// User specifically wanted skeleton for venue section
+		setDynamicData(null);
+
+		deferredDataPromise
+			.then((res) => {
+				if (active) {
+					setDynamicData(res);
+					setIsLoading(false);
+				}
+			})
+			.catch((err) => {
+				console.error("Failed to resolve deferred data", err);
+				if (active) setIsLoading(false);
+			});
+
+		return () => {
+			active = false;
+		};
+	}, [deferredDataPromise]);
+
+	// Extract data from dynamic result (safely handle nulls)
+	const bookingData = dynamicData?.bookingData;
+	const detailedStats = dynamicData?.detailedStats;
+	const availabilityData = dynamicData?.availabilityData;
+
+	// User Location State
+	const [userLocation, setUserLocation] = useState<DistrictCoords | null>(null);
+	const [isLocating, setIsLocating] = useState(false);
+
+	const handleLocate = useCallback(() => {
+		if (!navigator.geolocation) {
+			alert("Geolocation is not supported by your browser");
+			return;
 		}
 
-		return {
-			venues,
-			districts: districtsList,
-			centers: centersList,
-			lastUpdate:
-				lastUpdateData.success && lastUpdateData.data
-					? lastUpdateData.data.lastUpdate
-					: null,
-			metadata: (metadataData.success && metadataData.data
-				? metadataData.data
-				: {
-						districts: [],
-						facilityTypes: [],
-						facilityGroups: [],
-						centers: [],
-					}) as Metadata,
-		};
-	}, [bookingData, lastUpdateData, metadataData]);
+		setIsLocating(true);
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				setUserLocation({
+					lat: position.coords.latitude,
+					lng: position.coords.longitude,
+				});
+				setIsLocating(false);
+			},
+			(error) => {
+				console.error("Error getting location:", error);
+				setIsLocating(false);
+			},
+		);
+	}, []);
+
+	// Process raw data
+	const { venues, districts, centers, pagination, lastUpdate, metadata } =
+		useMemo(() => {
+			let venues: NormalizedVenue[] = [];
+			let paginationData = { currentPage: 1, totalPages: 1, totalVenues: 0 };
+			let districtsList: {
+				code: string;
+				name: string;
+				region: RegionType;
+				nameEn?: string | null;
+				nameTc?: string | null;
+				nameSc?: string | null;
+				hasData?: boolean;
+				totalSessions: number;
+				availableSessions: number;
+			}[] = [];
+			let centersList: {
+				id: string;
+				name: string;
+				nameEn?: string | null;
+				nameTc?: string | null;
+				nameSc?: string | null;
+				districtName: string;
+				districtNameEn?: string | null;
+				districtNameTc?: string | null;
+				districtNameSc?: string | null;
+				districtCode: string;
+			}[] = [];
+
+			if (bookingData?.success && bookingData.data) {
+				venues = bookingData.data.venues.map((v: NormalizedVenue) => {
+					let distance: number | undefined;
+					if (userLocation) {
+						const dCoords =
+							DISTRICT_COORDINATES[
+								v.districtCode as keyof typeof DISTRICT_COORDINATES
+							];
+						if (dCoords) {
+							distance = getDistance(userLocation, dCoords);
+						}
+					}
+					return {
+						...v,
+						distance,
+						imageUrl: v.imageUrl || "/placeholder-venue.jpg",
+						region: getRegion(v.districtCode),
+					};
+				});
+				paginationData = bookingData.data.pagination;
+				centersList = bookingData.data.centers.map(
+					(c: {
+						id: string;
+						name: string;
+						nameEn?: string | null;
+						districtName: string;
+						districtCode: string;
+					}) => ({
+						...c,
+						districtName: c.districtName || "",
+						districtCode: c.districtCode || "",
+					}),
+				);
+			}
+
+			// Use dynamic data if available, otherwise fallback to static metadata
+			// This prevents the district list from disappearing during loading
+			if (bookingData?.success && bookingData.data) {
+				districtsList = bookingData.data.districts.map(
+					(d: {
+						code: string;
+						name: string;
+						nameEn?: string | null;
+						nameTc?: string | null;
+						nameSc?: string | null;
+						hasData?: boolean;
+						totalSessions: number;
+						availableSessions: number;
+					}) => ({
+						...d,
+						region: getRegion(d.code),
+						hasData: d.hasData,
+						totalSessions: d.totalSessions,
+						availableSessions: d.availableSessions,
+					}),
+				);
+			} else if (metadataData?.success && metadataData.data) {
+				// Fallback to static metadata
+				districtsList = metadataData.data.districts.map((d) => ({
+					code: d.code,
+					name: d.name,
+					nameEn: d.nameEn,
+					nameTc: d.nameTc,
+					nameSc: d.nameSc,
+					region: getRegion(d.code),
+					hasData: false, // Unknown while loading
+					totalSessions: 0,
+					availableSessions: 0,
+				}));
+			}
+
+			return {
+				venues,
+				pagination: paginationData,
+				districts: districtsList,
+				centers: centersList,
+				lastUpdate:
+					lastUpdateData.success && lastUpdateData.data
+						? lastUpdateData.data.lastUpdate
+						: null,
+				metadata: (metadataData.success && metadataData.data
+					? metadataData.data
+					: {
+							districts: [],
+							facilityTypes: [],
+							facilityGroups: [],
+							centers: [],
+						}) as Metadata,
+			};
+		}, [bookingData, lastUpdateData, metadataData, userLocation]);
 
 	const dateAvailability = useMemo(() => {
-		return availabilityData.success && availabilityData.data
+		return availabilityData?.success && availabilityData.data
 			? availabilityData.data
 			: {};
 	}, [availabilityData]);
@@ -542,6 +707,7 @@ function BookingPageContent({
 		center: searchCenter,
 		facility: searchFacility,
 		priceType: searchPriceType,
+		page: searchPage,
 	} = Route.useSearch();
 
 	// Type-safe price type parsing
@@ -579,6 +745,7 @@ function BookingPageContent({
 				search: (prev) => ({
 					...prev,
 					...updates,
+					page: 1, // Always reset to page 1 on filter change
 				}),
 			});
 		},
@@ -591,7 +758,7 @@ function BookingPageContent({
 	const deferredFacility = useDeferredValue(selectedFacilityCode);
 	const deferredPriceType = useDeferredValue(selectedPriceType);
 
-	// Detect if a transition is pending
+	// Detect if a transition is pending (client-side only)
 	const isFilteringPending =
 		searchQuery !== deferredSearchQuery ||
 		selectedDistricts !== deferredDistricts ||
@@ -599,63 +766,18 @@ function BookingPageContent({
 		selectedFacilityCode !== deferredFacility ||
 		selectedPriceType !== deferredPriceType;
 
-	// User Location State
-	const [userLocation, setUserLocation] = useState<DistrictCoords | null>(null);
-	const [isLocating, setIsLocating] = useState(false);
-
-	const handleLocate = useCallback(() => {
-		if (!navigator.geolocation) {
-			alert("Geolocation is not supported by your browser");
-			return;
-		}
-
-		setIsLocating(true);
-		navigator.geolocation.getCurrentPosition(
-			(position) => {
-				setUserLocation({
-					lat: position.coords.latitude,
-					lng: position.coords.longitude,
-				});
-				setIsLocating(false);
-			},
-			(error) => {
-				console.error("Error getting location:", error);
-				setIsLocating(false);
-			},
-		);
-	}, []);
-
 	// Pagination State
-	const [currentPage, setCurrentPage] = useState(1);
-	const ITEMS_PER_PAGE = 6;
+	const currentPage = searchPage || 1;
+	// Use backend total pages if available
+	const totalPages = pagination.totalPages;
 
-	const filteredVenues = useVenueFilters({
-		venues,
-		searchQuery: deferredSearchQuery,
-		selectedDistricts: deferredDistricts,
-		selectedCenter: deferredCenter,
-		selectedFacilityCode: deferredFacility,
-		selectedPriceType: deferredPriceType,
-		userLocation,
-	});
-
-	// Reset page when filters change
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Reset page when filters change
-	useEffect(() => {
-		setCurrentPage(1);
-	}, [
-		deferredSearchQuery,
-		deferredDistricts,
-		deferredCenter,
-		deferredFacility,
-		deferredPriceType,
-	]);
-
-	const totalPages = Math.ceil(filteredVenues.length / ITEMS_PER_PAGE);
-	const paginatedVenues = filteredVenues.slice(
-		(currentPage - 1) * ITEMS_PER_PAGE,
-		currentPage * ITEMS_PER_PAGE,
-	);
+	// Stats from server
+	const serverStats = useMemo(() => {
+		if (detailedStats?.success && detailedStats.data) {
+			return detailedStats.data;
+		}
+		return undefined;
+	}, [detailedStats]);
 
 	const {
 		districtStyles,
@@ -664,13 +786,15 @@ function BookingPageContent({
 		availableDistricts,
 		availableCenters,
 	} = useBookingStats({
-		venues,
+		venues: [], // No longer need all venues for calculation
 		districts,
 		centers,
 		selectedDistricts: deferredDistricts,
 		selectedCenter: deferredCenter,
 		selectedFacilityCode: deferredFacility,
 		selectedPriceType: deferredPriceType,
+		stats: serverStats,
+		userLocation: userLocation,
 	});
 
 	// Date styles for calendar
@@ -788,7 +912,7 @@ function BookingPageContent({
 							<h2 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
 								{t("booking:available_venues")}
 								<span className="text-sm font-bold text-pacific-blue-600 bg-pacific-blue-50 px-2.5 py-0.5 rounded-full border border-pacific-blue-100 uppercase tracking-widest cursor-default">
-									{filteredVenues.length}
+									{pagination.totalVenues}
 								</span>
 							</h2>
 						</div>
@@ -825,10 +949,10 @@ function BookingPageContent({
 
 				{/* Venues Grid */}
 				<div className="grid grid-cols-1 gap-6">
-					{isFilteringPending ? (
+					{isLoading || isFilteringPending ? (
 						<VenueListSkeleton />
-					) : filteredVenues.length > 0 ? (
-						paginatedVenues.map((venue) => (
+					) : venues.length > 0 ? (
+						venues.map((venue) => (
 							<VenueCard
 								key={venue.id}
 								venue={venue}
@@ -848,12 +972,19 @@ function BookingPageContent({
 				</div>
 
 				{/* Pagination Controls */}
-				{!isFilteringPending && filteredVenues.length > ITEMS_PER_PAGE && (
+				{!isLoading && !isFilteringPending && totalPages > 1 && (
 					<Pagination className="mt-8">
 						<PaginationContent>
 							<PaginationItem>
 								<PaginationPrevious
-									onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+									onClick={() =>
+										navigate({
+											search: (prev) => ({
+												...prev,
+												page: Math.max(1, currentPage - 1),
+											}),
+										})
+									}
 									disabled={currentPage === 1}
 								/>
 							</PaginationItem>
@@ -862,7 +993,9 @@ function BookingPageContent({
 							{currentPage > 2 && (
 								<PaginationItem>
 									<PaginationLink
-										onClick={() => setCurrentPage(1)}
+										onClick={() =>
+											navigate({ search: (prev) => ({ ...prev, page: 1 }) })
+										}
 										isActive={currentPage === 1}
 									>
 										1
@@ -888,7 +1021,9 @@ function BookingPageContent({
 								.map((page) => (
 									<PaginationItem key={page}>
 										<PaginationLink
-											onClick={() => setCurrentPage(page)}
+											onClick={() =>
+												navigate({ search: (prev) => ({ ...prev, page }) })
+											}
 											isActive={currentPage === page}
 										>
 											{page}
@@ -908,7 +1043,11 @@ function BookingPageContent({
 							{currentPage < totalPages - 1 && (
 								<PaginationItem>
 									<PaginationLink
-										onClick={() => setCurrentPage(totalPages)}
+										onClick={() =>
+											navigate({
+												search: (prev) => ({ ...prev, page: totalPages }),
+											})
+										}
 										isActive={currentPage === totalPages}
 									>
 										{totalPages}
@@ -919,7 +1058,12 @@ function BookingPageContent({
 							<PaginationItem>
 								<PaginationNext
 									onClick={() =>
-										setCurrentPage((p) => Math.min(totalPages, p + 1))
+										navigate({
+											search: (prev) => ({
+												...prev,
+												page: Math.min(totalPages, currentPage + 1),
+											}),
+										})
 									}
 									disabled={currentPage === totalPages}
 								/>
