@@ -126,6 +126,7 @@ model Session {
   facilityTypeName   String
   facilityTypeNameEn String
   facilityVRId       String
+  fatId              String?      // SmartPlay Facility Type ID
   date               DateTime
   startTime          String
   endTime            String
