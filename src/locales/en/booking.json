@@ -18,6 +18,8 @@
 	"booking_confirmed_msg": "You will be redirected to the LCSD SmartPlay website to complete your booking.",
 	"watcher_added": "Watcher Added",
 	"watcher_added_desc": "You will be notified when this session becomes available.",
+	"watch": "Notify on availability",
+	"watching": "You are watching this session",
 	"watcher_modal": {
 		"title": "Add Availability Watcher",
 		"availability_watcher": "Availability Watcher",

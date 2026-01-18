@@ -32,6 +32,8 @@
 	"passed_hint": "此場次已過時，無法預訂。",
 	"watcher_added": "監控器已添加",
 	"watcher_added_desc": "當此時段可預訂時，您將收到通知。",
+	"watch": "有空時通知我",
+	"watching": "您正在監控此時段",
 	"watcher_modal": {
 		"title": "添加場地監控",
 		"availability_watcher": "場地監控器",

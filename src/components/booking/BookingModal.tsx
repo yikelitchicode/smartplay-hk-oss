@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { constructSmartPlayUrl } from "@/lib/booking/smartplay-link";
 import type { NormalizedSession, NormalizedVenue } from "@/lib/booking/types";
 import { resolveLocalizedName } from "@/lib/i18n-utils";
 
@@ -58,11 +59,38 @@ export function BookingModal({
 
 			if (result.success && result.data?.isAvailable) {
 				setStatus("available");
+
+				const details = result.data.details;
+
 				// Proceed to booking after short delay to show success state
 				setTimeout(() => {
-					onConfirm();
-					setStatus("idle");
-				}, 500);
+					onConfirm(); // This shows the success toast in parent
+
+					// Perform redirection if details are available
+					if (details) {
+						const redirectUrl = constructSmartPlayUrl({
+							venueId: details.venueId,
+							fatId: details.fatId,
+							fvrId: details.fvrId,
+							venueName: details.venueName,
+							playDate: session.date,
+							districtCode: venue.districtCode,
+							sportCode: details.faGroupCode,
+							typeCode: details.typeCode,
+							sessionIndex: details.sessionIndex,
+							dateIndex: details.dateIndex,
+							isFree:
+								venue.facilities[session.facilityId]?.priceType === "Free",
+						});
+
+						// Open in new tab
+						window.open(redirectUrl, "_blank");
+						setStatus("idle");
+					} else {
+						// Fallback if no details (shouldn't happen with new backend)
+						setStatus("idle");
+					}
+				}, 1000); // Increased delay slightly to let user see "Available!" checkmark
 			} else {
 				setStatus("unavailable");
 				setErrorMessage(
