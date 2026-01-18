@@ -18,6 +18,20 @@ export interface CheckAvailabilityParams {
 	endTime: string;
 }
 
+export interface AvailabilityResult {
+	isAvailable: boolean;
+	details?: {
+		fatId: number;
+		fvrId: number;
+		faGroupCode: string;
+		venueName: string;
+		venueId: string;
+		typeCode: string;
+		sessionIndex: number;
+		dateIndex: number;
+	};
+}
+
 /**
  * Update session availability in database after verification
  */
@@ -141,7 +155,7 @@ export async function checkSessionAvailabilityService({
 	date,
 	startTime,
 	endTime,
-}: CheckAvailabilityParams): Promise<boolean> {
+}: CheckAvailabilityParams): Promise<AvailabilityResult> {
 	try {
 		crawlerLogger.info(
 			{
@@ -230,7 +244,7 @@ export async function checkSessionAvailabilityService({
 			{
 				venueId,
 				facilityCode,
-				isAvailable,
+				isAvailable: isAvailable.isAvailable,
 			},
 			"Real-time availability check completed",
 		);
@@ -262,11 +276,11 @@ function findSessionInResponse(
 	facilityCode: string,
 	startTime: string,
 	endTime: string,
-): boolean {
+): AvailabilityResult {
 	try {
 		if (!response.data) {
 			crawlerLogger.warn("No data in LCSD API response");
-			return false;
+			return { isAvailable: false };
 		}
 
 		// Normalize time to HH:MM format for comparison
@@ -297,7 +311,8 @@ function findSessionInResponse(
 			"Searching for session in LCSD API response",
 		);
 
-		for (const period of timePeriods) {
+		for (let periodIdx = 0; periodIdx < timePeriods.length; periodIdx++) {
+			const period = timePeriods[periodIdx];
 			if (!period?.distList) continue;
 
 			for (const district of period.distList) {
@@ -307,61 +322,42 @@ function findSessionInResponse(
 					// Match venue ID (convert to string for comparison)
 					if (String(venue.venueId) !== venueId) continue;
 
-					crawlerLogger.debug(
-						{
-							venueId: venue.venueId,
-							venueName: venue.venueName,
-							facilityTypes: venue.fatList?.map((f) => ({
-								faCode: f.faCode,
-								fatName: f.fatName,
-								sessionCount: f.sessionList?.length || 0,
-							})),
-						},
-						"Found matching venue in LCSD response",
-					);
-
 					if (!venue.fatList) continue;
 
 					for (const facilityType of venue.fatList) {
 						// Match facility code
 						if (facilityType.faCode !== facilityCode) continue;
 
-						crawlerLogger.debug(
-							{
-								faCode: facilityType.faCode,
-								fatName: facilityType.fatName,
-								sessions: facilityType.sessionList?.map((s) => ({
-									start: s.ssnStartTime,
-									end: s.ssnEndTime,
-									available: s.available,
-								})),
-							},
-							"Found matching facility type, checking sessions",
-						);
-
 						if (!facilityType.sessionList) continue;
 
-						// Find matching session
-						for (const session of facilityType.sessionList) {
-							const sessionStart = normalizeTime(session.ssnStartTime);
-							const sessionEnd = normalizeTime(session.ssnEndTime);
+						// User clarified:
+						// dateIndex = 0 (Morning), 1 (Afternoon), 2 (Evening)
+						// sessionIndex = 0-based index within that period list
+						const sessionIdx = facilityType.sessionList.findIndex(
+							(s) =>
+								normalizeTime(s.ssnStartTime) === normalizedStartTime &&
+								normalizeTime(s.ssnEndTime) === normalizedEndTime,
+						);
 
-							// Match start and end time
-							if (
-								sessionStart === normalizedStartTime &&
-								sessionEnd === normalizedEndTime
-							) {
-								crawlerLogger.debug(
-									{
-										available: session.available,
-										startTime: sessionStart,
-										endTime: sessionEnd,
-									},
-									"Found matching session",
-								);
-								// Return availability status
-								return session.available === true;
-							}
+						if (sessionIdx !== -1) {
+							const matchingSession = facilityType.sessionList[sessionIdx];
+
+							return {
+								isAvailable: matchingSession.available === true,
+								details:
+									matchingSession.available === true
+										? {
+												fatId: facilityType.fatId,
+												fvrId: facilityType.fvrId,
+												faGroupCode: facilityType.faGroupCode,
+												venueName: venue.venueName,
+												venueId: String(venue.venueId),
+												typeCode: facilityType.faCode,
+												sessionIndex: sessionIdx,
+												dateIndex: periodIdx,
+											}
+										: undefined,
+							};
 						}
 					}
 				}
@@ -378,7 +374,7 @@ function findSessionInResponse(
 			"Session not found in LCSD API response",
 		);
 
-		return false;
+		return { isAvailable: false };
 	} catch (error) {
 		crawlerLogger.error(
 			{
@@ -386,6 +382,6 @@ function findSessionInResponse(
 			},
 			"Failed to parse LCSD API response",
 		);
-		return false;
+		return { isAvailable: false };
 	}
 }

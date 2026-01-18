@@ -143,8 +143,8 @@ export const checkSessionAvailability = createServerFn({
 	.handler(
 		withLogging("checkSessionAvailability", async ({ data }) => {
 			try {
-				const isAvailable = await checkSessionAvailabilityService(data);
-				return createSuccessResponse({ isAvailable });
+				const result = await checkSessionAvailabilityService(data);
+				return createSuccessResponse(result);
 			} catch (error) {
 				return createErrorResponse(
 					error instanceof Error
