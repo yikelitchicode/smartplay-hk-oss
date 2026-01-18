@@ -4,7 +4,18 @@
  */
 
 import { prisma } from "@/db";
+import type { Prisma } from "@/generated/prisma/client";
 import type { NormalizedVenue } from "@/lib/booking/types";
+
+interface DistrictMapValue {
+	code: string;
+	name: string;
+	region: string;
+	nameEn: string | null;
+	nameTc?: string | null;
+	nameSc?: string | null;
+}
+
 import {
 	getFacilityDetails,
 	getRegion,
@@ -12,7 +23,7 @@ import {
 	normalizeTime,
 } from "@/lib/booking/utils";
 import { healthChecker } from "@/lib/health";
-import type { DatabaseErrorType } from "@/lib/health/types";
+
 import {
 	classifyDatabaseError,
 	withDbErrorHandling,
@@ -67,7 +78,7 @@ export async function getAvailableDatesService(): Promise<string[]> {
 		// Handle health check failure or database errors
 		const errorType = classifyDatabaseError(error);
 
-		if (errorType === ("CONNECTION_FAILED" as DatabaseErrorType)) {
+		if (errorType === "CONNECTION_FAILED") {
 			console.warn(
 				"Database unavailable in getAvailableDatesService, returning empty array",
 			);
@@ -139,9 +150,9 @@ export interface MetadataResult {
 }
 
 /**
- * Result structure for booking data
+ * Result structure for paginated booking data
  */
-export interface BookingDataResult {
+export interface BookingDataPaginatedResult {
 	venues: NormalizedVenue[];
 	districts: Array<{
 		code: string;
@@ -150,6 +161,9 @@ export interface BookingDataResult {
 		nameEn?: string | null;
 		nameTc?: string | null;
 		nameSc?: string | null;
+		hasData?: boolean;
+		totalSessions: number;
+		availableSessions: number;
 	}>;
 	centers: Array<{
 		id: string;
@@ -163,8 +177,11 @@ export interface BookingDataResult {
 		nameTc?: string | null;
 		nameSc?: string | null;
 	}>;
-	districtStats: Record<string, { t: number; a: number }>;
-	centerStats: Record<string, { t: number; a: number }>;
+	pagination: {
+		currentPage: number;
+		totalPages: number;
+		totalVenues: number;
+	};
 }
 
 /**
@@ -187,141 +204,166 @@ export interface BookingDataResult {
  * @param _filters - Unused filter parameters (kept for signature compatibility if needed)
  * @returns Processed booking data with venues, metadata, and statistics
  */
+/**
+ * Retrieves and processes booking data for a specific date
+ */
 export async function getBookingDataService(
 	date: string,
-	_filters: BookingFilters = {},
-): Promise<BookingDataResult> {
+	filters: BookingFilters = {},
+	page = 1,
+	pageSize = 6,
+): Promise<BookingDataPaginatedResult> {
 	try {
-		// Pre-flight health check
 		await healthChecker.checkOrThrow({ timeout: 2000 });
 
 		return await withDbErrorHandling(
 			async () => {
 				const targetDate = new Date(date);
 
-				// Single comprehensive query
-				const allSessions = await prisma.session.findMany({
-					where: {
-						date: targetDate,
-					},
-					include: {
-						venue: true,
-						facilityType: true,
-					},
-					orderBy: [{ venue: { districtCode: "asc" } }, { startTime: "asc" }],
+				// Calculate pagination
+				// Add an offset to skip "page-1" pages of size "pageSize"
+				const skip = (page - 1) * pageSize;
+
+				// 1. Fetch filtered venues first (Pagination Logic)
+				// We need to find venues that have sessions matching our criteria
+				const targetDistricts = filters.districts?.includes(ALL_FILTER_VALUE)
+					? undefined
+					: filters.districts;
+				const targetVenueId =
+					filters.venueId === ALL_FILTER_VALUE ? undefined : filters.venueId;
+				const targetFacilityCode =
+					filters.facilityCode === ALL_FILTER_VALUE
+						? undefined
+						: filters.facilityCode;
+
+				// Base where clause for venues
+				const venueWhere: Prisma.FacilityWhereInput = {};
+
+				if (targetDistricts) {
+					venueWhere.districtCode = { in: targetDistricts };
+				}
+				if (targetVenueId) {
+					venueWhere.id = targetVenueId;
+				}
+
+				// Filter venues that have matching sessions
+				// This ensures we don't show venues with 0 facilities/sessions
+				const sessionWhereInput: Prisma.SessionWhereInput = {
+					date: targetDate,
+				};
+
+				if (targetFacilityCode) {
+					sessionWhereInput.facilityCode = targetFacilityCode;
+				}
+
+				if (filters.priceType) {
+					const isFree = filters.priceType === "Free";
+					sessionWhereInput.facilityType = { isFree };
+				}
+
+				venueWhere.sessions = {
+					some: sessionWhereInput,
+				};
+
+				// Count total venues matching district/id AND having sessions
+				const totalVenues = await prisma.facility.count({
+					where: venueWhere,
 				});
 
-				// Build maps for districts and venues
-				const districtMap = new Map<
-					string,
-					{
-						code: string;
-						name: string;
-						region: string;
-						nameEn?: string | null;
-						nameTc?: string | null;
-						nameSc?: string | null;
-					}
-				>();
-				const venueMap = new Map<
-					string,
-					{
-						id: string;
-						name: string;
-						nameEn?: string | null;
-						nameTc?: string | null;
-						nameSc?: string | null;
-						districtName: string;
-						districtCode: string;
-						districtNameEn?: string | null;
-						districtNameTc?: string | null;
-						districtNameSc?: string | null;
-					}
-				>();
+				// Fetch paginated venues
+				const facilities = await prisma.facility.findMany({
+					where: venueWhere,
+					orderBy: [{ districtCode: "asc" }, { name: "asc" }],
+					skip,
+					take: pageSize,
+					include: { district: true },
+				});
 
-				// Initialize stats structures
-				const districtStats: Record<string, { t: number; a: number }> = {};
-				const centerStats: Record<string, { t: number; a: number }> = {};
-				const venuesMap = new Map<string, NormalizedVenue>();
+				// Get IDs of venues in this page
+				const venueIds = facilities.map((f) => f.id);
 
-				const targetDateStr = formatDateToYYYYMMDD(targetDate);
+				// 2. Fetch Match Sessions ONLY for these venues
+				const sessionWhere: Prisma.SessionWhereInput = {
+					date: targetDate,
+					venueId: { in: venueIds },
+				};
 
-				// Single pass through sessions for all operations
-				for (const session of allSessions) {
-					const dCode = session.venue.districtCode;
-					const vId = session.venueId;
+				if (targetFacilityCode) {
+					sessionWhere.facilityCode = targetFacilityCode;
+				}
 
-					// Collect districts and venues
+				if (filters.priceType) {
+					const isFree = filters.priceType === "Free";
+					sessionWhere.facilityType = { isFree };
+				}
+
+				const sessions = await prisma.session.findMany({
+					where: sessionWhere,
+					include: {
+						facilityType: true,
+					},
+					orderBy: [{ startTime: "asc" }],
+				});
+
+				// Build maps for districts (needed for response structure)
+				// We fetch ALL districts relevant to the venues we found, not just paginated ones
+				// actually we just need distinct districts from the venues
+
+				const districtMap = new Map<string, DistrictMapValue>();
+				const venueMap = new Map<string, NormalizedVenue>();
+
+				// Initialize venues from facilities (even if they have no sessions matching criteria)
+				for (const facility of facilities) {
+					const dCode = facility.districtCode;
+
 					if (!districtMap.has(dCode)) {
 						districtMap.set(dCode, {
 							code: dCode,
-							name: session.venue.districtName,
+							name: facility.districtName,
 							region: getRegion(dCode),
-							nameEn: session.venue.districtNameEn,
-							nameTc: session.venue.districtNameTc,
-							nameSc: session.venue.districtNameSc,
-						});
-						districtStats[dCode] = { t: 0, a: 0 };
-					}
-
-					if (!venueMap.has(vId)) {
-						venueMap.set(vId, {
-							id: session.venue.id,
-							name: session.venue.name,
-							nameEn: session.venue.nameEn,
-							nameTc: session.venue.nameTc,
-							nameSc: session.venue.nameSc,
-							districtName: session.venue.districtName,
-							districtCode: dCode,
-							districtNameEn: session.venue.districtNameEn,
-							districtNameTc: session.venue.districtNameTc,
-							districtNameSc: session.venue.districtNameSc,
-						});
-						centerStats[vId] = { t: 0, a: 0 };
-					}
-
-					// Cache session data to avoid redundant computations
-					const { name: facilityName, priceType } = getFacilityDetails(
-						session.facilityCode,
-						session.facilityTypeName,
-						session.facilityTypeNameEn,
-					);
-					const normalizedStartTime = normalizeTime(session.startTime);
-					const isSessionPassedValue = isSessionPassed(
-						targetDateStr,
-						normalizedStartTime,
-					);
-					const isAvailableSession = session.available && !isSessionPassedValue;
-
-					// Update stats
-					districtStats[dCode].t++;
-					centerStats[vId].t++;
-					if (isAvailableSession) {
-						districtStats[dCode].a++;
-						centerStats[vId].a++;
-					}
-
-					// Build venue structure
-					if (!venuesMap.has(vId)) {
-						venuesMap.set(vId, {
-							id: vId,
-							name: session.venue.name,
-							nameEn: session.venue.nameEn,
-							nameTc: session.venue.nameTc,
-							nameSc: session.venue.nameSc,
-							districtCode: dCode,
-							districtName: session.venue.districtName,
-							districtNameEn: session.venue.districtNameEn,
-							districtNameTc: session.venue.districtNameTc,
-							districtNameSc: session.venue.districtNameSc,
-							region: getRegion(dCode),
-							imageUrl: session.venue.imageUrl,
-							facilities: {},
+							nameEn: facility.districtNameEn,
+							nameTc: facility.districtNameTc,
+							nameSc: facility.districtNameSc,
 						});
 					}
 
-					const venue = venuesMap.get(vId);
+					venueMap.set(facility.id, {
+						id: facility.id,
+						name: facility.name,
+						nameEn: facility.nameEn,
+						nameTc: facility.nameTc,
+						nameSc: facility.nameSc,
+						districtCode: dCode,
+						districtName: facility.districtName,
+						districtNameEn: facility.districtNameEn,
+						districtNameTc: facility.districtNameTc,
+						districtNameSc: facility.districtNameSc,
+						region: getRegion(dCode),
+						imageUrl: facility.imageUrl,
+						facilities: {}, // Will populate
+					});
+				}
+
+				const targetDateStr = formatDateToYYYYMMDD(targetDate);
+
+				// Populate match sessions
+				for (const session of sessions) {
+					const vId = session.venueId;
+					const venue = venueMap.get(vId);
+
 					if (venue) {
+						// Cache session data
+						const { name: facilityName, priceType } = getFacilityDetails(
+							session.facilityCode,
+							session.facilityTypeName,
+							session.facilityTypeNameEn,
+						);
+						const normalizedStartTime = normalizeTime(session.startTime);
+						const isSessionPassedValue = isSessionPassed(
+							targetDateStr,
+							normalizedStartTime,
+						);
+
 						const code = session.facilityCode;
 
 						if (!venue.facilities[code]) {
@@ -351,8 +393,11 @@ export async function getBookingDataService(
 					}
 				}
 
-				// Sort sessions within facilities
-				venuesMap.forEach((venue) => {
+				// Cleanup empty facilities if needed?
+				// No, keep them to show "no slots"
+
+				// Sort sessions
+				venueMap.forEach((venue) => {
 					Object.keys(venue.facilities).forEach((key) => {
 						venue.facilities[key].sessions.sort((a, b) =>
 							a.startTime.localeCompare(b.startTime),
@@ -360,21 +405,95 @@ export async function getBookingDataService(
 					});
 				});
 
-				// Prepare districts and venues for response
-				const availableDistricts = Array.from(districtMap.values()).sort(
-					(a, b) => sortStrings(a.name, b.name),
-				);
+				// Calculate cross-filter stats for ALL districts
+				// This ignores the district filter but respects facility/price filters
+				const { districtCode: _, ...statsWhere } = venueWhere;
+				const districtData = await prisma.facility.findMany({
+					where: statsWhere,
+					select: {
+						districtCode: true,
+						sessions: {
+							where: sessionWhereInput,
+							select: {
+								available: true,
+								startTime: true,
+							},
+						},
+					},
+				});
 
-				const centersList = Array.from(venueMap.values()).sort((a, b) =>
-					sortStrings(a.name, b.name),
-				);
+				const districtStatsMap = new Map<string, { t: number; a: number }>();
+				for (const item of districtData) {
+					const stats = districtStatsMap.get(item.districtCode) || {
+						t: 0,
+						a: 0,
+					};
+					stats.t += item.sessions.length;
+					stats.a += item.sessions.filter(
+						(s) =>
+							s.available &&
+							!isSessionPassed(targetDateStr, normalizeTime(s.startTime)),
+					).length;
+					districtStatsMap.set(item.districtCode, stats);
+				}
+
+				// Fetch ALL system districts to display in filter bar
+				const allDistricts = await prisma.district.findMany({
+					orderBy: { code: "asc" },
+				});
+
+				const availableDistricts = allDistricts
+					.map((d) => {
+						const stats = districtStatsMap.get(d.code) || { t: 0, a: 0 };
+						return {
+							code: d.code,
+							name: d.name,
+							region: d.region || "New Territories",
+							nameEn: d.nameEn,
+							nameTc: d.nameTc,
+							nameSc: d.nameSc,
+							hasData: stats.t > 0,
+							totalSessions: stats.t,
+							availableSessions: stats.a,
+						};
+					})
+					.sort((a, b) => sortStrings(a.name, b.name));
+
+				// Fetch ALL matching centers for the filter dropdown
+				// We use venueWhere but exclude the specific venue ID filter to allow switching
+				const centersWhere: Prisma.FacilityWhereInput = {
+					...venueWhere,
+					id: undefined,
+				};
+
+				const allMatchingCenters = await prisma.facility.findMany({
+					where: centersWhere,
+					include: { district: true },
+					orderBy: { name: "asc" },
+				});
+
+				const centersList = allMatchingCenters.map((c) => ({
+					id: c.id,
+					name: c.name,
+					nameEn: c.nameEn,
+					nameTc: c.nameTc,
+					nameSc: c.nameSc,
+					districtCode: c.districtCode,
+					districtName: c.district.name,
+					districtNameEn: c.district.nameEn,
+					districtNameTc: c.district.nameTc,
+					districtNameSc: c.district.nameSc,
+				}));
 
 				return {
-					venues: Array.from(venuesMap.values()),
+					venues: Array.from(venueMap.values()),
 					districts: availableDistricts,
 					centers: centersList,
-					districtStats,
-					centerStats,
+					pagination: {
+						currentPage: page,
+						totalPages: Math.ceil(totalVenues / pageSize),
+						totalVenues,
+					},
 				};
 			},
 			{
@@ -384,24 +503,25 @@ export async function getBookingDataService(
 			},
 		);
 	} catch (error) {
-		// Handle health check failure or database errors
 		const errorType = classifyDatabaseError(error);
 
-		if (errorType === ("CONNECTION_FAILED" as DatabaseErrorType)) {
+		if (errorType === "CONNECTION_FAILED") {
 			console.warn(
-				`Database unavailable in getBookingDataService for date ${date}, returning empty data`,
+				`Database unavailable in getBookingDataService for date ${date}`,
 			);
-			// Return empty structure for graceful degradation
 			return {
 				venues: [],
 				districts: [],
 				centers: [],
-				districtStats: {},
-				centerStats: {},
+				pagination: {
+					currentPage: 1,
+					totalPages: 0,
+					totalVenues: 0,
+				},
 			};
 		}
 
-		throw error; // Re-throw non-connection errors
+		throw error;
 	}
 }
 
@@ -492,7 +612,7 @@ export async function getDatesAvailabilityService(
 		// Handle health check failure or database errors
 		const errorType = classifyDatabaseError(error);
 
-		if (errorType === ("CONNECTION_FAILED" as DatabaseErrorType)) {
+		if (errorType === "CONNECTION_FAILED") {
 			console.warn(
 				"Database unavailable in getDatesAvailabilityService, returning empty stats",
 			);
@@ -538,7 +658,7 @@ export async function getLastUpdateTimeService(): Promise<Date | null> {
 		// Handle health check failure or database errors
 		const errorType = classifyDatabaseError(error);
 
-		if (errorType === ("CONNECTION_FAILED" as DatabaseErrorType)) {
+		if (errorType === "CONNECTION_FAILED") {
 			console.warn(
 				"Database unavailable in getLastUpdateTimeService, returning null",
 			);
@@ -641,7 +761,7 @@ export async function getMetadataService(): Promise<MetadataResult> {
 		// Handle health check failure or database errors
 		const errorType = classifyDatabaseError(error);
 
-		if (errorType === ("CONNECTION_FAILED" as DatabaseErrorType)) {
+		if (errorType === "CONNECTION_FAILED") {
 			console.warn(
 				"Database unavailable in getMetadataService, throwing error",
 			);

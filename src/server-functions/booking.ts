@@ -9,7 +9,6 @@ import { dateSchema } from "@/lib/server-utils/validation";
 import {
 	getAvailableDatesService,
 	getBookingDataService,
-	getDatesAvailabilityService,
 	getLastUpdateTimeService,
 	getMetadataService,
 } from "@/services/booking.service";
@@ -45,43 +44,45 @@ export const getBookingData = createServerFn({
 	.inputValidator(
 		z.object({
 			date: dateSchema,
+			filters: z
+				.object({
+					districts: z.array(z.string()).optional(),
+					venueId: z.string().optional(),
+					facilityCode: z.string().optional(),
+					priceType: z.enum(["Free", "Paid"] as const).optional(),
+				})
+				.optional(),
+			page: z.number().optional(),
+			pageSize: z.number().optional(),
 		}),
 	)
 	.handler(
-		withLogging("getBookingData", async ({ data: { date } }) => {
-			try {
-				const data = await getBookingDataService(date, {});
-				return createSuccessResponse(data);
-			} catch (_error) {
-				return createErrorResponse(
-					"Failed to fetch booking data",
-					"FETCH_BOOKING_ERROR",
-				);
-			}
-		}),
+		withLogging(
+			"getBookingData",
+			async ({ data: { date, filters, page, pageSize } }) => {
+				try {
+					const data = await getBookingDataService(
+						date,
+						filters,
+						page,
+						pageSize,
+					);
+					return createSuccessResponse(data);
+				} catch (_error) {
+					return createErrorResponse(
+						"Failed to fetch booking data",
+						"FETCH_BOOKING_ERROR",
+					);
+				}
+			},
+		),
 	);
 
 // ============================================
 // Get Availability Stats for multiple dates
 // ============================================
 
-export const getDatesAvailability = createServerFn({
-	method: "GET",
-})
-	.inputValidator(z.object({}).optional())
-	.handler(
-		withLogging("getDatesAvailability", async () => {
-			try {
-				const data = await getDatesAvailabilityService({});
-				return createSuccessResponse(data);
-			} catch (_error) {
-				return createErrorResponse(
-					"Failed to fetch dates availability",
-					"FETCH_AVAILABILITY_ERROR",
-				);
-			}
-		}),
-	);
+// getDatesAvailability is deprecated and removed in favor of /stats endpoints
 
 // ============================================
 // Get Last Update Time
