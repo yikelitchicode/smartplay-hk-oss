@@ -8,6 +8,7 @@
  * to direct repository usage. New code should use repositories directly.
  */
 
+import { formatDateToYYYYMMDD } from "@/lib/server-utils/formatting";
 import { prisma } from "../../db";
 import { type CrawlJob, Prisma } from "../../generated/prisma/client";
 import type {
@@ -15,6 +16,7 @@ import type {
 	ISessionRepository,
 } from "./repositories/interfaces";
 import { PrismaRepositoryFactory } from "./repositories/prisma-repository";
+import { calculateAndUpsertStats } from "./stats-calculator";
 import type {
 	DistrictInsert,
 	FacilityInsert,
@@ -125,6 +127,23 @@ export class CrawlerDatabaseService {
 				},
 				{ timeout: 60000 }, // 60s per chunk
 			);
+		}
+
+		// Phase 3: Update pre-computed availability stats
+		// We can do this asynchronously/background or await it depending on criticality
+		// Since UI depends on it, we should await it
+		if (sessions.length > 0) {
+			// Fix: Format dates to strings BEFORE Set deduplication (Set compares Date objects by reference)
+			const uniqueDateStrings = [
+				...new Set(sessions.map((s) => formatDateToYYYYMMDD(s.date))),
+			];
+			// Process stats for all affected dates in a single batch call
+			try {
+				await calculateAndUpsertStats(uniqueDateStrings);
+			} catch (error) {
+				console.error("Failed to update stats:", error);
+				// Recoverable error, don't fail the whole job
+			}
 		}
 	}
 

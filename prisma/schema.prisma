@@ -313,3 +313,28 @@ enum WatchStatus {
   EXPIRED
   DELETED
 }
+
+model AvailabilityStats {
+  id           String          @id @default(cuid())
+  entityType   StatsEntityType // DATE, DISTRICT, CENTER, FACILITY
+  entityCode   String          // date string, district code, center id, facility code
+  date         DateTime        @db.Date
+  priceType    String          @default("Paid") // "Paid" or "Free"
+  
+  // Stats
+  totalSessions     Int   @default(0)
+  availableSessions Int   @default(0)
+  
+  updatedAt    DateTime  @updatedAt
+  
+  @@unique([entityType, entityCode, date, priceType])
+  @@index([date, entityType, priceType])
+  @@index([entityType, priceType])
+}
+
+enum StatsEntityType {
+  DATE
+  DISTRICT
+  CENTER
+  FACILITY
+}
