@@ -89,6 +89,10 @@
 					"a": "We provide native, pre-formatted support for Discord and Slack to make alerts look clean and readable. For power users, our 'Generic Webhook' option sends standardized JSON data that can be integrated with tools like Zapier, IFTTT, or your own custom bots."
 				},
 				{
+					"q": "What does OSS mean?",
+					"a": "OSS stands for 'Open Source Software'. This means the project's source code is publicly available for anyone to view, inspect, modify, and distribute. Being open-source ensures transparency, allows community collaboration, and enables anyone to verify the code's security or contribute improvements."
+				},
+				{
 					"q": "How can I contribute to the project?",
 					"a": "As an open-source project, we welcome contributions! Whether you are a developer (React/Node.js), a designer, or want to help with translations and documentation, you can contribute by submitting Pull Requests or reporting issues on our GitHub repository found in the footer."
 				}
