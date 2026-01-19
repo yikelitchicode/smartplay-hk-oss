@@ -87,6 +87,7 @@ async function verifyPlatformWebhook(
 
 /**
  * Verify a custom/automation webhook by sending an infra.ping event.
+ * Strictly requires the endpoint to echo the challenge back.
  */
 async function verifyAutomationWebhook(
 	url: string,
@@ -99,14 +100,28 @@ async function verifyAutomationWebhook(
 		challenge,
 	};
 
-	const response = await fetch(url, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			"bypass-tunnel-reminder": "true",
-		},
-		body: JSON.stringify(pingPayload),
-	});
+	let response: Response;
+	try {
+		response = await fetch(url, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"bypass-tunnel-reminder": "true",
+			},
+			body: JSON.stringify(pingPayload),
+			signal: AbortSignal.timeout(5000), // 5 second timeout
+		});
+	} catch (error) {
+		if (error instanceof Error && error.name === "TimeoutError") {
+			logger.warn({ url }, "Webhook validation timed out");
+			return {
+				success: false,
+				error:
+					"Webhook validation timed out. Please ensure your endpoint responds within 5 seconds.",
+			};
+		}
+		throw error;
+	}
 
 	if (!response.ok) {
 		logger.warn(
@@ -132,16 +147,19 @@ async function verifyAutomationWebhook(
 
 	const data = await response.json().catch(() => ({}));
 
-	// If it responds with the challenge, it's definitely a compatible automation server
+	// Strictly require the challenge to be echoed back
 	if (data.status === "pong" && data.challenge === challenge) {
 		return { success: true };
 	}
 
-	// If it doesn't support ping-challenge but returned 200, we consider it "connected"
-	// but might not be our automation project.
-	logger.info(
-		{ url },
-		"Webhook connected but no ping-challenge response received. Accepting as generic.",
+	// Reject if challenge not echoed correctly
+	logger.warn(
+		{ url, expectedChallenge: challenge, receivedData: data },
+		"Webhook did not echo challenge correctly",
 	);
-	return { success: true };
+	return {
+		success: false,
+		error:
+			"Webhook must respond with the challenge token. Expected response: { status: 'pong', challenge: '<token>' }",
+	};
 }

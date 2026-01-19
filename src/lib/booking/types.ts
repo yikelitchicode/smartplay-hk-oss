@@ -11,6 +11,7 @@ export interface NormalizedSession {
 	peakHour: boolean;
 	facilityName: string;
 	facilityId: string; // Facility code (e.g., "TENC", "BASC")
+	isProjected?: boolean;
 }
 
 export interface NormalizedFacility {

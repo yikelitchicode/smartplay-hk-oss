@@ -129,7 +129,10 @@ export const getWatchers = createServerFn({
 				data.status,
 			);
 
-			return createSuccessResponse(watchers);
+			// Filter out DELETED watchers unless explicitly requested
+			const activeWatchers = watchers.filter((w) => w.status !== "DELETED");
+
+			return createSuccessResponse(activeWatchers);
 		} catch (error) {
 			console.error("Error fetching watchers:", error);
 			return createErrorResponse(

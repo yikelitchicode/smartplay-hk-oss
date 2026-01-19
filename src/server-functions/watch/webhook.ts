@@ -137,6 +137,8 @@ export const getWebhookSettings = createServerFn({
 // Test Webhook
 // ============================================
 
+import { verifyWebhookConnectivity } from "@/lib/watch/services/webhook-validator";
+
 export const testWebhook = createServerFn({
 	method: "POST",
 })
@@ -168,17 +170,26 @@ export const testWebhook = createServerFn({
 				);
 			}
 
-			// Send test webhook
+			// Step 1: Verify connectivity with ping/challenge
+			const verification = await verifyWebhookConnectivity(webhookUrl);
+			if (!verification.success) {
+				return createErrorResponse(
+					verification.error || "Webhook connectivity test failed",
+					"WEBHOOK_PING_FAILED",
+				);
+			}
+
+			// Step 2: Send demo notification to show what alerts look like
 			const success = await notificationService.sendTestWebhook(webhookUrl);
 
 			if (success) {
 				return createSuccessResponse(
 					null,
-					"Test notification sent successfully",
+					"Webhook verified and test notification sent",
 				);
 			} else {
 				return createErrorResponse(
-					"Failed to send test notification",
+					"Webhook verified but test notification failed",
 					"TEST_NOTIFICATION_FAILED",
 				);
 			}
