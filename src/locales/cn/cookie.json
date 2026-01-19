@@ -1,0 +1,33 @@
+{
+	"cookie": {
+		"title": "🍪 Cookie 偏好设置",
+		"description": "我们使用 Cookie 来增强您的体验。继续访问本网站即表示您同意我们使用 Cookie。",
+		"learnMore": "了解更多",
+		"customize": "自定义",
+		"decline": "拒绝",
+		"declineAll": "拒绝全部",
+		"acceptAll": "接受全部",
+		"acceptSelected": "接受已选",
+		"cancel": "取消",
+		"required": "（必需）",
+		"customizePreferences": "自定义您的偏好设置",
+		"categories": {
+			"necessary": {
+				"name": "必要 Cookies",
+				"description": "网站正常运行所必需。包括会话管理、安全设置和语言偏好。"
+			},
+			"analytics": {
+				"name": "分析 Cookies",
+				"description": "通过收集匿名使用数据帮助我们了解用户如何与我们的服务交互，以改善性能。"
+			},
+			"preferences": {
+				"name": "偏好设置 Cookies",
+				"description": "记住您的设置和偏好，如语言选择、过滤偏好和日历视图设置。"
+			},
+			"marketing": {
+				"name": "营销 Cookies",
+				"description": "用于衡量活动效果和展示相关广告（目前未使用）。"
+			}
+		}
+	}
+}

@@ -1,4 +1,18 @@
 {
+	"seo": {
+		"webhooks": {
+			"title": "Webhook Documentation | SmartPlay HK OSS Developer",
+			"description": "Learn how to integrate SmartPlay HK OSS notifications into your own applications using webhooks. Detailed API reference and payload documentation.",
+			"ogTitle": "Developer Docs - SmartPlay HK OSS Webhooks",
+			"ogDescription": "Build your own sports facility notification system with the SmartPlay HK OSS Webhook API."
+		},
+		"about": {
+			"title": "About SmartPlay HK OSS | Community Project",
+			"description": "Empowering the Hong Kong sports community with open technology. Learn more about the mission, mechanisms, and the team behind SmartPlay HK OSS.",
+			"ogTitle": "About Us - SmartPlay HK OSS",
+			"ogDescription": "Our mission is to make sports facility information accessible to everyone in Hong Kong."
+		}
+	},
 	"welcome": "Welcome to SmartPlay HK OSS",
 	"language": "Language",
 	"menu": "Menu",
@@ -9,56 +23,74 @@
 		"activity": "Activity",
 		"scheduler": "Scheduler",
 		"developer": "Developer",
-		"about": "About"
+		"about": "About",
+		"privacy": "Privacy Policy",
+		"terms": "Terms & Conditions"
 	},
 	"footer": {
 		"disclaimer": "Disclaimer: This is an unofficial open-source tool and is not affiliated with or endorsed by the LCSD.",
 		"visit_official": "Visit Official LCSD Website",
 		"inquiry_hotline": "Hotline",
 		"open_source": "View Source on GitHub",
-		"copyright": "Made with ❤️ by the open source community"
+		"copyright": "Made with ❤️ by the open source community",
+		"resources": "Resources",
+		"legal": "Legal",
+		"privacy_policy": "Privacy Policy",
+		"terms_conditions": "Terms & Conditions"
 	},
 	"about": {
 		"title": "About SmartPlay HK OSS",
 		"subtitle": "Empowering Hong Kong's sports community with open technology",
 		"mission": {
 			"title": "Our Mission",
-			"description": "SmartPlay HK OSS exists because the official website is difficult to navigate, imposes unnecessary restrictions (such as the 5-district limit), and lacks essential features. We believe finding a place to play shouldn't be a hassle."
+			"description": "SmartPlay HK OSS exists because the official website can be challenging to navigate and lacks essential features like cross-district monitoring. We believe finding a place to play should be seamless and accessible."
 		},
 		"mechanism": {
 			"title": "How it Works",
-			"description": "This tool acts as a specialized browser that efficiently scans the official LCSD SmartPlay system for open slots. It aggregates this data in real-time to provide you with a unified view of availability across all districts."
+			"description": "This tool acts as a specialized client that efficiently queries availability data. It aggregates information in real-time, providing you with a unified, transparent view of sports facilities across Hong Kong."
 		},
 		"qa": {
-			"title": "Q&A",
+			"title": "Frequently Asked Questions",
 			"items": [
 				{
 					"q": "Is this an official government website?",
-					"a": "No, this is an open-source project created by the community. It is NOT affiliated with the Leisure and Cultural Services Department (LCSD)."
+					"a": "No, this is an independent community-driven open-source project. It is NOT affiliated with, endorsed by, or connected to the Leisure and Cultural Services Department (LCSD) of Hong Kong. We built this project to provide a modern, more accessible interface that overcomes usability limitations of the official system."
 				},
 				{
 					"q": "Can I book facilities directly here?",
-					"a": "No. This site is for checking availability only. You must go to the official SmartPlay website to make actual bookings."
+					"a": "No. This platform is strictly for checking availability across multiple districts and facilities simultaneously. Due to security protocols and official policy, all actual bookings and payment transactions must be completed on the official LCSD SmartPlay website or mobile app."
 				},
 				{
 					"q": "Is the data real-time?",
-					"a": "Yes, but there might be a slight delay as we fetch data periodically to avoid overloading the official servers."
+					"a": "Yes, the system fetches data directly from official sources. However, to maintain high performance and minimize unnecessary load on official servers, we use a 30-minute caching strategy for general queries. For time-sensitive booking, we recommend verifying the final status on the official portal."
 				},
 				{
 					"q": "Do you store my SmartPlay login credentials?",
-					"a": "We do not store any of your personal SmartPlay login credentials. All data processing happens locally in your browser or through our transparent open-source backend."
+					"a": "Never. SmartPlay HK OSS is built with a 'zero-trust' security model regarding personal data. We do not require, request, or store your SmartPlay account credentials. Our backend is designed only to aggregate and process publicly available facility status information."
+				},
+				{
+					"q": "Is this tool free to use?",
+					"a": "Absolutely. This project is 100% free and open-source. It contains no advertisements, no hidden trackers, and no subscription fees. It is maintained by volunteers who believe that information about public facilities should be easily and freely accessible to everyone."
 				},
 				{
 					"q": "What is a Webhook and how do I use it?",
-					"a": "A Webhook allows you to receive real-time notifications on external platforms like Discord or Slack. Simply provide the Webhook URL from your platform settings, and we'll send you an alert as soon as a slot becomes available."
+					"a": "A Webhook is a technical bridge that allows our system to send automated, real-time alerts to your own apps (like Discord or Slack). By setting up a Webhook URL, you can receive a notification the very instant a venue becomes available, allowing you to react much faster than manual checking."
 				},
 				{
 					"q": "How does the Watcher system work?",
-					"a": "The Watcher automatically scans for your desired facility slots at regular intervals. When the availability status changes (e.g., from Full to Available), it triggers a notification so you can book immediately."
+					"a": "A Watcher is an automated 'scout' that monitors specific venues and time slots for you. Instead of manually refreshing the page, our server checks in the background. If a slot matching your criteria is found, a notification is triggered immediately via your chosen Webhook."
+				},
+				{
+					"q": "How often does the system check for availability?",
+					"a": "Most facility availability is scanned every 30 minutes. This interval is carefully chosen to provide reliable updates while ensuring we remain a 'good citizen' of the internet—respecting Hong Kong's official infrastructure by not overwhelming their systems."
 				},
 				{
 					"q": "Which platforms are supported for notifications?",
-					"a": "We natively support formatted messages for Discord and Slack. You can also use a generic endpoint to receive raw JSON data for custom integrations."
+					"a": "We provide native, pre-formatted support for Discord and Slack to make alerts look clean and readable. For power users, our 'Generic Webhook' option sends standardized JSON data that can be integrated with tools like Zapier, IFTTT, or your own custom bots."
+				},
+				{
+					"q": "How can I contribute to the project?",
+					"a": "As an open-source project, we welcome contributions! Whether you are a developer (React/Node.js), a designer, or want to help with translations and documentation, you can contribute by submitting Pull Requests or reporting issues on our GitHub repository found in the footer."
 				}
 			]
 		}

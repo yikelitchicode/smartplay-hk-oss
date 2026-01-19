@@ -10,6 +10,10 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { useState } from "react";
 import { I18nextProvider } from "react-i18next";
+import {
+	CookieConsentProvider,
+	CookieNotice,
+} from "../components/cookie-notice";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import NotFound from "../components/NotFound";
@@ -67,7 +71,7 @@ export const Route = createRootRoute({
 				return { lang };
 			} catch (err) {
 				console.error("Failed to initialize i18n on server:", err);
-				await initializeI18n("en"); // Fallback
+				await initializeI18n("zh"); // Fallback to Traditional Chinese
 
 				// Ensure scheduler is initialized even if i18n fails
 				const { ensureSchedulerInitialized } = await import(
@@ -77,7 +81,7 @@ export const Route = createRootRoute({
 					console.error("Failed to initialize scheduler:", err);
 				});
 
-				return { lang: "en" };
+				return { lang: "zh" };
 			}
 		} else {
 			// Client: ensure i18n is initialized (will use browser detection)
@@ -118,16 +122,28 @@ export const Route = createRootRoute({
 			{ rel: "stylesheet", href: appCss },
 			{
 				rel: "manifest",
-				href: "/manifest.json",
+				href: "/favicon/site.webmanifest",
 			},
 			{
 				rel: "icon",
 				type: "image/x-icon",
-				href: "/favicon.ico",
+				href: "/favicon/favicon.ico",
+			},
+			{
+				rel: "icon",
+				type: "image/png",
+				sizes: "32x32",
+				href: "/favicon/favicon-32x32.png",
+			},
+			{
+				rel: "icon",
+				type: "image/png",
+				sizes: "16x16",
+				href: "/favicon/favicon-16x16.png",
 			},
 			{
 				rel: "apple-touch-icon",
-				href: "/logo192.png",
+				href: "/favicon/apple-touch-icon.png",
 			},
 		],
 	}),
@@ -158,9 +174,29 @@ function RootComponent() {
 	return (
 		<I18nextProvider i18n={i18n}>
 			<QueryClientProvider client={queryClient}>
-				<RootDocument detectedLang={detectedLang}>
-					<Outlet />
-				</RootDocument>
+				<CookieConsentProvider
+					expiryDays={365}
+					onAccept={(categories: {
+						necessary: boolean;
+						analytics: boolean;
+						marketing: boolean;
+						preferences: boolean;
+					}) => {
+						// Initialize services based on consent
+						if (categories.analytics) {
+							// Initialize your analytics here
+							console.log("Analytics consent granted");
+						}
+						if (categories.marketing) {
+							// Initialize marketing pixels here
+							console.log("Marketing consent granted");
+						}
+					}}
+				>
+					<RootDocument detectedLang={detectedLang}>
+						<Outlet />
+					</RootDocument>
+				</CookieConsentProvider>
 			</QueryClientProvider>
 		</I18nextProvider>
 	);
@@ -186,6 +222,19 @@ function RootDocument({
 				<div className="flex-1">{children}</div>
 				{!isDocsPage && <Footer />}
 				{!isDocsPage && <BackToTop />}
+				{/* Cookie Notice Banner */}
+				{!isDocsPage && (
+					<CookieNotice
+						privacyPolicyUrl="/privacy"
+						onAccept={(categories: {
+							necessary: boolean;
+							analytics: boolean;
+							marketing: boolean;
+							preferences: boolean;
+						}) => console.log("User accepted cookies:", categories)}
+						onDecline={() => console.log("User declined cookies")}
+					/>
+				)}
 				{/* Inject detected language for client-side init */}
 				<script
 					dangerouslySetInnerHTML={{

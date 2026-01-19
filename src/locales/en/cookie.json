@@ -1,0 +1,33 @@
+{
+	"cookie": {
+		"title": "🍪 Cookie Preferences",
+		"description": "We use cookies to enhance your experience. By continuing to visit this site, you agree to our use of cookies.",
+		"learnMore": "Learn more",
+		"customize": "Customize",
+		"decline": "Decline",
+		"declineAll": "Decline All",
+		"acceptAll": "Accept All",
+		"acceptSelected": "Accept Selected",
+		"cancel": "Cancel",
+		"required": "(Required)",
+		"customizePreferences": "Customize your preferences",
+		"categories": {
+			"necessary": {
+				"name": "Strictly Necessary Cookies",
+				"description": "Essential for the website to function properly. Includes session management, security settings, and language preferences."
+			},
+			"analytics": {
+				"name": "Analytics Cookies",
+				"description": "Help us understand how users interact with our service by collecting anonymous usage data to improve performance."
+			},
+			"preferences": {
+				"name": "Preferences Cookies",
+				"description": "Remember your settings and preferences such as language selection, filter preferences, and calendar view settings."
+			},
+			"marketing": {
+				"name": "Marketing Cookies",
+				"description": "Used to measure campaign effectiveness and show relevant ads (not currently used)."
+			}
+		}
+	}
+}
