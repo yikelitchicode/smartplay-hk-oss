@@ -17,6 +17,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/Card";
+import { envConfig } from "@/lib/env";
 import i18n from "@/lib/i18n";
 
 /**
@@ -26,7 +27,7 @@ function getHomePageMeta() {
 	const baseUrl =
 		typeof window !== "undefined"
 			? `${window.location.protocol}//${window.location.host}`
-			: "https://smartplay.hk";
+			: envConfig.baseUrl;
 	const canonical = baseUrl;
 
 	const title = i18n.t("home.seo.title", {
@@ -53,7 +54,7 @@ function getHomePageMeta() {
 		description,
 		ogTitle,
 		ogDescription,
-		ogImage: `${baseUrl}/og-image.jpg`,
+		ogImage: `${baseUrl}/favicon/android-chrome-512x512.png`,
 		twitterCard: "summary_large_image",
 		canonical,
 	};
@@ -66,7 +67,7 @@ function getHomePageStructuredData() {
 	const baseUrl =
 		typeof window !== "undefined"
 			? `${window.location.protocol}//${window.location.host}`
-			: "https://smartplay.hk";
+			: envConfig.baseUrl;
 
 	return {
 		"@context": "https://schema.org",

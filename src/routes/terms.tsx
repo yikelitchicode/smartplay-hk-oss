@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/Accordion";
 import { Alert } from "@/components/ui/Alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { envConfig } from "@/lib/env";
 import i18n from "@/lib/i18n";
 
 /**
@@ -18,7 +19,7 @@ function getTermsPageMeta() {
 	const baseUrl =
 		typeof window !== "undefined"
 			? `${window.location.protocol}//${window.location.host}`
-			: "https://smartplay.hk"; // Default canonical base
+			: envConfig.baseUrl; // Default canonical base
 	const canonical = `${baseUrl}/terms`;
 
 	return {
@@ -40,7 +41,7 @@ function getTermsPageMeta() {
 			defaultValue:
 				"SmartPlay HK OSS 康文署設施可用性查詢工具的服務條款和法律限制。",
 		}),
-		ogImage: `${baseUrl}/og-image.jpg`,
+		ogImage: `${baseUrl}/favicon/android-chrome-512x512.png`,
 		twitterCard: "summary" as const,
 		canonical,
 	};
@@ -53,7 +54,7 @@ function getTermsPageStructuredData() {
 	const baseUrl =
 		typeof window !== "undefined"
 			? `${window.location.protocol}//${window.location.host}`
-			: "https://smartplay.hk";
+			: envConfig.baseUrl;
 
 	return {
 		"@context": "https://schema.org",
@@ -243,7 +244,7 @@ function TermsPage() {
 					{/* 1. Agreement to Terms */}
 					<AccordionItem value="agreement">
 						<AccordionTrigger className="text-lg font-semibold">
-							1. {t("terms.sections.agreement.title")}
+							{t("terms.sections.agreement.title")}
 						</AccordionTrigger>
 						<AccordionContent className="space-y-4 pt-4">
 							<div className="space-y-3">
@@ -268,7 +269,7 @@ function TermsPage() {
 					{/* 2. Service Description */}
 					<AccordionItem value="service">
 						<AccordionTrigger className="text-lg font-semibold">
-							2. {t("terms.sections.service.title")}
+							{t("terms.sections.service.title")}
 						</AccordionTrigger>
 						<AccordionContent className="space-y-4 pt-4">
 							<div className="space-y-4">
@@ -307,7 +308,7 @@ function TermsPage() {
 					{/* 3. Unofficial Status */}
 					<AccordionItem value="unofficial">
 						<AccordionTrigger className="text-lg font-semibold">
-							3. {t("terms.sections.unofficial.title")}
+							{t("terms.sections.unofficial.title")}
 						</AccordionTrigger>
 						<AccordionContent className="space-y-4 pt-4">
 							<div className="space-y-4">
@@ -352,7 +353,7 @@ function TermsPage() {
 					{/* 4. User Responsibilities */}
 					<AccordionItem value="responsibilities">
 						<AccordionTrigger className="text-lg font-semibold">
-							4. {t("terms.sections.responsibilities.title")}
+							{t("terms.sections.responsibilities.title")}
 						</AccordionTrigger>
 						<AccordionContent className="space-y-4 pt-4">
 							<div className="space-y-4">
@@ -414,7 +415,7 @@ function TermsPage() {
 					{/* 5. Intellectual Property */}
 					<AccordionItem value="ip">
 						<AccordionTrigger className="text-lg font-semibold">
-							5. {t("terms.sections.ip.title")}
+							{t("terms.sections.ip.title")}
 						</AccordionTrigger>
 						<AccordionContent className="space-y-4 pt-4">
 							<div className="space-y-4">
@@ -478,7 +479,7 @@ function TermsPage() {
 					{/* 6. Limitation of Liability */}
 					<AccordionItem value="liability">
 						<AccordionTrigger className="text-lg font-semibold">
-							6. {t("terms.sections.liability.title")}
+							{t("terms.sections.liability.title")}
 						</AccordionTrigger>
 						<AccordionContent className="space-y-4 pt-4">
 							<div className="space-y-4">
@@ -535,7 +536,7 @@ function TermsPage() {
 					{/* 7. Indemnification */}
 					<AccordionItem value="indemnification">
 						<AccordionTrigger className="text-lg font-semibold">
-							7. {t("terms.sections.indemnification.title")}
+							{t("terms.sections.indemnification.title")}
 						</AccordionTrigger>
 						<AccordionContent className="space-y-4 pt-4">
 							<div className="space-y-3">
@@ -555,7 +556,7 @@ function TermsPage() {
 					{/* 8. Privacy & Data */}
 					<AccordionItem value="privacy">
 						<AccordionTrigger className="text-lg font-semibold">
-							8. {t("terms.sections.privacy.title")}
+							{t("terms.sections.privacy.title")}
 						</AccordionTrigger>
 						<AccordionContent className="space-y-4 pt-4">
 							<div className="space-y-4">
@@ -578,7 +579,7 @@ function TermsPage() {
 					{/* 9. Termination */}
 					<AccordionItem value="termination">
 						<AccordionTrigger className="text-lg font-semibold">
-							9. {t("terms.sections.termination.title")}
+							{t("terms.sections.termination.title")}
 						</AccordionTrigger>
 						<AccordionContent className="space-y-4 pt-4">
 							<div className="space-y-4">
@@ -615,7 +616,7 @@ function TermsPage() {
 					{/* 10. Modifications */}
 					<AccordionItem value="changes">
 						<AccordionTrigger className="text-lg font-semibold">
-							10. {t("terms.sections.changes.title")}
+							{t("terms.sections.changes.title")}
 						</AccordionTrigger>
 						<AccordionContent className="space-y-4 pt-4">
 							<div className="space-y-4">
@@ -643,7 +644,7 @@ function TermsPage() {
 					{/* 11. Governing Law */}
 					<AccordionItem value="law">
 						<AccordionTrigger className="text-lg font-semibold">
-							11. {t("terms.sections.law.title")}
+							{t("terms.sections.law.title")}
 						</AccordionTrigger>
 						<AccordionContent className="space-y-4 pt-4">
 							<div className="space-y-4">
@@ -680,7 +681,7 @@ function TermsPage() {
 					{/* 12. Contact */}
 					<AccordionItem value="contact">
 						<AccordionTrigger className="text-lg font-semibold">
-							12. {t("terms.sections.contact.title")}
+							{t("terms.sections.contact.title")}
 						</AccordionTrigger>
 						<AccordionContent className="space-y-4 pt-4">
 							<p className="text-sm text-muted-foreground leading-relaxed">

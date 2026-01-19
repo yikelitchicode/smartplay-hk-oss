@@ -8,6 +8,7 @@ import {
 	AccordionTrigger,
 } from "@/components/ui/Accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { envConfig } from "@/lib/env";
 import i18n from "@/lib/i18n";
 
 /**
@@ -17,7 +18,7 @@ function getAboutPageMeta() {
 	const baseUrl =
 		typeof window !== "undefined"
 			? `${window.location.protocol}//${window.location.host}`
-			: "https://smartplay.hk";
+			: envConfig.baseUrl;
 	const canonical = `${baseUrl}/about`;
 
 	const title = i18n.t("common.seo.about.title", {
@@ -43,7 +44,7 @@ function getAboutPageMeta() {
 		description,
 		ogTitle,
 		ogDescription,
-		ogImage: `${baseUrl}/og-image.jpg`,
+		ogImage: `${baseUrl}/favicon/android-chrome-512x512.png`,
 		twitterCard: "summary" as const,
 		canonical,
 	};
@@ -56,7 +57,7 @@ function getAboutPageStructuredData() {
 	const baseUrl =
 		typeof window !== "undefined"
 			? `${window.location.protocol}//${window.location.host}`
-			: "https://smartplay.hk";
+			: envConfig.baseUrl;
 
 	return {
 		"@context": "https://schema.org",

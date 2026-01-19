@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { envConfig } from "@/lib/env";
 import i18n from "@/lib/i18n";
 import { getWatchers, updateWatcher } from "@/server-functions/watch/watcher";
 
@@ -37,7 +38,7 @@ function getSchedulerPageMeta() {
 	const baseUrl =
 		typeof window !== "undefined"
 			? `${window.location.protocol}//${window.location.host}`
-			: "https://smartplay.hk";
+			: envConfig.baseUrl;
 	const canonical = `${baseUrl}/scheduler`;
 
 	const title = i18n.t("scheduler.seo.title", {
@@ -63,7 +64,7 @@ function getSchedulerPageMeta() {
 		description,
 		ogTitle,
 		ogDescription,
-		ogImage: `${baseUrl}/og-image.jpg`,
+		ogImage: `${baseUrl}/favicon/android-chrome-512x512.png`,
 		twitterCard: "summary_large_image",
 		canonical,
 	};
@@ -76,7 +77,7 @@ function getSchedulerPageStructuredData() {
 	const baseUrl =
 		typeof window !== "undefined"
 			? `${window.location.protocol}//${window.location.host}`
-			: "https://smartplay.hk";
+			: envConfig.baseUrl;
 
 	return {
 		"@context": "https://schema.org",

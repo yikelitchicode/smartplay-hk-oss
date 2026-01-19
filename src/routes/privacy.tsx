@@ -12,6 +12,7 @@ import {
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { envConfig } from "@/lib/env";
 import i18n from "@/lib/i18n";
 
 /**
@@ -21,7 +22,7 @@ function getPrivacyPageMeta() {
 	const baseUrl =
 		typeof window !== "undefined"
 			? `${window.location.protocol}//${window.location.host}`
-			: "https://smartplay.hk"; // Default canonical base
+			: envConfig.baseUrl; // Default canonical base
 	const canonical = `${baseUrl}/privacy`;
 
 	return {
@@ -43,7 +44,7 @@ function getPrivacyPageMeta() {
 			defaultValue:
 				"SmartPlay HK OSS 康文署設施可用性查詢工具的數據保護和隱私實踐。",
 		}),
-		ogImage: `${baseUrl}/og-image.jpg`,
+		ogImage: `${baseUrl}/favicon/android-chrome-512x512.png`,
 		twitterCard: "summary" as const,
 		canonical,
 	};
@@ -56,7 +57,7 @@ function getPrivacyPageStructuredData() {
 	const baseUrl =
 		typeof window !== "undefined"
 			? `${window.location.protocol}//${window.location.host}`
-			: "https://smartplay.hk";
+			: envConfig.baseUrl;
 
 	return {
 		"@context": "https://schema.org",

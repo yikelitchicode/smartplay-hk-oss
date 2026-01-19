@@ -1,5 +1,6 @@
 import { ApiReferenceReact } from "@scalar/api-reference-react";
 import { createFileRoute } from "@tanstack/react-router";
+import { envConfig } from "@/lib/env";
 import "@scalar/api-reference-react/style.css";
 import { useEffect } from "react";
 import i18n from "@/lib/i18n";
@@ -13,7 +14,7 @@ function getWebhooksPageMeta() {
 	const baseUrl =
 		typeof window !== "undefined"
 			? `${window.location.protocol}//${window.location.host}`
-			: "https://smartplay.hk";
+			: envConfig.baseUrl;
 	const canonical = `${baseUrl}/docs/webhooks`;
 
 	const title = i18n.t("common.seo.webhooks.title", {
@@ -40,7 +41,7 @@ function getWebhooksPageMeta() {
 		description,
 		ogTitle,
 		ogDescription,
-		ogImage: `${baseUrl}/og-image.jpg`,
+		ogImage: `${baseUrl}/favicon/android-chrome-512x512.png`,
 		twitterCard: "summary_large_image",
 		canonical,
 	};
