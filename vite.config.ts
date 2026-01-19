@@ -18,6 +18,9 @@ const serverOnlyPackages = [
 	"pino",
 	"pino-pretty",
 	"node-cron",
+	"node:stream",
+	"node:stream/web",
+	"node:async_hooks",
 ];
 
 /**
@@ -43,6 +46,7 @@ function serverOnlyStubsPlugin(): Plugin {
 
 		const stub = createProxy("stub");
 		
+		export const Prisma = stub;
 		export const PrismaPg = stub;
 		export const PrismaClient = stub;
 		export const Pool = stub;
@@ -68,6 +72,34 @@ function serverOnlyStubsPlugin(): Plugin {
 		export const AnyNull = stub;
 		export const FieldRef = stub;
 		export const ModelName = stub;
+
+		// Prisma Enums
+		export const JobStatus = { PENDING: "PENDING", RUNNING: "RUNNING", COMPLETED: "COMPLETED", FAILED: "FAILED" };
+		export const TimePeriod = { MORNING: "MORNING", AFTERNOON: "AFTERNOON", EVENING: "EVENING" };
+		export const DLQStatus = { PENDING: "PENDING", RETRYING: "RETRYING", RESOLVED: "RESOLVED", PERMANENT: "PERMANENT" };
+		export const VerificationSource = { CRAWL: "CRAWL", USER: "USER" };
+		export const WatchStatus = { ACTIVE: "ACTIVE", PAUSED: "PAUSED", EXPIRED: "EXPIRED", DELETED: "DELETED" };
+		export const RecurringWatchStatus = { ACTIVE: "ACTIVE", PAUSED: "PAUSED", EXPIRED: "EXPIRED", DELETED: "DELETED" };
+		export const StatsEntityType = { DATE: "DATE", DISTRICT: "DISTRICT", CENTER: "CENTER", FACILITY: "FACILITY" };
+
+		// Node.js stream stubs
+		export const Stream = stub;
+		export const Readable = stub;
+		export const Writable = stub;
+		export const Duplex = stub;
+		export const Transform = stub;
+		export const PassThrough = stub;
+		export const pipeline = stub;
+		export const finished = stub;
+		export const ReadableStream = stub;
+		
+		// async_hooks stubs
+		export const AsyncLocalStorage = stub;
+
+		// TanStack SSR specific stubs (if they leak)
+		export const makeSerovalPlugin = stub;
+		export const makeSsrSerovalPlugin = stub;
+		export const createSerializationAdapter = stub;
 
 		export default stub;
 	`;
@@ -121,6 +153,56 @@ function serverOnlyStubsPlugin(): Plugin {
 	};
 }
 
+/**
+ * Custom Vite plugin to fix common source map errors in development.
+ * 1. Suppresses "No sources are declared" warnings from dependencies (e.g. TanStack)
+ * 2. Handles React DevTools 404s for source maps
+ */
+function sourceMapFixerPlugin(): Plugin {
+	return {
+		name: "source-map-fixer",
+		configureServer(server) {
+			server.middlewares.use((req, res, next) => {
+				const url = req.url?.split("?")[0];
+				if (
+					url?.endsWith("installHook.js.map") ||
+					url?.endsWith("react_devtools_backend_compact.js.map")
+				) {
+					res.statusCode = 200;
+					res.setHeader("Content-Type", "application/json");
+					res.end(
+						JSON.stringify({
+							version: 3,
+							sources: [],
+							names: [],
+							mappings: "",
+							file: url.split("/").pop(),
+						}),
+					);
+					return;
+				}
+				next();
+			});
+		},
+		transform(code, id) {
+			// Only target node_modules and check for data URI source maps
+			if (
+				id.includes("node_modules") &&
+				code.includes("sourceMappingURL=data:application/json;base64,")
+			) {
+				// Regex to match data URI source maps
+				const dataUriRegex =
+					/\/\/# sourceMappingURL=data:application\/json;base64,[A-Za-z0-9+/=]+/g;
+				return {
+					code: code.replace(dataUriRegex, ""),
+					map: null,
+				};
+			}
+			return null;
+		},
+	};
+}
+
 const config = defineConfig({
 	resolve: {
 		alias: {
@@ -136,17 +218,35 @@ const config = defineConfig({
 		exclude: serverOnlyPackages,
 	},
 	build: {
+		// Reduce memory pressure during SSR builds
+		chunkSizeWarningLimit: 1000,
 		rollupOptions: {
-			// Externalize Node.js-only packages from production client bundle
-			external: serverOnlyPackages,
+			// Improve build performance
+			treeshake: {
+				moduleSideEffects: false,
+			},
+			// Reduce memory usage
+			output: {
+				manualChunks: undefined,
+			},
 		},
+		// Optimize Nitro bundling
+		minify: "esbuild",
+		target: "esnext",
 	},
 	plugins: [
 		!process.env.VITEST && tanstackStart(),
 		// Apply server-only stubs early but after tanstackStart
 		serverOnlyStubsPlugin(),
+		// Fix source map issues in development
+		sourceMapFixerPlugin(),
 		// devtools(),
-		!process.env.VITEST && nitro(),
+		!process.env.VITEST &&
+			nitro({
+				// Optimize build output
+				minify: true,
+				sourcemap: false,
+			}),
 		// this is the plugin that enables path aliases
 		viteTsConfigPaths({
 			projects: ["./tsconfig.json"],

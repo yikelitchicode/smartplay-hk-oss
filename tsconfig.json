@@ -1,11 +1,11 @@
 {
 	"include": ["**/*.ts", "**/*.tsx"],
-	"exclude": [".agent", ".claude"],
+	"exclude": [".agent", ".claude", "node_modules"],
 	"compilerOptions": {
-		"target": "ES2024",
+		"target": "esnext",
 		"jsx": "react-jsx",
 		"module": "ESNext",
-		"lib": ["ES2024", "DOM", "DOM.Iterable"],
+		"lib": ["esnext", "DOM", "DOM.Iterable"],
 		"types": ["vite/client"],
 
 		/* Bundler mode */
@@ -20,8 +20,6 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true,
-		"noUncheckedSideEffectImports": true,
-		"baseUrl": ".",
 		"paths": {
 			"@/*": ["./src/*"]
 		}

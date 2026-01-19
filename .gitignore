@@ -7,6 +7,7 @@ count.txt
 .env
 .env.local
 .env.*.local
+.env.docker
 .nitro
 .tanstack
 .wrangler
@@ -24,5 +25,4 @@ scripts/logs
 
 # Keep example env files for documentation
 !.env.example
-!.env.docker
 !.env.*.example
