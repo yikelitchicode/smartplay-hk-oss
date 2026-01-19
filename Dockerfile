@@ -1,16 +1,13 @@
 # Multi-stage Dockerfile for TanStack Start application
-# Target platform: linux/amd64 for production
-
+# Optimized for build caching and smaller image size
 
 # Stage 1: Base image with pnpm
 FROM node:24-alpine AS base
-RUN apk add --no-cache libc6-compat wget
+RUN apk add --no-cache libc6-compat wget && \
+    corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Stage 2: Dependencies
+# Stage 2: Dependencies (cached layer - only rebuilds when lockfile changes)
 FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
@@ -18,49 +15,49 @@ RUN pnpm install --frozen-lockfile
 # Stage 3: Build the application
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copy all source files
 COPY . .
 
-# Generate Prisma client (dummy DATABASE_URL for build-time schema parsing only)
+# Generate Prisma client
 RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" pnpm prisma generate
 
 # Build the application
 RUN pnpm build
 
-# Stage 4: Production image
+# Stage 4: Production image (minimal)
 FROM node:24-alpine AS production
 WORKDIR /app
 
-# Install pnpm for production
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install runtime dependencies in single layer
+RUN apk add --no-cache wget netcat-openbsd && \
+    corepack enable && corepack prepare pnpm@latest --activate && \
+    npm install -g tsx
 
-# Install wget for healthcheck
-RUN apk add --no-cache wget netcat-openbsd
-
-# Copy necessary files
+# Copy package files first
 COPY package.json pnpm-lock.yaml ./
+
+# Install production dependencies only
+RUN pnpm install --prod --frozen-lockfile
+
+# Copy built application and required files
 COPY --from=build /app/.output ./.output
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/prisma.config.ts ./prisma.config.ts
 COPY --from=build /app/src/generated ./src/generated
-COPY --from=build /app/src/db ./src/db
-COPY --from=build /app/scripts ./scripts
+COPY --from=build /app/src/db.ts ./src/db.ts
 COPY --from=build /app/src/lib ./src/lib
-
-# Install production dependencies only (include tsx for scheduler)
-RUN pnpm install --prod --frozen-lockfile
-RUN npm install -g tsx
+COPY --from=build /app/scripts ./scripts
 
 # Copy startup script
 COPY docker-entrypoint.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
 # Set environment
-ENV NODE_ENV=production
-ENV HOST=0.0.0.0
-ENV PORT=3000
+ENV NODE_ENV=production \
+    HOST=0.0.0.0 \
+    PORT=3000
 
-# Expose port
 EXPOSE 3000
 
-# Run the application with startup script
 CMD ["/app/start.sh"]

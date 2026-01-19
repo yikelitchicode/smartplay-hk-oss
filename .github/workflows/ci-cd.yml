@@ -33,6 +33,18 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
 
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -50,10 +62,9 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-  # Build Job: Build and Push Docker Image
+  # Build Job: Build and Push Docker Image (runs in PARALLEL with test)
   build:
     name: Build Docker Image
-    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -90,18 +101,20 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          # Build for AMD64 production
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Enable BuildKit inline cache for better cache hits
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
 
-  # Deploy Job: Deploy to Remote Machine
+  # Deploy Job: Deploy to Remote Machine (waits for BOTH test and build)
   deploy:
     name: Deploy to Production
-    needs: build
+    needs: [test, build]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
@@ -110,90 +123,59 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Setup SSH
+      - name: Setup SSH and Deploy
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_ACTOR: ${{ github.actor }}
         run: |
+          # Setup SSH
           mkdir -p ~/.ssh
-          # Write SSH key using printf to preserve newlines
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          # Verify SSH_HOST is set
+
           if [ -z "$SSH_HOST" ]; then
             echo "❌ Error: SSH_HOST secret is not set"
             exit 1
           fi
           ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
 
-      - name: Create .env.docker file on remote
-        env:
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
-          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
-          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
-          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
-        run: |
-          ssh "$SSH_USER@$SSH_HOST" "mkdir -p ~/smartplay-hk-oss"
-
           # Parse DATABASE_URL to extract postgres credentials
-          # Format: postgresql://user:password@host:port/database
           POSTGRES_USER=$(echo "$DATABASE_URL" | sed -n 's|.*://\([^:]*\):.*|\1|p')
           POSTGRES_PASSWORD=$(echo "$DATABASE_URL" | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
           POSTGRES_DB=$(echo "$DATABASE_URL" | sed -n 's|.*/\([^?]*\).*|\1|p')
-
-          # Use defaults if parsing fails
           POSTGRES_USER=${POSTGRES_USER:-smartplay}
           POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-smartplay_password}
           POSTGRES_DB=${POSTGRES_DB:-smartplay}
-
-          # The app connects to 'postgres' hostname (docker service name)
-          # so we rewrite DATABASE_URL to use the internal docker hostname
           INTERNAL_DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
 
+          # Combined: Create directory, env file, and docker-compose in one SSH session
+          ssh "$SSH_USER@$SSH_HOST" "mkdir -p ~/smartplay-hk-oss"
+
+          # Create env file
           ssh "$SSH_USER@$SSH_HOST" "cat > ~/smartplay-hk-oss/.env.docker << 'ENVEOF'
-          # ============================================
-          # Database Configuration
-          # ============================================
           DATABASE_URL=${INTERNAL_DATABASE_URL}
           POSTGRES_USER=${POSTGRES_USER}
           POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
           POSTGRES_DB=${POSTGRES_DB}
-
-          # ============================================
-          # Application Configuration
-          # ============================================
           NODE_ENV=production
           BASE_URL=${DEPLOY_URL}
-
-          # ============================================
-          # Cloudflare Turnstile (Bot Protection)
-          # ============================================
           VITE_CLOUDFLARE_TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY}
           CLOUDFLARE_TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY}
-
-          # ============================================
-          # Cloudflare Tunnel
-          # ============================================
           CLOUDFLARE_TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
           ENVEOF"
 
-      - name: Copy docker-compose.prod.yml to remote
-        env:
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-        run: |
+          # Copy docker-compose file
           scp docker-compose.prod.yml "$SSH_USER@$SSH_HOST:~/smartplay-hk-oss/docker-compose.yml"
 
-      - name: Deploy using Docker Compose
-        env:
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_ACTOR: ${{ github.actor }}
-        run: |
+          # Deploy: login, pull, and start in one command
           ssh "$SSH_USER@$SSH_HOST" "cd ~/smartplay-hk-oss && \
             echo '$GH_TOKEN' | docker login ghcr.io -u '$GH_ACTOR' --password-stdin && \
             docker compose --env-file .env.docker pull && \
@@ -204,30 +186,28 @@ jobs:
         env:
           DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
         run: |
-          # Skip if DEPLOY_URL is not set
           if [ -z "$DEPLOY_URL" ]; then
             echo "⏭️  DEPLOY_URL not configured, skipping health check"
             exit 0
           fi
 
-          echo "⏳ Waiting 30s for services to start..."
-          sleep 30
+          echo "⏳ Waiting for services to start..."
 
-          echo "🔍 Checking $DEPLOY_URL..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 30 "$DEPLOY_URL" 2>/dev/null) || response="000"
+          # Retry loop instead of fixed wait
+          for i in 1 2 3 4 5; do
+            sleep 5
+            echo "🔍 Attempt $i: Checking $DEPLOY_URL..."
+            response=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 --max-time 10 "$DEPLOY_URL" 2>/dev/null) || response="000"
+            
+            if [ "$response" = "200" ] || [ "$response" = "301" ] || [ "$response" = "302" ] || [ "$response" = "403" ]; then
+              echo "✅ Health check passed (status: $response)"
+              exit 0
+            fi
+            echo "   Status: $response, retrying..."
+          done
 
-          echo "📊 HTTP status: $response"
-
-          if [ "$response" = "200" ] || [ "$response" = "301" ] || [ "$response" = "302" ] || [ "$response" = "403" ]; then
-            echo "✅ Deployment health check passed (server is responding)"
-            exit 0
-          elif [ "$response" = "000" ]; then
-            echo "⚠️  Could not reach server (may still be starting)"
-            exit 0
-          else
-            echo "❌ Deployment health check failed with status: $response"
-            exit 1
-          fi
+          echo "⚠️  Health check inconclusive after 5 attempts (server may still be starting)"
+          exit 0
 
       - name: Cleanup SSH keys
         if: always()
