@@ -140,6 +140,7 @@ async function initializeWatchSchedulers(): Promise<void> {
 		notifications: watchConfig.notifications,
 		webhook: watchConfig.webhook,
 	});
+
 	const { RefreshStrategyResolver } = await import(
 		"@/lib/watch/services/refresh-strategy-resolver"
 	);

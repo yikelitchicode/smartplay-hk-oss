@@ -92,7 +92,7 @@ export class WatchEvaluationScheduler {
 
 			const startTime = Date.now();
 
-			// Evaluate all active watchers
+			// 1. Evaluate all active watchers
 			const results = await this.watchEvaluator.evaluateActiveWatchers();
 
 			const duration = Date.now() - startTime;

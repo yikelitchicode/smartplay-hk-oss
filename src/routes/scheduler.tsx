@@ -2,7 +2,6 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
 	Activity,
 	AlertCircle,
-	ArrowLeft,
 	CheckCircle2,
 	Clock,
 	Loader2,
@@ -13,7 +12,9 @@ import {
 } from "lucide-react";
 import { type JSX, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DateSelector } from "@/components/booking/DateSelector";
 import { WatcherHitsModal } from "@/components/booking/WatcherHitsModal";
+import { SchedulerHeader } from "@/components/scheduler/SchedulerHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
@@ -26,7 +27,73 @@ import {
 } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
+import i18n from "@/lib/i18n";
 import { getWatchers, updateWatcher } from "@/server-functions/watch/watcher";
+
+/**
+ * Generate dynamic meta tags for the scheduler page
+ */
+function getSchedulerPageMeta() {
+	const baseUrl =
+		typeof window !== "undefined"
+			? `${window.location.protocol}//${window.location.host}`
+			: "https://smartplay.hk";
+	const canonical = `${baseUrl}/scheduler`;
+
+	const title = i18n.t("scheduler.seo.title", {
+		ns: "scheduler",
+		defaultValue: "監測排程器 | SmartPlay HK OSS",
+	});
+	const description = i18n.t("scheduler.seo.description", {
+		ns: "scheduler",
+		defaultValue:
+			"管理您的自動化康文署設施可用性監測。為您心儀的體育場地設定自訂通知，第一時間獲取可用資訊。",
+	});
+	const ogTitle = i18n.t("scheduler.seo.ogTitle", {
+		ns: "scheduler",
+		defaultValue: "排程器 - SmartPlay HK OSS 可用性監測",
+	});
+	const ogDescription = i18n.t("scheduler.seo.ogDescription", {
+		ns: "scheduler",
+		defaultValue: "香港體育設施自動監控。管理您的監測器與通知設定。",
+	});
+
+	return {
+		title,
+		description,
+		ogTitle,
+		ogDescription,
+		ogImage: `${baseUrl}/og-image.jpg`,
+		twitterCard: "summary_large_image",
+		canonical,
+	};
+}
+
+/**
+ * Generate structured data (JSON-LD) for the scheduler page
+ */
+function getSchedulerPageStructuredData() {
+	const baseUrl =
+		typeof window !== "undefined"
+			? `${window.location.protocol}//${window.location.host}`
+			: "https://smartplay.hk";
+
+	return {
+		"@context": "https://schema.org",
+		"@graph": [
+			{
+				"@type": "WebApplication",
+				"@id": `${baseUrl}/scheduler#webapp`,
+				name: "SmartPlay HK OSS Scheduler",
+				description: "Automated LCSD facility availability monitoring service.",
+				url: `${baseUrl}/scheduler`,
+				applicationCategory: "UtilitiesApplication",
+				operatingSystem: "Web",
+			},
+		],
+	};
+}
+
 import {
 	getWebhookSettings,
 	setWebhookUrl,
@@ -45,17 +112,53 @@ export const Route = createFileRoute("/scheduler")({
 	},
 	component: SchedulerPage,
 	pendingComponent: SchedulerSkeleton,
-	head: () => ({
-		meta: [
-			{
-				title: "Scheduler | SmartPlay HK OSS",
-			},
-			{
-				name: "description",
-				content: "Manage your availability watchers",
-			},
-		],
-	}),
+	head: () => {
+		const {
+			title,
+			description,
+			ogTitle,
+			ogDescription,
+			ogImage,
+			twitterCard,
+			canonical,
+		} = getSchedulerPageMeta();
+
+		return {
+			meta: [
+				{ title },
+				{ name: "description", content: description },
+				{ property: "og:title", content: ogTitle },
+				{ property: "og:description", content: ogDescription },
+				{ property: "og:type", content: "website" },
+				{ property: "og:image", content: ogImage },
+				{ property: "og:url", content: canonical },
+				{ name: "twitter:card", content: twitterCard },
+				{ name: "twitter:title", content: ogTitle },
+				{ name: "twitter:description", content: ogDescription },
+				{ name: "twitter:image", content: ogImage },
+				{ name: "twitter:url", content: canonical },
+				{ name: "robots", content: "index, follow" },
+			],
+			links: [
+				{ rel: "canonical", href: canonical },
+				{ rel: "alternate", hrefLang: "en", href: `${canonical}?lng=en` },
+				{ rel: "alternate", hrefLang: "zh-Hans", href: `${canonical}?lng=cn` },
+				{ rel: "alternate", hrefLang: "zh-Hant", href: `${canonical}?lng=zh` },
+				{ rel: "alternate", hrefLang: "zh-HK", href: canonical },
+				{
+					rel: "alternate",
+					hrefLang: "x-default",
+					href: `${canonical}?lng=en`,
+				},
+			],
+			scripts: [
+				{
+					type: "application/ld+json",
+					children: JSON.stringify(getSchedulerPageStructuredData()),
+				},
+			],
+		};
+	},
 });
 
 function SchedulerPage(): JSX.Element {
@@ -195,28 +298,20 @@ function SchedulerPage(): JSX.Element {
 	};
 
 	return (
-		<div className="min-h-[calc(100vh-4rem)] bg-background flex flex-col font-sans">
-			<div className="max-w-5xl mx-auto w-full px-4 py-8 space-y-8">
-				{/* Header */}
-				<div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-					<div>
-						<h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
-							{t("scheduler:title", "Watch Scheduler")}
-							<Badge variant="primary" size="sm">
-								Beta
-							</Badge>
-						</h1>
-						<p className="text-muted-foreground mt-1 text-lg">
-							{t("scheduler:subtitle", "Manage your availability watchers")}
-						</p>
-					</div>
-					<Link to="/">
-						<Button variant="ghost" size="sm" className="gap-2 shrink-0">
-							<ArrowLeft size={16} /> {t("nav.home")}
-						</Button>
-					</Link>
-				</div>
+		<div className="min-h-screen bg-background/50 flex flex-col font-sans">
+			{/* Header Container */}
+			<nav aria-label="Scheduler navigation">
+				<DateSelector
+					dates={[]}
+					selectedDate=""
+					onSelectDate={() => {}}
+					dateStyles={{}}
+				>
+					<SchedulerHeader />
+				</DateSelector>
+			</nav>
 
+			<main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8 space-y-8">
 				<div className="grid lg:grid-cols-3 gap-8">
 					{/* Active Watchers Column */}
 					<div className="lg:col-span-2 space-y-6">
@@ -292,8 +387,16 @@ function SchedulerPage(): JSX.Element {
 																{new Date(watcher.date).toLocaleDateString()}
 															</span>
 															<span className="flex items-center gap-1">
-																<Clock size={14} /> {watcher.startTime} -{" "}
-																{watcher.endTime}
+																<Clock size={14} />{" "}
+																{watcher.startTime
+																	.split(":")
+																	.slice(0, 2)
+																	.join(":")}{" "}
+																-{" "}
+																{watcher.endTime
+																	.split(":")
+																	.slice(0, 2)
+																	.join(":")}
 															</span>
 														</div>
 													</div>
@@ -492,7 +595,7 @@ function SchedulerPage(): JSX.Element {
 					open={!!selectedWatcherId}
 					onClose={() => setSelectedWatcherId(null)}
 				/>
-			</div>
+			</main>
 		</div>
 	);
 }
@@ -501,17 +604,26 @@ function SchedulerSkeleton() {
 	// Initialize translation to trigger loading of namespaces proactively
 	useTranslation(["common", "scheduler"]);
 	return (
-		<div className="min-h-[calc(100vh-4rem)] bg-background flex flex-col font-sans">
-			<div className="max-w-5xl mx-auto w-full px-4 py-8 space-y-8">
-				{/* Header Skeleton */}
-				<div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-					<div className="space-y-3">
-						<Skeleton className="h-10 w-64" />
-						<Skeleton className="h-6 w-96 opacity-60" />
+		<div className="min-h-screen bg-background flex flex-col font-sans">
+			{/* Header Skeleton */}
+			<nav aria-label="Scheduler skeleton navigation">
+				<DateSelector
+					dates={[]}
+					selectedDate=""
+					onSelectDate={() => {}}
+					dateStyles={{}}
+				>
+					<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 mt-4">
+						<div className="space-y-3">
+							<Skeleton className="h-10 w-64" />
+							<Skeleton className="h-6 w-96 opacity-60" />
+						</div>
+						<Skeleton className="h-9 w-24 shrink-0" />
 					</div>
-					<Skeleton className="h-9 w-24 shrink-0" />
-				</div>
+				</DateSelector>
+			</nav>
 
+			<main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8 space-y-8">
 				<div className="grid lg:grid-cols-3 gap-8">
 					{/* Watchers Column Skeleton */}
 					<div className="lg:col-span-2 space-y-6">
@@ -563,7 +675,7 @@ function SchedulerSkeleton() {
 						</div>
 					</div>
 				</div>
-			</div>
+			</main>
 		</div>
 	);
 }

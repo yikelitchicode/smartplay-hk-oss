@@ -1,6 +1,12 @@
 {
+	"seo": {
+		"title": "監測排程器 | SmartPlay HK OSS",
+		"description": "管理您的自動化康文署設施可用性監測。為您心儀的體育場地設定自訂通知，第一時間獲取可用資訊。",
+		"ogTitle": "排程器 - SmartPlay HK OSS 可用性監測",
+		"ogDescription": "香港體育設施自動監控。管理您的監測器與通知設定。"
+	},
 	"title": "監測排程器",
-	"subtitle": "管理您的場地監測器",
+	"subtitle": "實時監控康文署體育設施的可用狀態，並在您心儀的時段釋出時立即收到通知。",
 	"active_watchers": "活躍監測",
 	"active_desc": "正在為您監察場地",
 	"hits": "命中",

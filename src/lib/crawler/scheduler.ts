@@ -15,10 +15,14 @@ export class CrawlerScheduler {
 	private config: CrawlerConfig;
 	private isRunning: boolean = false;
 
-	constructor(config: CrawlerConfig) {
+	constructor(
+		config: CrawlerConfig,
+		orchestrator?: CrawlerOrchestrator,
+		checkpoint?: SchedulerCheckpointService,
+	) {
 		this.config = config;
-		this.orchestrator = new CrawlerOrchestrator(config);
-		this.checkpoint = new SchedulerCheckpointService();
+		this.orchestrator = orchestrator || new CrawlerOrchestrator(config);
+		this.checkpoint = checkpoint || new SchedulerCheckpointService();
 	}
 
 	/**
@@ -381,10 +385,18 @@ if (globalThis.__globalCrawlerScheduler === undefined) {
 /**
  * Initialize or get the global scheduler instance
  */
-export function initScheduler(config?: CrawlerConfig): CrawlerScheduler {
+export function initScheduler(
+	config?: CrawlerConfig,
+	orchestrator?: CrawlerOrchestrator,
+	checkpoint?: SchedulerCheckpointService,
+): CrawlerScheduler {
 	if (!globalThis.__globalCrawlerScheduler) {
 		const crawlerConfig = config || loadConfig();
-		globalThis.__globalCrawlerScheduler = new CrawlerScheduler(crawlerConfig);
+		globalThis.__globalCrawlerScheduler = new CrawlerScheduler(
+			crawlerConfig,
+			orchestrator,
+			checkpoint,
+		);
 	}
 	return globalThis.__globalCrawlerScheduler;
 }

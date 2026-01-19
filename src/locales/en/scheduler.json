@@ -1,6 +1,12 @@
 {
+	"seo": {
+		"title": "Watcher Scheduler | SmartPlay HK OSS",
+		"description": "Manage your automated LCSD facility availability watchers. Set up custom notifications for when your preferred sports venues become available.",
+		"ogTitle": "Scheduler - SmartPlay HK OSS Availability Watcher",
+		"ogDescription": "Automated monitoring for Hong Kong sports facilities. Manage your watchers and notification settings."
+	},
 	"title": "Watch Scheduler",
-	"subtitle": "Manage your availability watchers",
+	"subtitle": "Monitor real-time availability of LCSD sports facilities and receive instant notifications for your preferred sessions.",
 	"active_watchers": "Active Watchers",
 	"active_desc": "Monitoring sessions for you",
 	"hits": "Hits",
