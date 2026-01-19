@@ -36,6 +36,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        run: |
+          echo "DATABASE_URL=\"postgresql://test:test@localhost:5432/test\"" > .env.local
+          pnpm db:generate
+
       - name: Run Biome linter
         run: pnpm lint
 
@@ -44,11 +49,6 @@ jobs:
 
       - name: Run tests
         run: pnpm test
-
-      - name: Generate Prisma Client
-        run: |
-          echo "DATABASE_URL=\"postgresql://test:test@localhost:5432/test\"" > .env
-          pnpm db:generate
 
   # Build Job: Build and Push Docker Image
   build:
@@ -145,6 +145,11 @@ jobs:
           # Note: Crawler configuration is in src/lib/crawler/config.ts
           # The scheduler runs automatically via scripts/scheduler.ts
           # Edit src/lib/crawler/config.ts to customize crawler behavior
+
+          # ============================================
+          # Cloudflare Tunnel
+          # ============================================
+          CLOUDFLARE_TUNNEL_TOKEN=${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
           EOF"
 
       - name: Copy docker-compose.yml to remote

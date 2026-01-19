@@ -21,7 +21,7 @@ services:
       - internal
 
   # Application
-  app:
+  smartplay-hk-oss:
     build:
       context: .
       dockerfile: Dockerfile
@@ -67,7 +67,7 @@ services:
       # Get your token from: https://dash.cloudflare.com/get-started
       TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
     depends_on:
-      - app
+      - smartplay-hk-oss
     networks:
       - internal
     # Cloudflare tunnel is enabled by default for production
