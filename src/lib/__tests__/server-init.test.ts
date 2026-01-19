@@ -8,7 +8,12 @@
  * @vitest-environment node
  */
 
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { describe, expect, it } from "vitest";
+
+// Dynamically resolve the path to work in any environment (local or CI/CD)
+const SERVER_INIT_PATH = path.resolve(__dirname, "../server-init.ts");
 
 describe("server-init.ts", () => {
 	describe("module structure", () => {
@@ -22,24 +27,18 @@ describe("server-init.ts", () => {
 		it("should be importable", () => {
 			// The module should be importable
 			// We don't actually import it here to avoid triggering initialization
-			const path =
-				"/Users/lst97/Desktop/Work/Code/Projects/smartplay-hk-oss/src/lib/server-init.ts";
 
 			// Verify the file exists and has content
-			const fs = require("node:fs");
-			expect(fs.existsSync(path)).toBe(true);
+			expect(fs.existsSync(SERVER_INIT_PATH)).toBe(true);
 
-			const content = fs.readFileSync(path, "utf-8");
+			const content = fs.readFileSync(SERVER_INIT_PATH, "utf-8");
 			expect(content).toContain("ensureSchedulerInitialized");
 			expect(content).toContain("__serverInitPromise");
 			expect(content).toContain("__serverInitialized");
 		});
 
 		it("should export ensureSchedulerInitialized function", () => {
-			const fs = require("node:fs");
-			const path =
-				"/Users/lst97/Desktop/Work/Code/Projects/smartplay-hk-oss/src/lib/server-init.ts";
-			const content = fs.readFileSync(path, "utf-8");
+			const content = fs.readFileSync(SERVER_INIT_PATH, "utf-8");
 
 			// Verify the function is exported
 			expect(content).toMatch(
@@ -48,10 +47,7 @@ describe("server-init.ts", () => {
 		});
 
 		it("should have promise-based locking", () => {
-			const fs = require("node:fs");
-			const path =
-				"/Users/lst97/Desktop/Work/Code/Projects/smartplay-hk-oss/src/lib/server-init.ts";
-			const content = fs.readFileSync(path, "utf-8");
+			const content = fs.readFileSync(SERVER_INIT_PATH, "utf-8");
 
 			// Verify promise-based locking pattern is implemented
 			expect(content).toContain("__serverInitPromise");
@@ -60,10 +56,7 @@ describe("server-init.ts", () => {
 		});
 
 		it("should have error handling", () => {
-			const fs = require("node:fs");
-			const path =
-				"/Users/lst97/Desktop/Work/Code/Projects/smartplay-hk-oss/src/lib/server-init.ts";
-			const content = fs.readFileSync(path, "utf-8");
+			const content = fs.readFileSync(SERVER_INIT_PATH, "utf-8");
 
 			// Verify try-catch error handling
 			expect(content).toMatch(/try\s*{/);
@@ -72,10 +65,7 @@ describe("server-init.ts", () => {
 		});
 
 		it("should have auto-initialization for server-side", () => {
-			const fs = require("node:fs");
-			const path =
-				"/Users/lst97/Desktop/Work/Code/Projects/smartplay-hk-oss/src/lib/server-init.ts";
-			const content = fs.readFileSync(path, "utf-8");
+			const content = fs.readFileSync(SERVER_INIT_PATH, "utf-8");
 
 			// Verify auto-initialization code
 			expect(content).toContain("typeof window");
@@ -83,10 +73,7 @@ describe("server-init.ts", () => {
 		});
 
 		it("should clear promise after completion", () => {
-			const fs = require("node:fs");
-			const path =
-				"/Users/lst97/Desktop/Work/Code/Projects/smartplay-hk-oss/src/lib/server-init.ts";
-			const content = fs.readFileSync(path, "utf-8");
+			const content = fs.readFileSync(SERVER_INIT_PATH, "utf-8");
 
 			// Verify promise cleanup - the promise is kept for caching but flag is set
 			expect(content).toContain("finally");
@@ -96,20 +83,14 @@ describe("server-init.ts", () => {
 
 	describe("implementation details", () => {
 		it("should use dynamic import for crawler", () => {
-			const fs = require("node:fs");
-			const path =
-				"/Users/lst97/Desktop/Work/Code/Projects/smartplay-hk-oss/src/lib/server-init.ts";
-			const content = fs.readFileSync(path, "utf-8");
+			const content = fs.readFileSync(SERVER_INIT_PATH, "utf-8");
 
 			// Verify dynamic import
 			expect(content).toContain('await import("@/lib/crawler")');
 		});
 
 		it("should log initialization messages", () => {
-			const fs = require("node:fs");
-			const path =
-				"/Users/lst97/Desktop/Work/Code/Projects/smartplay-hk-oss/src/lib/server-init.ts";
-			const content = fs.readFileSync(path, "utf-8");
+			const content = fs.readFileSync(SERVER_INIT_PATH, "utf-8");
 
 			// Verify logging
 			expect(content).toContain("serverLogger.info");
@@ -117,10 +98,7 @@ describe("server-init.ts", () => {
 		});
 
 		it("should check if scheduler is active", () => {
-			const fs = require("node:fs");
-			const path =
-				"/Users/lst97/Desktop/Work/Code/Projects/smartplay-hk-oss/src/lib/server-init.ts";
-			const content = fs.readFileSync(path, "utf-8");
+			const content = fs.readFileSync(SERVER_INIT_PATH, "utf-8");
 
 			// Verify scheduler activity check
 			expect(content).toContain("scheduler.isActive()");
