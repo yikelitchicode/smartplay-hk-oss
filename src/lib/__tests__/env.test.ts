@@ -101,6 +101,7 @@ describe("env.ts", () => {
 				isDevelopment: true,
 				isProduction: false,
 				isTest: false,
+				baseUrl: "http://localhost:3000",
 				enableScheduler: false,
 				enableWatcher: false,
 			};
@@ -117,6 +118,7 @@ describe("env.ts", () => {
 				isDevelopment: false,
 				isProduction: true,
 				isTest: false,
+				baseUrl: "https://smartplay.hk",
 				enableScheduler: false,
 				enableWatcher: false,
 			};
@@ -138,6 +140,7 @@ describe("env.ts", () => {
 				isDevelopment: false,
 				isProduction: false,
 				isTest: true,
+				baseUrl: "http://localhost:3000",
 				enableScheduler: false,
 				enableWatcher: false,
 			};
@@ -154,6 +157,7 @@ describe("env.ts", () => {
 				isDevelopment: true,
 				isProduction: false,
 				isTest: false,
+				baseUrl: "http://localhost:3000",
 				enableScheduler: false,
 				enableWatcher: false,
 			};
@@ -173,6 +177,7 @@ describe("env.ts", () => {
 				isDevelopment: false,
 				isProduction: true,
 				isTest: false,
+				baseUrl: "https://smartplay.hk",
 				enableScheduler: false,
 				enableWatcher: false,
 			};

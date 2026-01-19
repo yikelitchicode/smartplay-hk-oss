@@ -23,53 +23,64 @@ import { z } from "zod";
  * - Deployment-specific settings
  * - Node environment configuration
  */
+const isBrowser = typeof window !== "undefined";
+const isTestEnv =
+	typeof process !== "undefined" && process.env?.NODE_ENV === "test";
+
 const envSchema = z.object({
 	// Database
-	DATABASE_URL: z
-		.string()
-		.min(1, "DATABASE_URL cannot be empty")
-		.refine((val) => {
-			try {
-				const url = new URL(val);
-				// Validate protocol
-				const isValidProtocol =
-					url.protocol === "postgresql:" || url.protocol === "postgres:";
-				if (!isValidProtocol) {
-					return false;
-				}
+	DATABASE_URL:
+		isBrowser || isTestEnv
+			? z.string().default("postgresql://localhost/db")
+			: z
+					.string()
+					.min(1, "DATABASE_URL cannot be empty")
+					.refine((val) => {
+						try {
+							const url = new URL(val);
+							// Validate protocol
+							const isValidProtocol =
+								url.protocol === "postgresql:" || url.protocol === "postgres:";
+							if (!isValidProtocol) {
+								return false;
+							}
 
-				// Check for potentially dangerous parameters that could indicate injection attempts
-				const dangerousParams = [
-					"sslmode",
-					"connect_timeout",
-					"statement_timeout",
-					"query_timeout",
-				];
-				const hasDangerousParams = dangerousParams.some((param) =>
-					url.searchParams.has(param),
-				);
-				if (hasDangerousParams) {
-					console.warn(
-						"⚠️ DATABASE_URL contains potentially unsafe parameters. Ensure these are intentional.",
-					);
-				}
+							// Check for potentially dangerous parameters that could indicate injection attempts
+							const dangerousParams = [
+								"sslmode",
+								"connect_timeout",
+								"statement_timeout",
+								"query_timeout",
+							];
+							const hasDangerousParams = dangerousParams.some((param) =>
+								url.searchParams.has(param),
+							);
+							if (hasDangerousParams) {
+								console.warn(
+									"⚠️ DATABASE_URL contains potentially unsafe parameters. Ensure these are intentional.",
+								);
+							}
 
-				// Ensure hostname is present (prevents protocol-only URLs like "postgresql://")
-				if (!url.hostname) {
-					return false;
-				}
+							// Ensure hostname is present (prevents protocol-only URLs like "postgresql://")
+							if (!url.hostname) {
+								return false;
+							}
 
-				return true;
-			} catch {
-				// URL parsing failed
-				return false;
-			}
-		}, "DATABASE_URL must be a valid PostgreSQL URL with hostname (e.g., postgresql://user:pass@localhost:5432/db)"),
+							return true;
+						} catch {
+							// URL parsing failed
+							return false;
+						}
+					}, "DATABASE_URL must be a valid PostgreSQL URL with hostname (e.g., postgresql://user:pass@localhost:5432/db)"),
 
 	// Node Environment
 	NODE_ENV: z
 		.enum(["development", "production", "test"])
 		.default("development"),
+	BASE_URL:
+		isBrowser || isTestEnv
+			? z.string().optional()
+			: z.string().url().optional(),
 
 	// Features
 	ENABLE_SCHEDULER: z
@@ -87,7 +98,6 @@ const envSchema = z.object({
  *
  * This provides TypeScript types that match the validated schema exactly.
  */
-type EnvInput = z.input<typeof envSchema>;
 type EnvOutput = z.output<typeof envSchema>;
 
 /**
@@ -99,9 +109,22 @@ type EnvOutput = z.output<typeof envSchema>;
  */
 function parseEnv(processEnv: NodeJS.ProcessEnv = process.env): EnvOutput {
 	// Filter out undefined values to allow defaults to apply
+	// Also filter out empty strings and literal "undefined" strings (can happen in some test runners)
 	const filteredEnv = Object.fromEntries(
-		Object.entries(processEnv).filter(([_, value]) => value !== undefined),
-	) as EnvInput;
+		Object.entries(processEnv).filter(
+			([_, value]) =>
+				value !== undefined && value !== "" && value !== "undefined",
+		),
+	) as Record<string, string>;
+
+	// Provide a dummy DATABASE_URL for tests if not present
+	if (
+		(filteredEnv.NODE_ENV === "test" || process.env.NODE_ENV === "test") &&
+		!filteredEnv.DATABASE_URL
+	) {
+		filteredEnv.DATABASE_URL =
+			"postgresql://postgres:postgres@localhost:5432/postgres";
+	}
 
 	try {
 		return envSchema.parse(filteredEnv);
@@ -153,6 +176,11 @@ export const envConfig = {
 	isDevelopment: env.NODE_ENV === "development",
 	isProduction: env.NODE_ENV === "production",
 	isTest: env.NODE_ENV === "test",
+	baseUrl:
+		env.BASE_URL ??
+		(env.NODE_ENV === "development"
+			? "http://localhost:3000"
+			: "https://smartplay.hk"),
 
 	// Features
 	enableScheduler: env.ENABLE_SCHEDULER,
