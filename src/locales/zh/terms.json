@@ -1,0 +1,232 @@
+{
+	"terms": {
+		"seo": {
+			"title": "條款與條件 | SmartPlay HK OSS",
+			"description": "閱讀 SmartPlay HK OSS 的條款與條件，這是一個用於檢查香港康文署體育設施可用性的非官方開源工具。",
+			"ogTitle": "條款與條件 - SmartPlay HK OSS",
+			"ogDescription": "SmartPlay HK OSS 康文署設施可用性查詢工具的服務條款和法律限制。"
+		},
+		"title": "條款與條件",
+		"subtitle": "使用 SmartPlay HK OSS 前，請仔細閱讀這些條款。",
+		"lastUpdated": "最後更新：",
+		"importantNotice": {
+			"title": "重要通知",
+			"disclaimer": "重要免責聲明：SmartPlay HK OSS 是一個用於檢查 LCSD 體育設施可用性的非官方開源工具。我們與香港康樂及文化事務署（LCSD）沒有關聯、認可或官方聯繫。",
+			"verify": "本服務按原樣提供，不提供任何保證。請直接通過官方 LCSD SmartPlay 網站核實所有資訊。"
+		},
+		"overviewCards": {
+			"acceptance": {
+				"title": "接受條款",
+				"description": "使用本服務即表示您同意這些條款和我們的隱私權政策"
+			},
+			"noGuarantees": {
+				"title": "無伺服器保證",
+				"description": "不保證伺服器可用性 - 服務可能中斷或停止"
+			},
+			"responsibility": {
+				"title": "用戶責任",
+				"description": "您有責任核實資訊並進行實際預訂"
+			}
+		},
+		"quickActions": {
+			"title": "快速操作",
+			"manageWatchers": "管理您的監視器",
+			"resetCookiePreferences": "重置 Cookie 偏好設定"
+		},
+		"sections": {
+			"agreement": {
+				"title": "1. 協議條款",
+				"items": {
+					"binding": "通過訪問或使用 SmartPlay HK OSS（「服務」），您同意受這些條款與條件（「條款」）的約束。如果您不同意這些條款，請勿使用本服務。",
+					"modification": "這些條款構成您與 SmartPlay HK OSS 之間具有法律約束力的協議。我們保留隨時修改這些條款的權利，您繼續使用服務即表示接受任何變更。",
+					"ageRequirement": {
+						"title": "年齡要求",
+						"content": "本網站沒有使用年齡限制。所有年齡的用戶均可使用本服務，這與香港康樂及文化事務署（LCSD）的官方 SmartPlay 指引一致，該指引允許所有香港居民（包括 11 歲以下的兒童，通過家長/監護人）進行登記和使用。請參閱官方 LCSD SmartPlay 文件以獲取具體的資格詳情。"
+					}
+				}
+			},
+			"service": {
+				"title": "2. 服務描述與限制",
+				"items": {
+					"whatWeProvide": {
+						"title": "我們提供的內容",
+						"content": "SmartPlay HK OSS 是一個非官方工具，它：爬取 LCSD SmartPlay 網站的公開可用資料，顯示體育設施可用性資訊，允許用戶設置設施可用性監視器，在設施可用時發送可選的 Webhook 通知，提供用於查看和管理設施時間表的介面。"
+					},
+					"whatWeDontProvide": {
+						"title": "我們不提供的內容",
+						"content": "我們不：代表您進行實際預訂或保留，保證即時可用性準確性，提供官方 LCSD 服務，儲存支付資訊或處理付款，為 LCSD 設施提供客戶支援。"
+					},
+					"availability": {
+						"title": "服務可用性",
+						"content": "我們努力維護服務，但不保證：不間斷或無錯誤運行，將糾正缺陷，伺服器沒有病毒或有害元件，設施資料的及時可用性。"
+					}
+				}
+			},
+			"unofficial": {
+				"title": "3. 非官方與獨立服務",
+				"items": {
+					"status": "重要免責聲明：SmartPlay HK OSS 與香港康樂及文化事務署（LCSD）或香港政府沒有關聯、認可或官方聯繫。",
+					"dataSource": {
+						"title": "資料來源",
+						"content": "所有設施可用性資料均來自公開可存取的 LCSD SmartPlay 網站。我們與 LCSD 沒有任何特殊存取或官方關係。"
+					},
+					"accuracy": {
+						"title": "資訊準確性",
+						"content": "雖然我們努力提供準確資訊：可用性資訊可能不是即時或最新的，我們無法保證顯示的可用性仍然準確，您必須在制定計劃前直接向 LCSD SmartPlay 核實可用性，我們不對不準確資訊造成的任何不便負責。"
+					},
+					"noBooking": {
+						"title": "無預訂功能",
+						"content": "本服務僅顯示可用性資訊。我們不促進實際預訂或保留。要預訂設施，您必須訪問官方 LCSD SmartPlay 網站或使用官方 SmartPlay 行動應用程式。"
+					}
+				}
+			},
+			"responsibilities": {
+				"title": "4. 您的責任",
+				"items": {
+					"accurateInfo": {
+						"title": "準確資訊",
+						"content": "您同意：在設置監視器時提供準確資訊，僅使用您控制的有效 Webhook URL，不將服務用於任何非法或未授權的目的。"
+					},
+					"verification": {
+						"title": "需要核實",
+						"content": "您必須始終直接向 LCSD SmartPlay 核實設施可用性，然後才能：前往場地的旅行安排，基於顯示的可用性計劃活動，向他人轉達可用性資訊。"
+					},
+					"prohibited": {
+						"title": "禁止用途",
+						"content": "您不得：試圖破壞、損壞或干擾服務，使用自動化腳本過度查詢我們的伺服器，聲稱或暗示我們的資料是官方或保證的，未經許可將服務用於任何商業目的。"
+					},
+					"accountSecurity": {
+						"title": "帳戶安全",
+						"content": "您有責任：維護瀏覽器會話的機密性，在您的瀏覽器會話下發生的所有活動，如果您懷疑會話被未經授權使用，通知我們。"
+					}
+				}
+			},
+			"ip": {
+				"title": "5. 智慧財產權與許可",
+				"items": {
+					"ourContent": {
+						"title": "我們的內容",
+						"content": "服務（包括其設計、程式碼和原始內容）由 SmartPlay HK OSS 所有，受智慧財產權法保護。"
+					},
+					"mitLicense": {
+						"title": "CC BY-NC-SA 4.0 許可",
+						"content": "本項目採用 知識共享署名-非商業性使用-相同方式共享 4.0 國際 (CC BY-NC-SA 4.0) 許可授權。您可以出於非商業目的自由分享和修改本素材，但必須提供適當的歸屬，並以相同的許可分發您的貢獻。未經事先書面許可，嚴格禁止商業使用。",
+						"availabilityPrefix": "本項目是開源的，並根據 ",
+						"availabilitySuffix": " 提供。"
+					},
+					"lcsdContent": {
+						"title": "LCSD 內容",
+						"content": "LCSD SmartPlay 網站的設施名稱、圖像和其他資料歸康樂及文化事務署所有。我們僅將這些資訊用於顯示目的，不聲稱擁有所有權。"
+					},
+					"yourContent": {
+						"title": "您的內容",
+						"content": "通過向服務提供 Webhook URL 或其他內容，您授予我們僅為了向您提供服務而使用它的權利。"
+					}
+				}
+			},
+			"liability": {
+				"title": "6. 責任限制",
+				"items": {
+					"introduction": "在法律允許的最大範圍內，SmartPlay HK OSS 不對任何間接、附帶、特殊、後果性或懲罰性損害負責。",
+					"noWarranties": {
+						"title": "無保證",
+						"content": "服務按「原樣」和「可用」提供，不提供任何明示或暗示的保證，包括但不限於：適銷性，特定用途的適用性，非侵權性，資訊的準確性或可靠性，不間斷或安全運行。"
+					},
+					"exclusions": {
+						"title": "具體除外責任",
+						"content": "我們不對以下情況負責：因不準確的可用性資訊造成的任何損失或損害，因過時資料導致的預訂失敗或錯失機會，技術問題、伺服器故障或服務中斷，第三方服務（Webhook 服務、LCSD SmartPlay 網站），您隨時無法存取服務，對服務或您的資料的惡意干擾。"
+					},
+					"serverWarning": {
+						"heading": "⚠️ 不保證伺服器可用性",
+						"text": "服務按「原樣」提供，不提供任何保證。我們不保證：伺服器正常運行時間 - 服務可能因維護、更新或無通知而停機，連續運行 - 服務可能中斷、暫停或永久停止，即時資料 - 資訊可能延遲或過時，備份或恢復 - 資料可能遺失備份，通知傳遞 - Webhook 通知可能失敗或延遲。",
+						"risk": "使用風險自負：不要僅依賴本服務滿足關鍵的預訂需求。始終直接向 LCSD SmartPlay 核實可用性。"
+					},
+					"dataAccuracy": {
+						"title": "資料準確性免責聲明",
+						"content": "設施可用性資訊如有更改，恕不另行通知。我們強烈建議在根據我們的資料做出任何決定之前，直接向 LCSD SmartPlay 核實所有資訊。"
+					}
+				}
+			},
+			"indemnification": {
+				"title": "7. 賠償",
+				"intro": "簡單來說，如果因為您的行為導致 SmartPlay HK OSS 面臨索賠或損失，您需要承擔責任。具體而言，您同意賠償並保障 SmartPlay HK OSS 及其運營商免受因以下情況而產生的任何索賠、損害、損失、責任和費用（包括律師費）：",
+				"list": {
+					"item1": "您對服務的使用或濫用；",
+					"item2": "您違反本條款；",
+					"item3": "您侵犯任何第三方的權利；",
+					"item4": "您提供的 Webhook URL 或內容導致的問題。"
+				}
+			},
+			"privacy": {
+				"title": "8. 隱私與資料保護",
+				"items": {
+					"link": "您的隱私對我們很重要。請查看我們的隱私權政策，該政策也管轄您對服務的使用，並說明我們如何收集、使用和保護您的資料。",
+					"keyPointsTitle": "隱私關鍵點",
+					"keyPoints": "我們僅收集匿名瀏覽器會話 ID，我們不收集個人識別符（姓名、電子郵件等），我們經您同意使用 Cookies（可在隱私權頁面上管理），您的監視器偏好設定已安全儲存，您可以隨時刪除您的資料。"
+				}
+			},
+			"termination": {
+				"title": "9. 服務終止",
+				"items": {
+					"ourRight": {
+						"title": "我們的終止權",
+						"content": "我們保留隨時暫停或終止您存取服務的權利，無需事先通知或承擔責任，原因包括但不限於：違反這些條款，濫用或有害使用服務，技術問題或安全問題，停止服務。"
+					},
+					"yourRight": {
+						"title": "您的終止權",
+						"content": "您可以隨時停止使用服務。要刪除所有資料：從調度器頁面刪除所有監視器，清除瀏覽器 cookies 和 localStorage，通過 GitHub issues 聯絡我們。"
+					},
+					"deletion": {
+						"title": "終止後的資料刪除",
+						"content": "終止後，我們將根據隱私權政策刪除您的所有資料，除非法律要求或出於合法業務目的。"
+					}
+				}
+			},
+			"changes": {
+				"title": "10. 這些條款的變更",
+				"policy": {
+					"title": "修改",
+					"content": "我們保留隨時修改這些條款的權利。我們將在此頁面上發布最新版本。"
+				},
+				"notification": {
+					"title": "通知",
+					"content": "如果我們對這些條款進行重大更改，我們將通過更新這些條款頂部的日期並維護變更記錄來通知您。"
+				}
+			},
+			"law": {
+				"title": "11. 管轄法律與爭議",
+				"items": {
+					"governingLaw": {
+						"title": "管轄法律",
+						"content": "這些條款應受中華人民共和國香港特別行政區法律管轄，並據此解釋。"
+					},
+					"disputeResolution": {
+						"title": "爭議解決",
+						"content": "因這些條款或您使用服務而產生的任何爭議應通過以下方式解決：雙方直接討論，GitHub Issues（用於技術問題），香港法院（作為最後手段）。"
+					},
+					"severability": {
+						"title": "可分割性",
+						"content": "如果這些條款的任何條款被發現不可執行，其餘條款仍應完全有效。"
+					}
+				}
+			},
+			"contact": {
+				"title": "12. 聯絡與反饋",
+				"content": "如果您對這些條款或服務有任何疑問、擔憂或建議，請聯絡我們。",
+				"repoTitle": "GitHub 倉庫",
+				"issuesTitle": "報告問題",
+				"discussionsTitle": "討論",
+				"note": "作為開源專案，我們通過 GitHub 平台歡迎反饋、貢獻和社區參與。"
+			}
+		},
+		"acknowledgment": {
+			"title": "確認",
+			"content": "使用 SmartPlay HK OSS 即表示您確認您已閱讀、理解並同意受這些條款與條件和我們的隱私權政策的約束。如果您不同意這些條款，請立即停止使用服務。"
+		},
+		"relatedPages": {
+			"title": "相關頁面",
+			"privacy": "隱私權政策",
+			"about": "關於我們"
+		}
+	}
+}

@@ -1,0 +1,232 @@
+{
+	"terms": {
+		"seo": {
+			"title": "Terms & Conditions | SmartPlay HK OSS",
+			"description": "Read the terms and conditions for using SmartPlay HK OSS, an unofficial open-source tool for checking LCSD sports facility availability in Hong Kong.",
+			"ogTitle": "Terms & Conditions - SmartPlay HK OSS",
+			"ogDescription": "Terms of use and service limitations for the SmartPlay HK OSS LCSD availability checker."
+		},
+		"title": "Terms & Conditions",
+		"subtitle": "Please read these terms carefully before using SmartPlay HK OSS.",
+		"lastUpdated": "Last Updated:",
+		"importantNotice": {
+			"title": "Important Notice",
+			"disclaimer": "IMPORTANT DISCLAIMER: SmartPlay HK OSS is an unofficial, open-source tool for checking LCSD sports facility availability. We are NOT affiliated with, endorsed by, or officially connected to the Leisure and Cultural Services Department (LCSD) of Hong Kong.",
+			"verify": "This service is provided as-is without any guarantees. Please verify all information directly with the official LCSD SmartPlay website."
+		},
+		"overviewCards": {
+			"acceptance": {
+				"title": "Acceptance of Terms",
+				"description": "By using this service, you agree to these terms and our privacy policy"
+			},
+			"noGuarantees": {
+				"title": "No Server Guarantees",
+				"description": "Server availability NOT guaranteed - service may be interrupted or discontinued"
+			},
+			"responsibility": {
+				"title": "User Responsibility",
+				"description": "You are responsible for verifying information and making actual bookings"
+			}
+		},
+		"quickActions": {
+			"title": "Quick Actions",
+			"manageWatchers": "Manage Your Watchers",
+			"resetCookiePreferences": "Reset Cookie Preferences"
+		},
+		"sections": {
+			"agreement": {
+				"title": "1. Agreement to Terms",
+				"items": {
+					"binding": "By accessing or using SmartPlay HK OSS (\"the Service\"), you agree to be bound by these Terms & Conditions (\"Terms\"). If you do not agree to these Terms, please do not use the Service.",
+					"modification": "These Terms constitute a legally binding agreement between you and SmartPlay HK OSS. We reserve the right to modify these Terms at any time, and your continued use of the Service constitutes acceptance of any changes.",
+					"ageRequirement": {
+						"title": "Age Requirement",
+						"content": "There are no age restrictions to use this website. Users of all ages are welcome to use the service, in accordance with official LCSD SmartPlay guidelines which allow registration and usage by all Hong Kong residents (including those under 11 years old via parent/guardian). Please refer to the official LCSD SmartPlay documentation for specific eligibility details."
+					}
+				}
+			},
+			"service": {
+				"title": "2. Service Description & Limitations",
+				"items": {
+					"whatWeProvide": {
+						"title": "What We Provide",
+						"content": "SmartPlay HK OSS is an unofficial tool that: Crawls publicly available data from the LCSD SmartPlay website, Displays sports facility availability information, Allows users to set up watchers for facility availability, Sends optional webhook notifications when facilities become available, Provides an interface to view and manage facility schedules."
+					},
+					"whatWeDontProvide": {
+						"title": "What We Don't Provide",
+						"content": "We do NOT: Make actual bookings or reservations on your behalf, Guarantee real-time availability accuracy, Provide official LCSD services, Store payment information or process payments, Offer customer support for LCSD facilities."
+					},
+					"availability": {
+						"title": "Service Availability",
+						"content": "We strive to maintain the Service but do not guarantee: Uninterrupted or error-free operation, That defects will be corrected, The server is free of viruses or harmful components, Timely availability of facility data."
+					}
+				}
+			},
+			"unofficial": {
+				"title": "3. Unofficial & Independent Service",
+				"items": {
+					"status": "IMPORTANT DISCLAIMER: SmartPlay HK OSS is NOT affiliated with, endorsed by, or officially connected to the Leisure and Cultural Services Department (LCSD) or the Hong Kong Government.",
+					"dataSource": {
+						"title": "Data Source",
+						"content": "All facility availability data is obtained from the publicly accessible LCSD SmartPlay website. We do not have any special access or official relationship with LCSD."
+					},
+					"accuracy": {
+						"title": "Accuracy of Information",
+						"content": "While we make reasonable efforts to provide accurate information: Availability information may not be real-time or up-to-date, We cannot guarantee that displayed availability is still accurate, You must verify availability directly with LCSD SmartPlay before making plans, We are not responsible for any inconvenience caused by inaccurate information."
+					},
+					"noBooking": {
+						"title": "No Booking Capability",
+						"content": "This Service only displays availability information. We do not facilitate actual bookings or reservations. To book facilities, you must visit the official LCSD SmartPlay website or use the official SmartPlay mobile app."
+					}
+				}
+			},
+			"responsibilities": {
+				"title": "4. Your Responsibilities",
+				"items": {
+					"accurateInfo": {
+						"title": "Accurate Information",
+						"content": "You agree to: Provide accurate information when setting up watchers, Use only valid webhook URLs that you control, Not use the Service for any illegal or unauthorized purpose."
+					},
+					"verification": {
+						"title": "Verification Required",
+						"content": "You must always verify facility availability directly with LCSD SmartPlay before: Making travel arrangements to venues, Planning activities based on displayed availability, Relaying availability information to others."
+					},
+					"prohibited": {
+						"title": "Prohibited Uses",
+						"content": "You must not: Attempt to disrupt, damage, or interfere with the Service, Use automated scripts to excessively query our servers, Claim or imply that our data is official or guaranteed, Use the Service for any commercial purpose without permission."
+					},
+					"accountSecurity": {
+						"title": "Account Security",
+						"content": "You are responsible for: Maintaining the confidentiality of your browser session, All activities that occur under your browser session, Notifying us if you suspect any unauthorized use of your session."
+					}
+				}
+			},
+			"ip": {
+				"title": "5. Intellectual Property & License",
+				"items": {
+					"ourContent": {
+						"title": "Our Content",
+						"content": "The Service, including its design, code, and original content, is owned by SmartPlay HK OSS and is protected by intellectual property laws."
+					},
+					"mitLicense": {
+						"title": "CC BY-NC-SA 4.0 License",
+						"content": "This project is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) License. You are free to share and adapt the material for non-commercial purposes, provided you give appropriate credit and distribute your contributions under the same license. Commercial use is strictly prohibited without prior written permission.",
+						"availabilityPrefix": "This project is open-source and available under the ",
+						"availabilitySuffix": "."
+					},
+					"lcsdContent": {
+						"title": "LCSD Content",
+						"content": "Facility names, images, and other data from the LCSD SmartPlay website are the property of the Leisure and Cultural Services Department. We use this information solely for display purposes and make no claim of ownership."
+					},
+					"yourContent": {
+						"title": "Your Content",
+						"content": "By providing webhook URLs or other content to the Service, you grant us the right to use it solely for providing the Service to you."
+					}
+				}
+			},
+			"liability": {
+				"title": "6. Limitation of Liability",
+				"items": {
+					"introduction": "TO THE MAXIMUM EXTENT PERMITTED BY LAW, SmartPlay HK OSS shall not be liable for any indirect, incidental, special, consequential, or punitive damages.",
+					"noWarranties": {
+						"title": "No Warranties",
+						"content": "The Service is provided \"AS IS\" and \"AS AVAILABLE\" without warranties of any kind, either express or implied, including but not limited to: Merchantability, Fitness for a particular purpose, Non-infringement, Accuracy or reliability of information, Uninterrupted or secure operation."
+					},
+					"exclusions": {
+						"title": "Specific Exclusions",
+						"content": "We are not responsible for: Any loss or damage resulting from inaccurate availability information, Failed bookings or missed opportunities due to outdated data, Technical issues, server outages, or service interruptions, Third-party services (webhook services, LCSD SmartPlay website), Your inability to access the Service at any time, Malicious interference with the Service or your data."
+					},
+					"serverWarning": {
+						"heading": "⚠️ Server Availability NOT Guaranteed",
+						"text": "THE SERVICE IS PROVIDED \"AS IS\" WITHOUT WARRANTY OF ANY KIND. We do NOT guarantee: Server uptime - Service may be down for maintenance, updates, or without notice, Continuous operation - Service may be interrupted, suspended, or discontinued permanently, Real-time data - Information may be delayed or outdated, Backup or recovery - Data may be lost without backups, Notification delivery - Webhook notifications may fail or be delayed.",
+						"risk": "USE AT YOUR OWN RISK: Do not rely solely on this service for critical booking needs. Always verify availability directly with LCSD SmartPlay."
+					},
+					"dataAccuracy": {
+						"title": "Data Accuracy Disclaimer",
+						"content": "Facility availability information is subject to change without notice. We strongly recommend verifying all information directly with LCSD SmartPlay before making any decisions based on our data."
+					}
+				}
+			},
+			"indemnification": {
+				"title": "7. Indemnification",
+				"intro": "Simply put, if your actions get us into trouble, you are responsible for the costs. Specifically, you agree to indemnify and hold harmless SmartPlay HK OSS and its operators from any claims, damages, losses, liabilities, and expenses (including legal fees) arising from:",
+				"list": {
+					"item1": "Your use or misuse of the Service;",
+					"item2": "Your violation of these Terms;",
+					"item3": "Your violation of any third-party right;",
+					"item4": "Any issues arising from the Webhook URL or content you provide."
+				}
+			},
+			"privacy": {
+				"title": "8. Privacy & Data Protection",
+				"items": {
+					"link": "Your privacy is important to us. Please review our Privacy Policy, which also governs your use of the Service and explains how we collect, use, and protect your data.",
+					"keyPointsTitle": "Key Privacy Points",
+					"keyPoints": "We collect anonymous browser session IDs only, We don't collect personal identifiers (names, emails, etc.), We use cookies with your consent (manageable on the Privacy page), Your watcher preferences are stored securely, You can delete your data at any time."
+				}
+			},
+			"termination": {
+				"title": "9. Termination of Service",
+				"items": {
+					"ourRight": {
+						"title": "Our Right to Terminate",
+						"content": "We reserve the right to suspend or terminate your access to the Service at any time, without prior notice or liability, for any reason, including but not limited to: Breach of these Terms, Abusive or harmful use of the Service, Technical issues or security concerns, Discontinuation of the Service."
+					},
+					"yourRight": {
+						"title": "Your Right to Terminate",
+						"content": "You may stop using the Service at any time. To delete all your data: Delete all your watchers from the scheduler page, Clear your browser cookies and localStorage, Contact us through GitHub issues."
+					},
+					"deletion": {
+						"title": "Data Deletion upon Termination",
+						"content": "Upon termination, we will delete all your data in accordance with our privacy policy, except as required by law or for legitimate business purposes."
+					}
+				}
+			},
+			"changes": {
+				"title": "10. Changes to These Terms",
+				"policy": {
+					"title": "Modifications",
+					"content": "We reserve the right to modify these Terms at any time. We will post the most current version on this page. Your continued use of the Service after any changes constitutes acceptance of the new Terms. It is your responsibility to review these Terms periodically for changes."
+				},
+				"notification": {
+					"title": "Notification",
+					"content": "If we make material changes to these Terms, we will notify you by updating the \"Last Updated\" date at the top of these Terms and maintaining a changelog. We will also make reasonable efforts to post significant changes to the GitHub repository."
+				}
+			},
+			"law": {
+				"title": "11. Governing Law & Disputes",
+				"items": {
+					"governingLaw": {
+						"title": "Governing Law",
+						"content": "These Terms shall be governed by and construed in accordance with the laws of Hong Kong Special Administrative Region of the People's Republic of China."
+					},
+					"disputeResolution": {
+						"title": "Dispute Resolution",
+						"content": "Any disputes arising from these Terms or your use of the Service shall be resolved through: Direct discussion between parties, GitHub Issues (for technical matters), Hong Kong courts (as a last resort)."
+					},
+					"severability": {
+						"title": "Severability",
+						"content": "If any provision of these Terms is found to be unenforceable, the remaining provisions shall remain in full force and effect."
+					}
+				}
+			},
+			"contact": {
+				"title": "12. Contact & Feedback",
+				"content": "If you have questions, concerns, or suggestions about these Terms or the Service, please contact us:",
+				"repoTitle": "GitHub Repository",
+				"issuesTitle": "Report Issues",
+				"discussionsTitle": "Discussions",
+				"note": "As an open-source project, we welcome feedback, contributions, and community engagement through our GitHub platform."
+			}
+		},
+		"acknowledgment": {
+			"title": "Acknowledgment",
+			"content": "By using SmartPlay HK OSS, you acknowledge that you have read, understood, and agree to be bound by these Terms & Conditions and our Privacy Policy. If you do not agree with these Terms, please discontinue use of the Service immediately."
+		},
+		"relatedPages": {
+			"title": "Related Pages",
+			"privacy": "Privacy Policy",
+			"about": "About Us"
+		}
+	}
+}

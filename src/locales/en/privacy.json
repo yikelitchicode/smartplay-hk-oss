@@ -1,0 +1,165 @@
+{
+	"privacy": {
+		"seo": {
+			"title": "Privacy Policy | SmartPlay HK OSS",
+			"description": "Learn how SmartPlay HK OSS handles your data. Our privacy-first approach ensures minimal data collection while you check LCSD facility availability.",
+			"ogTitle": "Privacy Policy - SmartPlay HK OSS",
+			"ogDescription": "Data protection and privacy practices for the SmartPlay HK OSS LCSD availability checker."
+		},
+		"title": "Privacy Policy",
+		"subtitle": "Your privacy is important to us. This policy explains how SmartPlay HK OSS handles your data.",
+		"lastUpdated": "Last Updated:",
+		"cookieManagement": {
+			"title": "Your Cookie Preferences",
+			"hasConsented": "You have previously saved your cookie preferences.",
+			"description": "You can manage them here or reset them at any time.",
+			"resetButton": "Reset Cookie Preferences",
+			"resetSuccess": "Cookie preferences have been reset. Refresh the page to see the cookie notice again."
+		},
+		"overviewCards": {
+			"dataCollected": {
+				"title": "Data We Collect",
+				"description": "Anonymous browser sessions, facility preferences, and optional webhook URLs"
+			},
+			"dataProtection": {
+				"title": "Data Protection",
+				"description": "No personal identifiers, encrypted connections, minimal data retention"
+			},
+			"userRights": {
+				"title": "Your Rights",
+				"description": "View, export, delete your data, and manage cookie preferences"
+			}
+		},
+		"quickActions": {
+			"title": "Quick Actions",
+			"manageWatchers": "Manage Your Watchers",
+			"resetCookiePreferences": "Reset Cookie Preferences"
+		},
+		"sections": {
+			"overview": {
+				"title": "What Data We Collect",
+				"items": {
+					"anonymousSession": {
+						"title": "Anonymous Session Data",
+						"content": "We assign a random anonymous browser session ID to your device. This ID helps us manage your watcher preferences but doesn't identify you personally. We don't collect names, emails, or any personal identifiers."
+					},
+					"watcherPreferences": {
+						"title": "Facility Watching Preferences",
+						"content": "When you set up availability watchers, we store: Selected facilities and venues, Preferred dates and time slots, Optional webhook URL for notifications"
+					},
+					"webhookUrls": {
+						"title": "Webhook URLs",
+						"content": "If you provide a webhook URL for notifications, we store it securely and only use it to send you availability alerts. You can remove it at any time by deleting your watchers."
+					}
+				}
+			},
+			"usage": {
+				"title": "How We Use Your Data",
+				"items": {
+					"monitor": {
+						"title": "Monitor Facility Availability",
+						"content": "We crawl the LCSD SmartPlay API periodically to check facility availability and notify you when matching sessions become available."
+					},
+					"notify": {
+						"title": "Send Notifications",
+						"content": "When a watched facility becomes available, we send a notification to your webhook URL (if provided)."
+					},
+					"improve": {
+						"title": "Improve Service Quality",
+						"content": "We analyze aggregate usage patterns to improve our crawling efficiency and notification accuracy. No personally identifiable information is used."
+					}
+				}
+			},
+			"protection": {
+				"title": "Data Security & Protection",
+				"items": {
+					"anonymousByDesign": {
+						"title": "Anonymous by Design",
+						"content": "Our system is built to be privacy-first. We don't collect names, emails, or any personally identifiable information (PII). All session IDs are randomly generated and anonymous."
+					},
+					"storage": {
+						"title": "Data Storage",
+						"content": "Your data is stored securely in our PostgreSQL database. We implement appropriate security measures to protect against unauthorized access, alteration, or destruction of your data."
+					},
+					"retention": {
+						"title": "Data Retention",
+						"content": "Active Watchers: Retained until you delete them or they expire; Session Data: Retained for up to 30 days after the date; Browser Sessions: Cleared after 6 months of inactivity; Cookies: Respect your browser's cookie settings and your consent preferences"
+					},
+					"thirdParty": {
+						"title": "Third-Party Services",
+						"content": "We use the LCSD SmartPlay public API to fetch facility availability data. We do not share your data with any third parties for marketing purposes."
+					}
+				}
+			},
+			"rights": {
+				"title": "Your Privacy Rights",
+				"items": {
+					"access": {
+						"title": "Right to Access",
+						"content": "You can view all your active watchers and their settings on the scheduler page. Your browser session ID is visible in your browser's developer console."
+					},
+					"delete": {
+						"title": "Right to Delete",
+						"content": "You can delete individual watchers directly from the scheduler page. To delete all your data, you can: Delete all watchers from the scheduler page, Clear your browser cookies and localStorage, Contact us for complete data removal."
+					},
+					"portability": {
+						"title": "Right to Data Portability",
+						"content": "You can export your watcher settings and preferences. Use the export functionality on the scheduler page to download your data."
+					},
+					"optOut": {
+						"title": "Right to Opt-Out",
+						"content": "You can opt-out of analytics and marketing cookies at any time by: Using the cookie consent banner, Managing preferences on this page, Adjusting your browser's cookie settings"
+					},
+					"withdrawConsent": {
+						"title": "Right to Withdraw Consent",
+						"content": "You can withdraw your cookie consent at any time without affecting your ability to use our core services. Use the reset button above or visit this privacy page."
+					}
+				}
+			},
+			"cookies": {
+				"title": "Cookies & Tracking Technologies",
+				"items": {
+					"necessary": {
+						"title": "Strictly Necessary Cookies",
+						"content": "These cookies are essential for the website to function properly. They include: Browser session management (anonymous ID), Security settings and preferences, Language preference (i18next). These cannot be disabled as they are required for the site to work."
+					},
+					"analytics": {
+						"title": "Analytics Cookies (Optional)",
+						"content": "These cookies help us understand how users interact with our service by collecting anonymous usage data. We may use this information to: Identify popular facilities and time slots, Improve crawling schedules, Optimize notification timing, Detect and fix technical issues."
+					},
+					"preferences": {
+						"title": "Preferences Cookies (Optional)",
+						"content": "These cookies remember your settings and preferences, such as: Language selection (English/Chinese), Filter preferences for facilities, Calendar view settings."
+					},
+					"marketing": {
+						"title": "Marketing Cookies (Optional)",
+						"content": "We do not currently use marketing cookies. If we add them in the future, they will only be enabled with your explicit consent and used for: measuring campaign effectiveness, showing relevant ads, tracking conversions."
+					}
+				}
+			},
+			"contact": {
+				"title": "Contact Us",
+				"content": "If you have questions, concerns, or requests about this privacy policy or our data practices, please contact us:",
+				"github": "github.com/lst97/smartplay-hk-oss",
+				"issues": "Create a GitHub Issue",
+				"note": "We are an open-source project and handle privacy inquiries through our public GitHub repository for transparency."
+			},
+			"children": {
+				"title": "Children's Privacy",
+				"content1": "Our service is accessible to users of all ages, consistent with the inclusive nature of the official SmartPlay platform. We do not intentionally collect personal information from any users, including children. If you are a parent or guardian and believe your child has provided us with sensitive personal data, please contact us immediately.",
+				"content2": "Since we don't collect personally identifiable information, our service does not pose specific risks to children's privacy beyond general internet safety considerations."
+			},
+			"changes": {
+				"title": "Changes to This Policy",
+				"content": "We may update this privacy policy from time to time to reflect changes in our practices, technology, or legal requirements. We will:",
+				"list": {
+					"item1": "Post the updated policy on this page",
+					"item2": "Update the \"Last Updated\" date at the top",
+					"item3": "Notify users of significant changes via the app"
+				},
+				"acceptance": "Your continued use of the service after any changes indicates your acceptance of the updated policy."
+			}
+		},
+		"footerNote": "This privacy policy is part of our commitment to transparency and user privacy. By using SmartPlay HK OSS, you agree to the terms described in this policy."
+	}
+}

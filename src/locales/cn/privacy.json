@@ -1,0 +1,165 @@
+{
+	"privacy": {
+		"seo": {
+			"title": "隐私政策 | SmartPlay HK OSS",
+			"description": "了解 SmartPlay HK OSS 如何处理您的数据。我们的隐私优先方案确保在您查询康文署设施可用性时，仅收集最少的数据。",
+			"ogTitle": "隐私政策 - SmartPlay HK OSS",
+			"ogDescription": "SmartPlay HK OSS 康文署设施可用性查询工具的数据保护和隐私实践。"
+		},
+		"title": "隐私权政策",
+		"subtitle": "您的隐私对我们很重要。本政策说明 SmartPlay HK OSS 如何处理您的数据。",
+		"lastUpdated": "最后更新：",
+		"cookieManagement": {
+			"title": "您的 Cookie 偏好设置",
+			"hasConsented": "您之前已保存 Cookie 偏好设置。",
+			"description": "您可以随时管理或重置它们。",
+			"resetButton": "重置 Cookie 偏好设置",
+			"resetSuccess": "Cookie 偏好设置已重置。刷新页面以查看 Cookie 通知。"
+		},
+		"overviewCards": {
+			"dataCollected": {
+				"title": "我们收集的数据",
+				"description": "匿名浏览器会话、设施偏好设置和可选的 Webhook URL"
+			},
+			"dataProtection": {
+				"title": "数据保护",
+				"description": "无个人标识符、加密连接、最小数据保留"
+			},
+			"userRights": {
+				"title": "您的权利",
+				"description": "查看、导出、删除数据及管理 Cookie 偏好"
+			}
+		},
+		"quickActions": {
+			"title": "快速操作",
+			"manageWatchers": "管理您的监视器",
+			"resetCookiePreferences": "重置 Cookie 偏好设置"
+		},
+		"sections": {
+			"overview": {
+				"title": "我们收集的数据",
+				"items": {
+					"anonymousSession": {
+						"title": "匿名会话数据",
+						"content": "我们会为您的设备分配一个随机的匿名浏览器会话 ID。此 ID 有助于我们管理您的监视器偏好设置，但不会识别您的个人身份。我们不收集姓名、电子邮件或任何个人标识符。"
+					},
+					"watcherPreferences": {
+						"title": "设施监视偏好设置",
+						"content": "当您设置可用性监视器时，我们会存储：选定的设施和场地、偏好日期和时间段、可选的 Webhook URL 以接收通知"
+					},
+					"webhookUrls": {
+						"title": "Webhook URL",
+						"content": "如果您提供 Webhook URL 用于通知，我们会将其安全存储并仅用于向您发送可用性警报。您可以随时删除您的监视器来移除它。"
+					}
+				}
+			},
+			"usage": {
+				"title": "我们如何使用您的数据",
+				"items": {
+					"monitor": {
+						"title": "监测设施可用性",
+						"content": "我们会定期爬取 LCSD SmartPlay API 以检查设施可用性，并在符合您条件的时段空档出现时通知您。"
+					},
+					"notify": {
+						"title": "发送通知",
+						"content": "当监视的设施变得可用时，我们会向您的 Webhook URL（如有提供）发送通知。"
+					},
+					"improve": {
+						"title": "改善服务质量",
+						"content": "我们分析聚合使用模式以改善我们的爬虫效率和通知准确性。不使用任何个人识别信息。"
+					}
+				}
+			},
+			"protection": {
+				"title": "数据安全与保护",
+				"items": {
+					"anonymousByDesign": {
+						"title": "匿名设计",
+						"content": "我们的系统以隐私优先设计。我们不收集姓名、电子邮件或任何个人识别信息（PII）。所有会话 ID 均为随机生成且匿名。"
+					},
+					"storage": {
+						"title": "数据存储",
+						"content": "您的数据安全存储在我们的 PostgreSQL 数据库中。我们实施适当的安全措施以保护您的数据免受未授权访问、更改或破坏。"
+					},
+					"retention": {
+						"title": "数据保留期限",
+						"content": "活跃监视器：保留至您删除或过期；会话数据：日期后保留最多 30 天；浏览器会话：6个月无活动后清除；Cookies：尊重您的浏览器 Cookie 设置和您的偏好设置"
+					},
+					"thirdParty": {
+						"title": "第三方服务",
+						"content": "我们使用 LCSD SmartPlay 公共 API 获取设施可用性数据。我们不会与任何第三方分享您的数据以进行营销用途。"
+					}
+				}
+			},
+			"rights": {
+				"title": "您的隐私权",
+				"items": {
+					"access": {
+						"title": "访问权",
+						"content": "您可以在调度器页面查看您所有活跃的监视器及其设置。您的浏览器会话 ID 可在浏览器的开发者控制台中看到。"
+					},
+					"delete": {
+						"title": "删除权",
+						"content": "您可以直接从调度器页面删除个别监视器。要删除所有数据，您可以：从调度器页面删除所有监视器，清除浏览器 cookies 和 localStorage，通过 GitHub Issues 联系我们进行完整数据删除。"
+					},
+					"portability": {
+						"title": "数据可携带性权",
+						"content": "您可以导出您的监视器偏好设置和偏好设置。使用调度器页面上的导出功能下载您的数据。"
+					},
+					"optOut": {
+						"title": "选择退出权",
+						"content": "您可以随时选择退出分析和营销 Cookies：使用 Cookie 同意横幅，在此页面上管理偏好设置，调整浏览器的 Cookie 设置"
+					},
+					"withdrawConsent": {
+						"title": "撤回同意权",
+						"content": "您可以随时撤回您的 Cookie 同意，而不影响您使用我们核心服务的能力。使用上方的重置按钮或访问此隐私权页面。"
+					}
+				}
+			},
+			"cookies": {
+				"title": "Cookies 与追踪技术",
+				"items": {
+					"necessary": {
+						"title": "必要 Cookies",
+						"content": "这些 Cookies 对于网站正常运行所必需。包括：浏览器会话管理（匿名 ID）、安全设置和偏好设置、语言偏好（i18next）。这些无法停用，因为它们是网站运行所必需的。"
+					},
+					"analytics": {
+						"title": "分析 Cookies（可选）",
+						"content": "这些 Cookies 帮助我们了解用户如何与我们的服务交互，收集匿名使用数据。我们可能会使用此信息来：识别热门设施和时段、改善爬虫时间表、优化通知时间、检测和修复技术问题。"
+					},
+					"preferences": {
+						"title": "偏好设置 Cookies（可选）",
+						"content": "这些 Cookies 记住您的设置和偏好设置，例如：语言选择（英文/中文）、设施过滤偏好设置、日历视图设置。"
+					},
+					"marketing": {
+						"title": "营销 Cookies（可选）",
+						"content": "我们目前不使用营销 Cookies。如果将来添加，它们只会在您明确同意后启用，用于：衡量活动效果、展示相关广告、追踪转化。"
+					}
+				}
+			},
+			"contact": {
+				"title": "联系我们",
+				"content": "如果您对本隐私政策或我们的数据处理方式有任何疑问、担忧或请求，请联系我们：",
+				"github": "github.com/lst97/smartplay-hk-oss",
+				"issues": "创建 GitHub Issue",
+				"note": "作为一个开源项目，我们通过公开的 GitHub 仓库处理隐私查询，以确保透明度。"
+			},
+			"children": {
+				"title": "儿童隐私",
+				"content1": "我们的服务对所有年龄的用户开放，这与官方 SmartPlay 平台的包容性一致。我们不会有意收集任何用户（包括儿童）的个人信息。如果您是家长或监护人，并且认为您的孩子向我们提供了敏感的个人数据，请立即联系我们。",
+				"content2": "由于我们不收集个人识别信息，我们的服务除了互联网安全的一般考虑外，不会对儿童的隐私构成特定风险。"
+			},
+			"changes": {
+				"title": "本政策的变更",
+				"content": "我们可能会不时更新此隐私政策，以反映我们的做法、技术或法律要求的变化。我们将：",
+				"list": {
+					"item1": "在此页面上发布更新的政策",
+					"item2": "更新顶部的「最后更新」日期",
+					"item3": "通过应用程序通知用户重大更改"
+				},
+				"acceptance": "您在任何更改后继续使用服务即表示您接受更新的政策。"
+			}
+		},
+		"footerNote": "此隐私权政策是我们对透明度和用户隐私承诺的一部分。使用 SmartPlay HK OSS 即表示您同意本政策中描述的条款。"
+	}
+}
