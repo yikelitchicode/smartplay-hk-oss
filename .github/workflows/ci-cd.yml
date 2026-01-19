@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: "24"
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -28,10 +28,10 @@ jobs:
           version: latest
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -47,7 +47,7 @@ jobs:
 
       - name: Generate Prisma Client
         run: |
-          echo "DATABASE_URL=\"file:./dev.db\"" > .env
+          echo "DATABASE_URL=\"postgresql://test:test@localhost:5432/test\"" > .env
           pnpm db:generate
 
   # Build Job: Build and Push Docker Image
@@ -61,7 +61,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -90,6 +90,8 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          # Build for AMD64 production
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -102,12 +104,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment:
-      name: production
+    # environment: production  # Uncomment after creating environment in repo settings
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup SSH
         run: |
@@ -116,11 +117,11 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Create .env file on remote
+      - name: Create .env.docker file on remote
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/smartplay-app"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/smartplay-hk-oss"
 
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cat > ~/smartplay-app/.env << 'EOF'
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cat > ~/smartplay-hk-oss/.env.docker << 'EOF'
           # ============================================
           # Database Configuration
           # ============================================
@@ -130,6 +131,13 @@ jobs:
           # Application Configuration
           # ============================================
           NODE_ENV=production
+          BASE_URL=${{ secrets.DEPLOY_URL }}
+
+          # ============================================
+          # Cloudflare Turnstile (Bot Protection)
+          # ============================================
+          VITE_CLOUDFLARE_TURNSTILE_SITE_KEY=${{ secrets.TURNSTILE_SITE_KEY }}
+          CLOUDFLARE_TURNSTILE_SECRET_KEY=${{ secrets.TURNSTILE_SECRET_KEY }}
 
           # ============================================
           # Crawler Configuration
@@ -141,43 +149,42 @@ jobs:
 
       - name: Copy docker-compose.yml to remote
         run: |
-          scp docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/smartplay-app/
+          scp docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/smartplay-hk-oss/
 
       - name: Deploy using Docker Compose
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
-            cd ~/smartplay-app
+            cd ~/smartplay-hk-oss
 
             # Login to GitHub Container Registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # Pull latest image
-            docker compose pull
+            docker compose --env-file .env.docker pull
 
             # Stop old containers and start new ones
-            docker compose up -d --remove-orphans
+            # Note: Migrations run automatically via docker-entrypoint.sh
+            docker compose --env-file .env.docker up -d --remove-orphans --force-recreate
 
             # Clean up old images
             docker image prune -af --filter "until=24h"
           ENDSSH
 
-      - name: Run database migrations
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
-            cd ~/smartplay-app
-            docker compose exec -T app npx prisma migrate deploy
-          ENDSSH
-
       - name: Health check
-        if: ${{ secrets.DEPLOY_URL != '' }}
         run: |
+          # Skip if DEPLOY_URL is not set
+          if [ -z "${{ secrets.DEPLOY_URL }}" ]; then
+            echo "⏭️  DEPLOY_URL not configured, skipping health check"
+            exit 0
+          fi
+
           sleep 10
           response=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.DEPLOY_URL }}" || echo "000")
           if [ "$response" != "200" ] && [ "$response" != "000" ]; then
-            echo "Deployment health check failed with status: $response"
+            echo "❌ Deployment health check failed with status: $response"
             exit 1
           fi
-          echo "Deployment health check passed with status: $response"
+          echo "✅ Deployment health check passed with status: $response"
 
       - name: Cleanup SSH keys
         if: always()
