@@ -11,21 +11,23 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - ${POSTGRES_VOLUME_NAME:-smartplay_postgres_data}:/var/lib/postgresql/data
+      - smartplay_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-smartplay}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - internal
 
   # Application
   app:
     build:
       context: .
       dockerfile: Dockerfile
-      # Platform auto-detection: builds for current machine architecture
-      # Options: linux/amd64, linux/arm64, or leave empty for auto-detection
-      platform: ${DOCKER_PLATFORM:-}
+      # Platform: linux/amd64 for production
+      platforms:
+        - linux/amd64
     container_name: ${APP_CONTAINER_NAME:-smartplay-app}
     restart: unless-stopped
     ports:
@@ -34,6 +36,11 @@ services:
       # Application Settings
       NODE_ENV: ${NODE_ENV:-production}
       DATABASE_URL: ${DATABASE_URL:-postgresql://smartplay:smartplay_password@postgres:5432/smartplay}
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
+
+      # Cloudflare Turnstile (Bot Protection)
+      VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: ${VITE_CLOUDFLARE_TURNSTILE_SITE_KEY:-}
+      CLOUDFLARE_TURNSTILE_SECRET_KEY: ${CLOUDFLARE_TURNSTILE_SECRET_KEY:-}
 
       # Note: Crawler configuration is in src/lib/crawler/config.ts
       # The scheduler runs automatically via scripts/scheduler.ts
@@ -63,11 +70,10 @@ services:
       - app
     networks:
       - internal
-    profiles:
-      - cloudflare  # Disabled by default, enable with: docker compose --profile cloudflare up
+    # Cloudflare tunnel is enabled by default for production
 
 volumes:
-  ${POSTGRES_VOLUME_NAME:-smartplay_postgres_data}:
+  smartplay_postgres_data:
     driver: local
 
 networks:

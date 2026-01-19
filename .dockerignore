@@ -19,6 +19,7 @@ build
 !.env.example
 !.env.docker
 !.env.*.example
+!.env.docker.example
 
 # Git
 .git
@@ -45,8 +46,9 @@ coverage
 
 # Docker
 Dockerfile
-docker-compose.yml
+docker-compose*.yml
 .dockerignore
+docker-entrypoint.sh
 
 # Misc
 .editorconfig
