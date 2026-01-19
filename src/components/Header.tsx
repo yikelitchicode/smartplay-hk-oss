@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Activity, CalendarDays, Code, Home, Info, Menu } from "lucide-react";
+import { CalendarDays, Code, Home, Info, Menu } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./LanguageSwitcher";
@@ -58,9 +58,13 @@ export default function Header(): React.ReactNode {
 	// Get current page name based on route
 	const currentPageName = useMemo(() => {
 		const path = location.pathname;
-		if (path === "/") return t("nav.home");
-		if (path === "/booking") return t("nav.booking");
-		if (path === "/docs/webhooks") return t("nav.developer");
+		if (path === "/" || path === "") return t("nav.home");
+		if (path.startsWith("/booking")) return t("nav.booking");
+		if (path.startsWith("/scheduler")) return t("nav.scheduler");
+		if (path.startsWith("/docs")) return t("nav.developer");
+		if (path.startsWith("/privacy")) return t("nav.privacy");
+		if (path.startsWith("/terms")) return t("nav.terms");
+		if (path.startsWith("/about")) return t("nav.about");
 		return t("nav.home"); // Default fallback
 	}, [location.pathname, t]);
 
@@ -77,12 +81,6 @@ export default function Header(): React.ReactNode {
 				label: t("nav.booking"),
 				to: "/booking",
 				icon: <CalendarDays size={20} />,
-			},
-			{
-				id: "activity",
-				label: t("nav.activity"),
-				to: "/activity",
-				icon: <Activity size={20} />,
 			},
 			{
 				id: "scheduler",
@@ -142,14 +140,23 @@ export default function Header(): React.ReactNode {
 					>
 						<Menu size={24} />
 					</Button>
-					<h1 className="ml-4 text-xl font-semibold flex items-center gap-2">
-						<Link to="/" className="text-card-foreground hover:text-primary">
-							SmartPlay HK OSS
+					<h1 className="ml-2 md:ml-4 text-xl font-semibold flex items-center gap-2">
+						<Link to="/" className="flex items-center">
+							<img
+								src="/images/icon-banner.png"
+								alt="SmartPlay HK OSS"
+								className="h-14 md:h-20 w-auto hover:opacity-80 transition-opacity"
+							/>
 						</Link>
-						<span className="text-muted-foreground" aria-hidden="true">
+						<span
+							className="text-muted-foreground ml-2 hidden sm:inline"
+							aria-hidden="true"
+						>
 							|
 						</span>
-						<span className="text-primary">{currentPageName}</span>
+						<span className="text-primary hidden sm:inline">
+							{currentPageName}
+						</span>
 					</h1>
 				</div>
 				<div className="flex items-center gap-4">

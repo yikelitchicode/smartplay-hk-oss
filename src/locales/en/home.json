@@ -1,4 +1,10 @@
 {
+	"seo": {
+		"title": "SmartPlay HK OSS | LCSD Sports Facility Availability Checker",
+		"description": "SmartPlay HK OSS is an open-source, community-driven tool for checking LCSD sports facility availability in Hong Kong. Monitor real-time availability for tennis, basketball, and more.",
+		"ogTitle": "SmartPlay HK OSS - Community LCSD Availability Checker",
+		"ogDescription": "Fast, clean, and open-source alternative for checking Hong Kong LCSD facility availability. Get real-time updates and notifications."
+	},
 	"hero": {
 		"title": "SmartPlay HK OSS",
 		"subtitle": "Community-Driven Availability Checker",
@@ -6,20 +12,20 @@
 	},
 	"features": {
 		"booking": {
-			"title": "Venue Booking",
-			"description": "Check real-time availability for tennis, basketball, and more across all districts.",
+			"title": "Venue Search",
+			"description": "Instantly scan real-time availability for tennis courts, basketball courts, and more across all districts. No more manual region switching—see all open slots in one unified view.",
 			"cta": "Check Availability",
 			"badge": "Active"
 		},
 		"activity": {
 			"title": "Activity",
-			"description": "Browse and monitor activity quotas and enrollment status.",
+			"description": "Monitor quotas and enrollment status for sports courses and tournaments. A centralized hub to keep track of upcoming programs and their remaining slots.",
 			"cta": "Coming Soon",
 			"badge": "Planned"
 		},
 		"scheduler": {
 			"title": "Watcher Scheduler",
-			"description": "Monitor venue availability automatically and receive notifications.",
+			"description": "Automate your facility checks. Set up custom 'Watchers' for your favorite venues and times, and receive instant alerts via Webhook (Discord/Slack) as soon as a slot becomes available.",
 			"cta": "Open Scheduler",
 			"badge": "New"
 		}

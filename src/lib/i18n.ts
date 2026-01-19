@@ -31,7 +31,7 @@ for (const path in locales) {
  * Detect language from Accept-Language header or other sources
  */
 export function detectLanguage(acceptLanguage: string | null): string {
-	if (!acceptLanguage) return "en";
+	if (!acceptLanguage) return "zh";
 
 	const languages = acceptLanguage
 		.split(",")
@@ -46,7 +46,7 @@ export function detectLanguage(acceptLanguage: string | null): string {
 		if (normalized.startsWith("en")) return "en";
 	}
 
-	return "en";
+	return "zh";
 }
 
 let initPromise: Promise<void> | null = null;
@@ -77,9 +77,17 @@ export async function initializeI18n(lng?: string): Promise<void> {
 	const config = {
 		resources,
 		lng, // Use provided lang (from server or undefined for detection)
-		fallbackLng: "en",
+		fallbackLng: "zh",
 		supportedLngs: ["en", "zh", "cn"],
-		ns: ["common", "home", "booking", "scheduler"],
+		ns: [
+			"common",
+			"home",
+			"booking",
+			"scheduler",
+			"privacy",
+			"terms",
+			"cookie",
+		],
 		defaultNS: "common",
 		interpolation: {
 			escapeValue: false,

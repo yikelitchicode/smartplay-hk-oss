@@ -1,4 +1,10 @@
 {
+	"seo": {
+		"title": "SmartPlay HK OSS | 康文署體育設施可用性查詢工具",
+		"description": "SmartPlay HK OSS 是一個開源、社群驅動的工具，用於查詢香港康文署體育設施的可用位置。實時監控網球場、籃球場等場地的可用情況。",
+		"ogTitle": "SmartPlay HK OSS - 社群康文署場地查詢工具",
+		"ogDescription": "更快、更簡潔的開源方案，用於查詢香港康文署設施可用性。獲取實時更新與通知。"
+	},
 	"hero": {
 		"title": "SmartPlay HK OSS",
 		"subtitle": "社區驅動的場地查詢工具",
@@ -6,20 +12,20 @@
 	},
 	"features": {
 		"booking": {
-			"title": "場地預訂",
-			"description": "即時查詢全港各地區網球、籃球等設施的可用情況。",
+			"title": "場地查詢",
+			"description": "即時橫跨全港所有地區，一鍵查詢網球場、籃球場、羽毛球場及壁球場等康文署設施的最新可用時段，無需反覆切換地區介面。",
 			"cta": "查詢可用性",
 			"badge": "已啟用"
 		},
 		"activity": {
 			"title": "活動報名",
-			"description": "瀏覽並監控活動名額及報名狀態。",
+			"description": "集中瀏覽各類體育課程、訓練班及競賽活動的餘額、報名日期與狀態。即將推出的功能將支援關鍵活動的名額監控。",
 			"cta": "即將推出",
 			"badge": "計劃中"
 		},
 		"scheduler": {
 			"title": "監測排程器",
-			"description": "自動監控場地可用性並接收通知。",
+			"description": "設定專屬的監測規律，當您心儀的場地（如熱門時段的網球場）出現空缺時，系統將立即透過 Webhook 發送實時通知，確保您第一時間掌握訂場機會。",
 			"cta": "開啟排程器",
 			"badge": "新功能"
 		}
