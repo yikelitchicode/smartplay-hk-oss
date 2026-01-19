@@ -24,7 +24,7 @@ const AccordionItem = React.forwardRef<
 >(({ className, ...props }, ref) => (
 	<BaseAccordion.Item
 		ref={ref}
-		className={`border rounded-xl transition-all duration-200 overflow-hidden bg-card/50 border-border hover:border-primary/20 data-[state=open]:bg-card data-[state=open]:border-primary/30 data-[state=open]:shadow-md ${className || ""}`}
+		className={`border rounded-xl transition-all duration-200 overflow-hidden bg-white/80 backdrop-blur-md border-border/50 shadow-sm hover:border-primary/20 data-[state=open]:bg-white data-[state=open]:border-primary/30 data-[state=open]:shadow-lg ${className || ""}`}
 		{...props}
 	/>
 ));

@@ -12,12 +12,13 @@ export interface DrawerProps {
 	closeOnEscape?: boolean;
 	closeOnOutsideClick?: boolean;
 	title?: string;
+	className?: string;
 }
 
 const sizeStyles = {
 	sm: "w-64",
 	md: "w-80",
-	lg: "w-[400px]",
+	lg: "w-[85vw] sm:w-[400px]",
 	xl: "max-w-xl",
 	full: "w-full",
 };
@@ -46,6 +47,7 @@ export const Drawer = ({
 	showCloseButton = true,
 	closeOnOutsideClick = true,
 	title,
+	className,
 }: DrawerProps) => {
 	return (
 		<Dialog.Root
@@ -61,7 +63,9 @@ export const Drawer = ({
 				<Dialog.Popup
 					role="dialog"
 					aria-modal="true"
-					className={`${anchorStyles[anchor]} ${sizeStyles[size]} ${transformStyles[anchor]} bg-white shadow-2xl z-50 flex flex-col data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 transition-transform duration-300 ease-in-out`}
+					className={`${anchorStyles[anchor]} ${sizeStyles[size]} ${transformStyles[anchor]} bg-white shadow-2xl z-50 flex flex-col data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 transition-transform duration-300 ease-in-out ${
+						className || ""
+					}`}
 				>
 					{showCloseButton && (
 						<div className="flex items-center justify-between p-4 border-b border-gray-200">

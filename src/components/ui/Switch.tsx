@@ -2,34 +2,54 @@ import { Switch as BaseSwitch } from "@base-ui/react/switch";
 import * as React from "react";
 
 export interface SwitchProps
-	extends Omit<React.ComponentProps<"input">, "size"> {
+	extends Omit<
+		React.HTMLAttributes<HTMLSpanElement>,
+		"onChange" | "defaultValue"
+	> {
 	label?: string;
 	description?: string;
 	error?: string;
 	size?: "sm" | "md" | "lg";
+	checked?: boolean;
+	defaultChecked?: boolean;
+	onCheckedChange?: (checked: boolean) => void;
+	value?: string;
+	disabled?: boolean;
 }
 
 const sizeStyles = {
 	sm: {
 		switch: "h-5 w-9",
-		thumb: "h-3 w-3 translate-x-0.5 data-[checked]:translate-x-4.5",
+		thumb: "h-3 w-3 data-[checked]:translate-x-4.5",
 		label: "text-sm",
 	},
 	md: {
 		switch: "h-6 w-11",
-		thumb: "h-4 w-4 translate-x-0.5 data-[checked]:translate-x-6",
+		thumb: "h-4 w-4 data-[checked]:translate-x-6",
 		label: "text-base",
 	},
 	lg: {
 		switch: "h-7 w-13",
-		thumb: "h-5 w-5 translate-x-0.5 data-[checked]:translate-x-7.5",
+		thumb: "h-5 w-5 data-[checked]:translate-x-7.5",
 		label: "text-lg",
 	},
 };
 
-export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
+export const Switch = React.forwardRef<HTMLSpanElement, SwitchProps>(
 	(
-		{ label, description, error, size = "md", disabled, className = "", id },
+		{
+			label,
+			description,
+			error,
+			size = "md",
+			disabled,
+			className = "",
+			id,
+			checked,
+			defaultChecked,
+			onCheckedChange,
+			...props
+		},
 		ref,
 	) => {
 		const generatedId = React.useId();
@@ -40,16 +60,16 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
 		const currentSize = sizeStyles[size];
 
 		const switchStyles =
-			"relative inline-flex flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+			"relative inline-flex flex-shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
 		const thumbStyles =
-			"pointer-events-none inline-block transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out";
+			"pointer-events-none inline-block transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0.5";
 
 		const backgroundColor = disabled
-			? "bg-gray-300"
+			? "bg-muted"
 			: error
 				? "bg-destructive data-[checked]:bg-destructive"
-				: "bg-gray-200 data-[checked]:bg-primary";
+				: "bg-input data-[checked]:bg-primary";
 
 		return (
 			<div>
@@ -58,15 +78,18 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
 						<BaseSwitch.Root
 							ref={ref}
 							id={switchId}
+							checked={checked}
+							defaultChecked={defaultChecked}
+							onCheckedChange={onCheckedChange}
+							disabled={disabled}
 							className={`${switchStyles} ${currentSize.switch} ${backgroundColor} ${className}`.trim()}
-							aria-invalid={error ? "true" : "false"}
+							aria-invalid={error ? true : undefined}
 							aria-describedby={
 								error ? errorId : description ? descriptionId : undefined
 							}
-							disabled={disabled}
+							{...props}
 						>
-							<span
-								aria-hidden="true"
+							<BaseSwitch.Thumb
 								className={`${thumbStyles} ${currentSize.thumb}`}
 							/>
 						</BaseSwitch.Root>
@@ -75,12 +98,12 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
 						<div className="ml-3">
 							<label
 								htmlFor={switchId}
-								className={`font-medium text-gray-900 ${error ? "text-destructive" : ""} ${currentSize.label} block`}
+								className={`font-medium text-foreground ${error ? "text-destructive" : ""} ${currentSize.label} cursor-pointer select-none block`}
 							>
 								{label}
 							</label>
 							{description && (
-								<p id={descriptionId} className="text-sm text-gray-500">
+								<p id={descriptionId} className="text-sm text-muted-foreground">
 									{description}
 								</p>
 							)}
@@ -88,7 +111,7 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
 					)}
 				</div>
 				{error && (
-					<p id={errorId} className="mt-1 text-sm text-red-600 ml-12">
+					<p id={errorId} className="mt-1 text-sm text-destructive ml-12">
 						{error}
 					</p>
 				)}

@@ -5,7 +5,24 @@ import { Button } from "./Button";
 export function BackToTop() {
 	const [isVisible, setIsVisible] = useState(false);
 
+	const [isScrollLocked, setIsScrollLocked] = useState(false);
+
 	useEffect(() => {
+		const checkScrollLock = () => {
+			const locked = document.body.hasAttribute("data-scroll-locked");
+			setIsScrollLocked(locked);
+		};
+
+		// Initial check
+		checkScrollLock();
+
+		// Observe body for attribute changes
+		const observer = new MutationObserver(checkScrollLock);
+		observer.observe(document.body, {
+			attributes: true,
+			attributeFilter: ["data-scroll-locked"],
+		});
+
 		const toggleVisibility = () => {
 			if (window.scrollY > 300) {
 				setIsVisible(true);
@@ -18,17 +35,19 @@ export function BackToTop() {
 
 		return () => {
 			window.removeEventListener("scroll", toggleVisibility);
+			observer.disconnect();
 		};
 	}, []);
 
 	const scrollToTop = () => {
+		if (isScrollLocked) return;
 		window.scrollTo({
 			top: 0,
 			behavior: "smooth",
 		});
 	};
 
-	if (!isVisible) {
+	if (!isVisible || isScrollLocked) {
 		return null;
 	}
 
