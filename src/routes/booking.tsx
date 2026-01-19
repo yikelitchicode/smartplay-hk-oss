@@ -27,6 +27,7 @@ import {
 	useBookingFilters,
 	useBookingNavigation,
 	useBookingStats,
+	useVenueFilters,
 	useWatcherSync,
 } from "@/lib/booking/hooks";
 import type { NormalizedSession, NormalizedVenue } from "@/lib/booking/types";
@@ -34,6 +35,7 @@ import {
 	type AvailabilityTheme,
 	getAvailabilityColor,
 } from "@/lib/booking/utils";
+import { envConfig } from "@/lib/env";
 import { initializeI18n } from "@/lib/i18n";
 import type {
 	ServerError,
@@ -62,6 +64,7 @@ const searchSchema = z.object({
 	facility: z.string().optional(),
 	priceType: z.enum(["Paid", "Free"]).optional(),
 	page: z.number().optional().default(1),
+	query: z.string().optional(),
 });
 
 interface BookingDeferredResult {
@@ -88,7 +91,7 @@ function getBookingPageMeta() {
 	const baseUrl =
 		typeof window !== "undefined"
 			? `${window.location.protocol}//${window.location.host}`
-			: "https://smartplay.hk";
+			: envConfig.baseUrl;
 	const canonical = `${baseUrl}/booking`;
 
 	const title = i18n.t("booking.seo.title", {
@@ -115,7 +118,7 @@ function getBookingPageMeta() {
 		description,
 		ogTitle,
 		ogDescription,
-		ogImage: `${baseUrl}/og-image.jpg`,
+		ogImage: `${baseUrl}/favicon/android-chrome-512x512.png`,
 		twitterCard: "summary_large_image",
 		canonical,
 	};
@@ -128,7 +131,7 @@ function getBookingPageStructuredData() {
 	const baseUrl =
 		typeof window !== "undefined"
 			? `${window.location.protocol}//${window.location.host}`
-			: "https://smartplay.hk";
+			: envConfig.baseUrl;
 
 	return {
 		"@context": "https://schema.org",
@@ -196,6 +199,7 @@ export const Route = createFileRoute("/booking")({
 		facility: search.facility,
 		priceType: search.priceType,
 		page: search.page,
+		query: search.query,
 	}),
 	// Data refreshes every 30 minutes on the server
 	// Cache for 30 minutes to match server cycle while allowing instant navigation
@@ -206,7 +210,7 @@ export const Route = createFileRoute("/booking")({
 		await initializeI18n();
 
 		const defaultDate = new Date().toISOString().split("T")[0];
-		const { date, districts, center, facility, priceType, page } = deps;
+		const { date, districts, center, facility, priceType, page, query } = deps;
 
 		// 1. Start fetching data
 		// We await static/fast data to render the shell immediately
@@ -259,6 +263,7 @@ export const Route = createFileRoute("/booking")({
 				venueId: center === "All" ? undefined : center,
 				facilityCode: facility === "All" ? undefined : facility,
 				priceType: normalizedPriceType,
+				query: query,
 			};
 
 			// Check if target date is beyond the standard 8-day live window
@@ -592,6 +597,7 @@ function BookingPageContent({
 		facility: searchFacility,
 		priceType: searchPriceType,
 		page: searchPage,
+		query,
 	} = Route.useSearch();
 
 	// Type-safe price type parsing
@@ -619,23 +625,24 @@ function BookingPageContent({
 		handleSelectFacility,
 		handleResetFilters,
 		handleSearchChange,
+		handleSearchSubmit,
 	} = useBookingFilters({
 		initialDistricts: searchDistricts || ["All"],
 		initialCenter: searchCenter || "All",
 		initialFacility: searchFacility || "All",
+		initialQuery: query,
 		onNavigate: (updates) => {
 			navigate({
 				search: (prev) => ({
 					...prev,
 					...updates,
-					page: 1, // Always reset to page 1 on filter change
+					page: updates.page ?? 1, // Use updates.page or default to 1
 				}),
 			});
 		},
 	});
 
 	// Defer expensive filtering and stats calculation
-	const deferredSearchQuery = useDeferredValue(searchQuery);
 	const deferredDistricts = useDeferredValue(selectedDistricts);
 	const deferredCenter = useDeferredValue(selectedCenter);
 	const deferredFacility = useDeferredValue(selectedFacilityCode);
@@ -643,7 +650,6 @@ function BookingPageContent({
 
 	// Detect if a transition is pending (client-side only)
 	const isFilteringPending =
-		searchQuery !== deferredSearchQuery ||
 		selectedDistricts !== deferredDistricts ||
 		selectedCenter !== deferredCenter ||
 		selectedFacilityCode !== deferredFacility ||
@@ -678,7 +684,7 @@ function BookingPageContent({
 		availableDistricts,
 		availableCenters,
 	} = useBookingStats({
-		venues: [], // No longer need all venues for calculation
+		venues: venues, // Re-added venues required by stats hook
 		districts,
 		centers,
 		selectedDistricts: deferredDistricts,
@@ -689,12 +695,19 @@ function BookingPageContent({
 		userLocation: userLocation,
 	});
 
+	// Sort venues by distance (only client-side operation needed now)
+	const filteredVenues = useVenueFilters({
+		venues,
+		userLocation,
+	});
+
 	const dateAvailability = useMemo(() => {
 		return availabilityData?.success && availabilityData.data
 			? availabilityData.data
 			: {};
 	}, [availabilityData]);
 
+	// Toast Notification States
 	// Date styles for calendar
 	const dateStyles = useMemo(() => {
 		const styles: Record<string, AvailabilityTheme> = {};
@@ -709,13 +722,28 @@ function BookingPageContent({
 		return styles;
 	}, [dateAvailability, availabilityData]);
 
-	// Current facility groups based on price type - from database
+	// Current facility groups based on available facilities from server
 	const currentFacilityGroups = useMemo(() => {
 		const isFree = selectedPriceType === "Free";
+		const availableCodes = bookingData?.success
+			? bookingData.data?.availableFacilities
+			: undefined;
+
+		// 2. Filter groups
 		return metadata.facilityGroups
 			.map((g) => ({
 				...g,
-				facilities: g.facilities.filter((f) => f.isFree === isFree),
+				facilities: g.facilities.filter((f) => {
+					// Always filter by price type
+					if (f.isFree !== isFree) return false;
+
+					// If we have server-side available facilities, strictly filter by them
+					if (availableCodes) {
+						return availableCodes.includes(f.code);
+					}
+
+					return true;
+				}),
 			}))
 			.filter((g) => g.facilities.length > 0)
 			.map((g) => ({
@@ -726,7 +754,7 @@ function BookingPageContent({
 					value: f.code,
 				})),
 			}));
-	}, [selectedPriceType, metadata.facilityGroups]);
+	}, [selectedPriceType, metadata.facilityGroups, bookingData]);
 
 	// Generate future dates - Kept for reference but unused in UI
 	/*
@@ -786,6 +814,7 @@ function BookingPageContent({
 					<FilterBar
 						searchQuery={searchQuery}
 						onSearchChange={handleSearchChange}
+						onSearchSubmit={handleSearchSubmit}
 						availableDistricts={availableDistricts}
 						selectedDistricts={selectedDistricts}
 						onSelectDistrict={handleSelectDistrict}
@@ -835,7 +864,7 @@ function BookingPageContent({
 
 				{/* Venues Grid */}
 				<VenueList
-					venues={venues}
+					venues={filteredVenues}
 					isLoading={isLoading || isFilteringPending}
 					onSessionClick={onSessionClick}
 					onWatchClick={onWatchClick}

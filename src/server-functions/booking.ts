@@ -50,6 +50,7 @@ export const getBookingData = createServerFn({
 					venueId: z.string().optional(),
 					facilityCode: z.string().optional(),
 					priceType: z.enum(["Free", "Paid"] as const).optional(),
+					query: z.string().max(100).optional(),
 				})
 				.optional(),
 			page: z.number().optional(),

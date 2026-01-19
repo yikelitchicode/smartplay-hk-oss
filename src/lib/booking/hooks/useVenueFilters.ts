@@ -6,7 +6,6 @@
 import { useMemo } from "react";
 import { DISTRICT_COORDINATES, type DistrictCoords } from "@/data/districts";
 import { getDistance } from "@/utils/location";
-import { filterVenues } from "../filter-venues";
 import type { NormalizedVenue, PriceType } from "../types";
 
 /**
@@ -35,25 +34,15 @@ export interface UseVenueFiltersParams {
  */
 export function useVenueFilters({
 	venues,
-	searchQuery,
-	selectedDistricts,
-	selectedCenter,
-	selectedFacilityCode,
-	selectedPriceType,
 	userLocation,
-}: UseVenueFiltersParams): NormalizedVenue[] {
+}: Pick<UseVenueFiltersParams, "venues" | "userLocation">): NormalizedVenue[] {
 	return useMemo(() => {
-		let filtered = filterVenues(venues, {
-			searchQuery,
-			selectedDistricts,
-			selectedCenter,
-			selectedFacilityCode,
-			selectedPriceType,
-		});
+		// Clone venues to avoid mutation during sort
+		let processedVenues = [...venues];
 
 		// Calculate distances if user location is available
 		if (userLocation) {
-			filtered = filtered.map((venue) => {
+			processedVenues = processedVenues.map((venue) => {
 				const districtCode = venue.districtCode;
 				// Check if we have coordinates for this district
 				// Uses type assertion to check if key exists in record
@@ -67,7 +56,7 @@ export function useVenueFilters({
 			});
 
 			// Sort by distance (ASC) with Venue ID (ASC) as tie-breaker
-			filtered.sort((a, b) => {
+			processedVenues.sort((a, b) => {
 				if (a.distance !== undefined && b.distance !== undefined) {
 					const diff = a.distance - b.distance;
 					if (diff !== 0) return diff;
@@ -82,17 +71,9 @@ export function useVenueFilters({
 			});
 		} else {
 			// If no location, sort by Venue ID for deterministic order
-			filtered.sort((a, b) => a.id.localeCompare(b.id));
+			processedVenues.sort((a, b) => a.id.localeCompare(b.id));
 		}
 
-		return filtered;
-	}, [
-		venues,
-		searchQuery,
-		selectedDistricts,
-		selectedCenter,
-		selectedFacilityCode,
-		selectedPriceType,
-		userLocation,
-	]);
+		return processedVenues;
+	}, [venues, userLocation]);
 }

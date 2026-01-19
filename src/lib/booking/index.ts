@@ -20,13 +20,7 @@ export {
 	SORT_WEIGHTS,
 	TOAST_DURATION,
 } from "./constants";
-// Filter functions
-export {
-	filterByDistrict,
-	filterBySearchQuery,
-	filterVenueFacilities,
-	filterVenues,
-} from "./filter-venues";
+
 // Hooks
 export {
 	type BookingFilters,

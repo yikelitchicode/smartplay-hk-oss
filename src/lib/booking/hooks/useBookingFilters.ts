@@ -30,11 +30,15 @@ export interface UseBookingFiltersParams {
 	initialCenter?: string;
 	/** Initial facility from URL */
 	initialFacility?: string;
+	/** Initial query from URL */
+	initialQuery?: string;
 	/** Navigation function for URL updates */
 	onNavigate: (updates: {
 		districts?: string[];
 		center?: string;
 		facility?: string;
+		query?: string;
+		page?: number;
 	}) => void;
 }
 
@@ -45,6 +49,7 @@ export function useBookingFilters({
 	initialDistricts = [DEFAULT_FILTERS.DISTRICT],
 	initialCenter = DEFAULT_FILTERS.CENTER,
 	initialFacility = DEFAULT_FILTERS.FACILITY,
+	initialQuery,
 	onNavigate,
 }: UseBookingFiltersParams) {
 	// Local state for filters
@@ -53,7 +58,9 @@ export function useBookingFilters({
 	const [selectedCenter, setSelectedCenter] = useState<string>(initialCenter);
 	const [selectedFacilityCode, setSelectedFacilityCode] =
 		useState<string>(initialFacility);
-	const [searchQuery, setSearchQuery] = useState(DEFAULT_FILTERS.SEARCH_QUERY);
+	const [searchQuery, setSearchQuery] = useState(
+		initialQuery ?? DEFAULT_FILTERS.SEARCH_QUERY,
+	);
 
 	// Sync with URL params when they change
 	useEffect(() => {
@@ -80,6 +87,14 @@ export function useBookingFilters({
 			setSelectedDistricts(initialDistricts);
 		}
 	}, [initialDistricts, selectedDistricts]);
+
+	// Sync query from URL (immediate, no debounce)
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Adding searchQuery to deps causes input reset while typing
+	useEffect(() => {
+		if (initialQuery !== undefined && initialQuery !== searchQuery) {
+			setSearchQuery(initialQuery);
+		}
+	}, [initialQuery]);
 
 	/**
 	 * Handle district selection with multi-select support
@@ -139,12 +154,35 @@ export function useBookingFilters({
 	);
 
 	/**
-	 * Handle search query change
+	 * Handle search input change
+	 * - Updates local state
+	 * - If cleared, immediately resets the search
 	 */
-	const handleSearchChange = useCallback((query: string) => {
-		// biome-ignore lint/suspicious/noExplicitAny: query typing issue with state setter
-		setSearchQuery(query as any);
-	}, []);
+	const handleSearchChange = useCallback(
+		(query: string) => {
+			// biome-ignore lint/suspicious/noExplicitAny: query typing issue with state setter
+			setSearchQuery(query as any);
+
+			// If user clears the input, reset search immediately
+			if (query.trim() === "") {
+				onNavigate({
+					query: undefined,
+					page: 1,
+				});
+			}
+		},
+		[onNavigate],
+	);
+
+	/**
+	 * Handle search submission (Enter key or button click)
+	 */
+	const handleSearchSubmit = useCallback(() => {
+		onNavigate({
+			query: searchQuery.trim().length >= 2 ? searchQuery.trim() : undefined,
+			page: 1, // Reset to page 1 on search
+		});
+	}, [onNavigate, searchQuery]);
 
 	/**
 	 * Reset all filters to default values
@@ -158,6 +196,7 @@ export function useBookingFilters({
 			districts: undefined,
 			center: undefined,
 			facility: undefined,
+			query: undefined,
 		});
 	}, [onNavigate]);
 
@@ -173,6 +212,7 @@ export function useBookingFilters({
 		handleSelectCenter,
 		handleSelectFacility,
 		handleSearchChange,
+		handleSearchSubmit,
 		handleResetFilters,
 
 		// Computed

@@ -104,7 +104,7 @@ export const DateSelector = memo(function DateSelector({
 									onClick={() => onSelectDate(dateStr)}
 									aria-label={`${month} ${dayNumber}, ${dayName}${isSelected ? ` (${t("booking:selected")})` : ""}${isDisabled ? ` (${t("booking:fully_booked")})` : ""}`}
 									aria-pressed={isSelected}
-									className={`flex flex-col items-center min-w-[65px] sm:min-w-[70px] w-[65px] sm:w-[70px] flex-shrink-0 p-2 rounded-xl transition-all duration-200 border relative ${
+									className={`flex flex-col items-center min-w-[65px] sm:min-w-[70px] w-[65px] sm:w-[70px] shrink-0 p-2 rounded-xl transition-all duration-200 border relative ${
 										isSelected
 											? "bg-primary border-primary text-white shadow-md transform scale-105 z-10"
 											: availabilityClass

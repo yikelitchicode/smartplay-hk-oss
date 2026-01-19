@@ -211,34 +211,19 @@ export async function checkSessionAvailabilityService({
 
 		// Update database if session is confirmed unavailable
 		// This keeps data fresh for all users
-		if (!isAvailable) {
-			// Fire-and-forget update - don't block user experience
-			updateSessionAvailability({
-				venueId,
-				facilityCode,
-				date: new Date(date),
-				startTime,
-				endTime,
-				available: false,
-				verifiedBy: "USER",
-			}).catch((err) => {
-				// Already logged inside function
-				console.error("Background availability update failed:", err);
-			});
-		} else {
-			// Also update when confirmed available (for tracking)
-			updateSessionAvailability({
-				venueId,
-				facilityCode,
-				date: new Date(date),
-				startTime,
-				endTime,
-				available: true,
-				verifiedBy: "USER",
-			}).catch((err) => {
-				console.error("Background availability update failed:", err);
-			});
-		}
+		// Update database with the confirmed availability status
+		// This keeps data fresh for all users
+		updateSessionAvailability({
+			venueId,
+			facilityCode,
+			date: new Date(date),
+			startTime,
+			endTime,
+			available: isAvailable.isAvailable,
+			verifiedBy: "USER",
+		}).catch((err) => {
+			console.error("Background availability update failed:", err);
+		});
 
 		crawlerLogger.info(
 			{

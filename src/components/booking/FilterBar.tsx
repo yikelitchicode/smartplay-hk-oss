@@ -30,6 +30,7 @@ interface FilterBarProps {
 	// Search Data
 	searchQuery: string;
 	onSearchChange: (query: string) => void;
+	onSearchSubmit: () => void;
 
 	// Location Data
 	availableDistricts: {
@@ -100,6 +101,7 @@ const REGIONS: RegionType[] = [
 export function FilterBar({
 	searchQuery,
 	onSearchChange,
+	onSearchSubmit,
 	availableDistricts,
 	selectedDistricts,
 	onSelectDistrict,
@@ -361,8 +363,25 @@ export function FilterBar({
 							className="w-full pl-10 pr-4 py-3 bg-porcelain-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-transparent focus:bg-white transition-all outline-none"
 							value={searchQuery}
 							onChange={(e) => onSearchChange(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") {
+									onSearchSubmit();
+								}
+							}}
 						/>
 					</div>
+					<button
+						type="button"
+						onClick={onSearchSubmit}
+						disabled={isLoading || searchQuery.trim().length < 2}
+						className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-white bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all"
+						title={t("booking:search_button", "Search")}
+					>
+						<Search size={16} />
+						<span className="hidden sm:inline">
+							{t("booking:search_button", "Search")}
+						</span>
+					</button>
 					<button
 						type="button"
 						onClick={handleReset}
