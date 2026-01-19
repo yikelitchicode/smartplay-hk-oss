@@ -35,7 +35,7 @@ RUN apk add --no-cache wget netcat-openbsd && \
     npm install -g tsx
 
 # Copy package files first
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml tsconfig.json ./
 
 # Install production dependencies only
 RUN pnpm install --prod --frozen-lockfile

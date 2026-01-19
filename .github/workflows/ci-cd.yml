@@ -160,7 +160,8 @@ jobs:
           ssh "$SSH_USER@$SSH_HOST" "mkdir -p ~/smartplay-hk-oss"
 
           # Create env file
-          ssh "$SSH_USER@$SSH_HOST" "cat > ~/smartplay-hk-oss/.env.docker << 'ENVEOF'
+          # Create env file (use .env so docker compose picks it up automatically)
+          ssh "$SSH_USER@$SSH_HOST" "cat > ~/smartplay-hk-oss/.env << 'ENVEOF'
           DATABASE_URL=${INTERNAL_DATABASE_URL}
           POSTGRES_USER=${POSTGRES_USER}
           POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -178,8 +179,8 @@ jobs:
           # Deploy: login, pull, and start in one command
           ssh "$SSH_USER@$SSH_HOST" "cd ~/smartplay-hk-oss && \
             echo '$GH_TOKEN' | docker login ghcr.io -u '$GH_ACTOR' --password-stdin && \
-            docker compose --env-file .env.docker pull && \
-            docker compose --env-file .env.docker up -d --remove-orphans --force-recreate && \
+            docker compose pull && \
+            docker compose up -d --remove-orphans --force-recreate && \
             docker image prune -af --filter 'until=24h'"
 
       - name: Health check
