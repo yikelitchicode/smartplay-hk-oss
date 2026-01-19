@@ -20,8 +20,8 @@ FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma client
-RUN pnpm db:generate || pnpm prisma generate
+# Generate Prisma client (dummy DATABASE_URL for build-time schema parsing only)
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" pnpm prisma generate
 
 # Build the application
 RUN pnpm build
@@ -40,7 +40,9 @@ RUN apk add --no-cache wget netcat-openbsd
 COPY package.json pnpm-lock.yaml ./
 COPY --from=build /app/.output ./.output
 COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/prisma.config.ts ./prisma.config.ts
 COPY --from=build /app/src/generated ./src/generated
+COPY --from=build /app/src/db ./src/db
 COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/src/lib ./src/lib
 

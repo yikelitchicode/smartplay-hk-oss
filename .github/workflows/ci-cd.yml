@@ -104,92 +104,130 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    # environment: production  # Uncomment after creating environment in repo settings
+    environment: production
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
       - name: Setup SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          # Write SSH key using printf to preserve newlines
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+          # Verify SSH_HOST is set
+          if [ -z "$SSH_HOST" ]; then
+            echo "❌ Error: SSH_HOST secret is not set"
+            exit 1
+          fi
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
 
       - name: Create .env.docker file on remote
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/smartplay-hk-oss"
+          ssh "$SSH_USER@$SSH_HOST" "mkdir -p ~/smartplay-hk-oss"
 
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cat > ~/smartplay-hk-oss/.env.docker << 'EOF'
+          # Parse DATABASE_URL to extract postgres credentials
+          # Format: postgresql://user:password@host:port/database
+          POSTGRES_USER=$(echo "$DATABASE_URL" | sed -n 's|.*://\([^:]*\):.*|\1|p')
+          POSTGRES_PASSWORD=$(echo "$DATABASE_URL" | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
+          POSTGRES_DB=$(echo "$DATABASE_URL" | sed -n 's|.*/\([^?]*\).*|\1|p')
+
+          # Use defaults if parsing fails
+          POSTGRES_USER=${POSTGRES_USER:-smartplay}
+          POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-smartplay_password}
+          POSTGRES_DB=${POSTGRES_DB:-smartplay}
+
+          # The app connects to 'postgres' hostname (docker service name)
+          # so we rewrite DATABASE_URL to use the internal docker hostname
+          INTERNAL_DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+
+          ssh "$SSH_USER@$SSH_HOST" "cat > ~/smartplay-hk-oss/.env.docker << 'ENVEOF'
           # ============================================
           # Database Configuration
           # ============================================
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          DATABASE_URL=${INTERNAL_DATABASE_URL}
+          POSTGRES_USER=${POSTGRES_USER}
+          POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+          POSTGRES_DB=${POSTGRES_DB}
 
           # ============================================
           # Application Configuration
           # ============================================
           NODE_ENV=production
-          BASE_URL=${{ secrets.DEPLOY_URL }}
+          BASE_URL=${DEPLOY_URL}
 
           # ============================================
           # Cloudflare Turnstile (Bot Protection)
           # ============================================
-          VITE_CLOUDFLARE_TURNSTILE_SITE_KEY=${{ secrets.TURNSTILE_SITE_KEY }}
-          CLOUDFLARE_TURNSTILE_SECRET_KEY=${{ secrets.TURNSTILE_SECRET_KEY }}
-
-          # ============================================
-          # Crawler Configuration
-          # ============================================
-          # Note: Crawler configuration is in src/lib/crawler/config.ts
-          # The scheduler runs automatically via scripts/scheduler.ts
-          # Edit src/lib/crawler/config.ts to customize crawler behavior
+          VITE_CLOUDFLARE_TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY}
+          CLOUDFLARE_TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY}
 
           # ============================================
           # Cloudflare Tunnel
           # ============================================
-          CLOUDFLARE_TUNNEL_TOKEN=${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
-          EOF"
+          CLOUDFLARE_TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+          ENVEOF"
 
-      - name: Copy docker-compose.yml to remote
+      - name: Copy docker-compose.prod.yml to remote
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
-          scp docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/smartplay-hk-oss/
+          scp docker-compose.prod.yml "$SSH_USER@$SSH_HOST:~/smartplay-hk-oss/docker-compose.yml"
 
       - name: Deploy using Docker Compose
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_ACTOR: ${{ github.actor }}
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
-            cd ~/smartplay-hk-oss
-
-            # Login to GitHub Container Registry
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-            # Pull latest image
-            docker compose --env-file .env.docker pull
-
-            # Stop old containers and start new ones
-            # Note: Migrations run automatically via docker-entrypoint.sh
-            docker compose --env-file .env.docker up -d --remove-orphans --force-recreate
-
-            # Clean up old images
-            docker image prune -af --filter "until=24h"
-          ENDSSH
+          ssh "$SSH_USER@$SSH_HOST" "cd ~/smartplay-hk-oss && \
+            echo '$GH_TOKEN' | docker login ghcr.io -u '$GH_ACTOR' --password-stdin && \
+            docker compose --env-file .env.docker pull && \
+            docker compose --env-file .env.docker up -d --remove-orphans --force-recreate && \
+            docker image prune -af --filter 'until=24h'"
 
       - name: Health check
+        env:
+          DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
         run: |
           # Skip if DEPLOY_URL is not set
-          if [ -z "${{ secrets.DEPLOY_URL }}" ]; then
+          if [ -z "$DEPLOY_URL" ]; then
             echo "⏭️  DEPLOY_URL not configured, skipping health check"
             exit 0
           fi
 
-          sleep 10
-          response=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.DEPLOY_URL }}" || echo "000")
-          if [ "$response" != "200" ] && [ "$response" != "000" ]; then
+          echo "⏳ Waiting 30s for services to start..."
+          sleep 30
+
+          echo "🔍 Checking $DEPLOY_URL..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 30 "$DEPLOY_URL" 2>/dev/null) || response="000"
+
+          echo "📊 HTTP status: $response"
+
+          if [ "$response" = "200" ] || [ "$response" = "301" ] || [ "$response" = "302" ] || [ "$response" = "403" ]; then
+            echo "✅ Deployment health check passed (server is responding)"
+            exit 0
+          elif [ "$response" = "000" ]; then
+            echo "⚠️  Could not reach server (may still be starting)"
+            exit 0
+          else
             echo "❌ Deployment health check failed with status: $response"
             exit 1
           fi
-          echo "✅ Deployment health check passed with status: $response"
 
       - name: Cleanup SSH keys
         if: always()

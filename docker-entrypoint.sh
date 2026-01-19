@@ -41,7 +41,9 @@ wait_for_db() {
 # Function to run Prisma migrations
 run_migrations() {
     echo "📋 Running database migrations..."
-    if npx prisma migrate deploy; then
+    # DATABASE_URL is already set in the environment from docker-compose
+    # Prisma uses prisma.config.ts which reads env("DATABASE_URL")
+    if DATABASE_URL="$DATABASE_URL" npx prisma migrate deploy; then
         echo "✅ Migrations completed successfully"
     else
         echo "⚠️  WARNING: Migration failed or no migrations to run"
