@@ -18,8 +18,8 @@ describe("i18n.ts", () => {
 			// fallbackLng can be a string or array
 			const fallbackLng = i18n.options.fallbackLng;
 			const isValid =
-				fallbackLng === "en" ||
-				(Array.isArray(fallbackLng) && fallbackLng.includes("en"));
+				fallbackLng === "zh" ||
+				(Array.isArray(fallbackLng) && fallbackLng.includes("zh"));
 			expect(isValid).toBe(true);
 		});
 
@@ -116,8 +116,8 @@ describe("i18n.ts", () => {
 		const { detectLanguage } = i18nModule;
 
 		it("should return 'en' for null/empty accept-language", () => {
-			expect(detectLanguage(null)).toBe("en");
-			expect(detectLanguage("")).toBe("en");
+			expect(detectLanguage(null)).toBe("zh");
+			expect(detectLanguage("")).toBe("zh");
 		});
 
 		it("should detect English", () => {
