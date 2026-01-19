@@ -1,10 +1,5 @@
-import {
-	createFileRoute,
-	defer,
-	Link,
-	useNavigate,
-} from "@tanstack/react-router";
-import { ArrowLeft, CalendarDays, Check } from "lucide-react";
+import { createFileRoute, defer, useNavigate } from "@tanstack/react-router";
+import { Check } from "lucide-react";
 import {
 	useCallback,
 	useDeferredValue,
@@ -15,41 +10,29 @@ import {
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import {
+	BookingHeader,
 	BookingModal,
+	BookingPagination,
 	BookingPending,
+	BookingResultsInfo,
 	DateSelector,
 	FilterBar,
-	VenueCard,
-	VenueListSkeleton,
+	VenueList,
 	WatcherModal,
 } from "@/components/booking";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import {
-	Pagination,
-	PaginationContent,
-	PaginationEllipsis,
-	PaginationItem,
-	PaginationLink,
-	PaginationNext,
-	PaginationPrevious,
-} from "@/components/ui/Pagination";
-import { DISTRICT_COORDINATES, type DistrictCoords } from "@/data/districts";
+import type { DistrictCoords } from "@/data/districts";
 import { parsePriceType } from "@/lib/booking";
 import {
+	useBookingDataProcessor,
 	useBookingFilters,
 	useBookingNavigation,
 	useBookingStats,
+	useWatcherSync,
 } from "@/lib/booking/hooks";
-import type {
-	NormalizedSession,
-	NormalizedVenue,
-	RegionType,
-} from "@/lib/booking/types";
+import type { NormalizedSession, NormalizedVenue } from "@/lib/booking/types";
 import {
 	type AvailabilityTheme,
 	getAvailabilityColor,
-	getRegion,
 } from "@/lib/booking/utils";
 import { initializeI18n } from "@/lib/i18n";
 import type {
@@ -66,12 +49,10 @@ import {
 	getCalendarStats as getCalendarStatsFn,
 	getDetailedStats as getDetailedStatsFn,
 } from "@/server-functions/stats";
-import { getWatchers } from "@/server-functions/watch/watcher";
 import type {
 	BookingDataPaginatedResult,
 	MetadataResult,
 } from "@/services/booking.service";
-import { getDistance } from "@/utils/location";
 
 // Search Params Schema
 const searchSchema = z.object({
@@ -98,6 +79,8 @@ interface BookingDeferredResult {
 		| ServerSuccess<Record<string, { t: number; a: number }>>;
 }
 
+import i18n from "@/lib/i18n";
+
 /**
  * Generate dynamic meta tags for the booking page
  */
@@ -108,13 +91,30 @@ function getBookingPageMeta() {
 			: "https://smartplay.hk";
 	const canonical = `${baseUrl}/booking`;
 
+	const title = i18n.t("booking.seo.title", {
+		ns: "booking",
+		defaultValue: "康文署體育設施可用位置查詢 | SmartPlay HK OSS",
+	});
+	const description = i18n.t("booking.seo.description", {
+		ns: "booking",
+		defaultValue:
+			"香港康文署體育設施可用性查詢開源工具。實時查詢全港各地區網球場、籃球場、羽毛球場的可用情況。預訂程序必須在康文署 SmartPlay 官方網站完成。",
+	});
+	const ogTitle = i18n.t("booking.seo.ogTitle", {
+		ns: "booking",
+		defaultValue: "SmartPlay HK OSS - 康文署設施可用性查詢",
+	});
+	const ogDescription = i18n.t("booking.seo.ogDescription", {
+		ns: "booking",
+		defaultValue:
+			"開源工具實時查詢香港康文署體育設施可用性。尋找可用的網球、籃球及羽毛球場。官方預訂請前往康文署 SmartPlay 網站。",
+	});
+
 	return {
-		title: "LCSD Sports Facilities Availability | SmartPlay HK OSS",
-		description:
-			"Open-source availability checker for Hong Kong LCSD sports facilities. Check real-time availability for tennis, basketball, badminton courts across all Hong Kong districts. Booking must be completed on the official LCSD SmartPlay website.",
-		ogTitle: "SmartPlay HK OSS - LCSD Facilities Availability Checker",
-		ogDescription:
-			"Open-source tool to check Hong Kong LCSD sports facility availability in real-time. Find available tennis, basketball, and badminton courts. Official booking via LCSD SmartPlay website.",
+		title,
+		description,
+		ogTitle,
+		ogDescription,
 		ogImage: `${baseUrl}/og-image.jpg`,
 		twitterCard: "summary_large_image",
 		canonical,
@@ -261,10 +261,19 @@ export const Route = createFileRoute("/booking")({
 				priceType: normalizedPriceType,
 			};
 
+			// Check if target date is beyond the standard 8-day live window
+			// If so, we fetch today's data to get the venue structure (names, facilities)
+			// effectively mirroring the "All" view for future projections.
+			const today = new Date();
+			const target = new Date(targetDate);
+			const diffTime = target.getTime() - today.getTime();
+			const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+			const isFarFuture = diffDays > 8;
+
 			const [bookingData, detailedStats, availabilityData] = await Promise.all([
 				getBookingData({
 					data: {
-						date: targetDate,
+						date: isFarFuture ? defaultDate : targetDate,
 						filters,
 						page: page || 1,
 						pageSize: 6,
@@ -324,6 +333,7 @@ export const Route = createFileRoute("/booking")({
 				{ name: "twitter:title", content: ogTitle },
 				{ name: "twitter:description", content: ogDescription },
 				{ name: "twitter:image", content: ogImage },
+				{ name: "twitter:url", content: canonical },
 				{ name: "robots", content: "index, follow" },
 			],
 			links: [
@@ -380,12 +390,11 @@ function BookingPage() {
 		null,
 	);
 
-	// Modal state for watcher
-	const [watcherSession, setWatcherSession] =
+	// Watcher Modal State
+	const [watcherModalSession, setWatcherModalSession] =
 		useState<NormalizedSession | null>(null);
-	const [watcherVenue, setWatcherVenue] = useState<NormalizedVenue | null>(
-		null,
-	);
+	const [watcherModalVenue, setWatcherModalVenue] =
+		useState<NormalizedVenue | null>(null);
 
 	const [showToast, setShowToast] = useState(false);
 	const [toastTitle, setTitle] = useState("");
@@ -410,25 +419,25 @@ function BookingPage() {
 		setTimeout(() => setShowToast(false), 3000);
 	}, [t]);
 
-	// Handle watch click
-	const handleWatchClick = useCallback(
+	// Handler for subscribing to a session
+	const handleSubscribe = useCallback(
 		(venue: NormalizedVenue, session: NormalizedSession) => {
-			setWatcherVenue(venue);
-			setWatcherSession(session);
+			setWatcherModalSession(session);
+			setWatcherModalVenue(venue);
 		},
 		[],
 	);
 
 	const confirmWatcher = useCallback(() => {
-		if (!watcherVenue || !watcherSession) return;
+		if (!watcherModalVenue || !watcherModalSession) return;
 
 		setTitle(t("booking:watcher_added"));
 		setMessage(t("booking:watcher_added_desc"));
-		setWatcherSession(null);
-		setWatcherVenue(null);
+		setWatcherModalSession(null);
+		setWatcherModalVenue(null);
 		setShowToast(true);
 		setTimeout(() => setShowToast(false), 3000);
-	}, [t, watcherVenue, watcherSession]);
+	}, [t, watcherModalVenue, watcherModalSession]);
 
 	return (
 		<>
@@ -441,7 +450,7 @@ function BookingPage() {
 				metadataData={metadataData}
 				currentPriceType={priceType}
 				onSessionClick={handleSessionClick}
-				onWatchClick={handleWatchClick}
+				onWatchClick={handleSubscribe}
 			/>
 
 			{/* Modals */}
@@ -454,11 +463,11 @@ function BookingPage() {
 				/>
 			)}
 
-			{watcherSession && watcherVenue && (
+			{watcherModalSession && watcherModalVenue && (
 				<WatcherModal
-					session={watcherSession}
-					venue={watcherVenue}
-					onClose={() => setWatcherSession(null)}
+					session={watcherModalSession}
+					venue={watcherModalVenue}
+					onClose={() => setWatcherModalSession(null)}
 					onConfirm={confirmWatcher}
 				/>
 			)}
@@ -492,8 +501,6 @@ function BookingPage() {
 	);
 }
 
-interface Metadata extends MetadataResult {}
-
 function BookingPageContent({
 	availableDates,
 	selectedDate,
@@ -513,8 +520,6 @@ function BookingPageContent({
 	onSessionClick: (venue: NormalizedVenue, session: NormalizedSession) => void;
 	onWatchClick: (venue: NormalizedVenue, session: NormalizedSession) => void;
 }) {
-	const { t } = useTranslation(["booking", "common"]);
-
 	// Resolve the deferred promise
 	const [dynamicData, setDynamicData] = useState<BookingDeferredResult | null>(
 		null,
@@ -522,11 +527,12 @@ function BookingPageContent({
 	// We need to track if we are loading new data
 	const [isLoading, setIsLoading] = useState(true);
 
+	// Tab state for Future Sessions - Removed (Feature hidden)
+	// const [activeTab, setActiveTab] = useState<"live" | "future">("live");
+
 	useEffect(() => {
 		let active = true;
 		setIsLoading(true);
-		// Reset data to show skeleton, or keep stale?
-		// User specifically wanted skeleton for venue section
 		setDynamicData(null);
 
 		deferredDataPromise
@@ -555,34 +561,8 @@ function BookingPageContent({
 	const [userLocation, setUserLocation] = useState<DistrictCoords | null>(null);
 	const [isLocating, setIsLocating] = useState(false);
 
-	// Watched Sessions State - Track which sessions are being watched
-	const [watchedSessionIds, setWatchedSessionIds] = useState<Set<string>>(
-		new Set(),
-	);
-
-	// Fetch watchers on component mount
-	useEffect(() => {
-		let active = true;
-		const fetchWatchers = async () => {
-			try {
-				const result = await getWatchers({ data: {} });
-				if (active && result?.success && result.data) {
-					const ids = new Set(
-						result.data
-							.map((w) => w.targetSessionId)
-							.filter((id): id is string => id !== null),
-					);
-					setWatchedSessionIds(ids);
-				}
-			} catch (error) {
-				console.error("Failed to fetch watchers:", error);
-			}
-		};
-		fetchWatchers();
-		return () => {
-			active = false;
-		};
-	}, []);
+	// Watchers Sync Hook - No argument needed, we sync all active watchers
+	const { watchedSessionIds } = useWatcherSync();
 
 	const handleLocate = useCallback(() => {
 		if (!navigator.geolocation) {
@@ -606,132 +586,6 @@ function BookingPageContent({
 		);
 	}, []);
 
-	// Process raw data
-	const { venues, districts, centers, pagination, lastUpdate, metadata } =
-		useMemo(() => {
-			let venues: NormalizedVenue[] = [];
-			let paginationData = { currentPage: 1, totalPages: 1, totalVenues: 0 };
-			let districtsList: {
-				code: string;
-				name: string;
-				region: RegionType;
-				nameEn?: string | null;
-				nameTc?: string | null;
-				nameSc?: string | null;
-				hasData?: boolean;
-				totalSessions: number;
-				availableSessions: number;
-			}[] = [];
-			let centersList: {
-				id: string;
-				name: string;
-				nameEn?: string | null;
-				nameTc?: string | null;
-				nameSc?: string | null;
-				districtName: string;
-				districtNameEn?: string | null;
-				districtNameTc?: string | null;
-				districtNameSc?: string | null;
-				districtCode: string;
-			}[] = [];
-
-			if (bookingData?.success && bookingData.data) {
-				venues = bookingData.data.venues.map((v: NormalizedVenue) => {
-					let distance: number | undefined;
-					if (userLocation) {
-						const dCoords =
-							DISTRICT_COORDINATES[
-								v.districtCode as keyof typeof DISTRICT_COORDINATES
-							];
-						if (dCoords) {
-							distance = getDistance(userLocation, dCoords);
-						}
-					}
-					return {
-						...v,
-						distance,
-						imageUrl: v.imageUrl || "/placeholder-venue.jpg",
-						region: getRegion(v.districtCode),
-					};
-				});
-				paginationData = bookingData.data.pagination;
-				centersList = bookingData.data.centers.map(
-					(c: {
-						id: string;
-						name: string;
-						nameEn?: string | null;
-						districtName: string;
-						districtCode: string;
-					}) => ({
-						...c,
-						districtName: c.districtName || "",
-						districtCode: c.districtCode || "",
-					}),
-				);
-			}
-
-			// Use dynamic data if available, otherwise fallback to static metadata
-			// This prevents the district list from disappearing during loading
-			if (bookingData?.success && bookingData.data) {
-				districtsList = bookingData.data.districts.map(
-					(d: {
-						code: string;
-						name: string;
-						nameEn?: string | null;
-						nameTc?: string | null;
-						nameSc?: string | null;
-						hasData?: boolean;
-						totalSessions: number;
-						availableSessions: number;
-					}) => ({
-						...d,
-						region: getRegion(d.code),
-						hasData: d.hasData,
-						totalSessions: d.totalSessions,
-						availableSessions: d.availableSessions,
-					}),
-				);
-			} else if (metadataData?.success && metadataData.data) {
-				// Fallback to static metadata
-				districtsList = metadataData.data.districts.map((d) => ({
-					code: d.code,
-					name: d.name,
-					nameEn: d.nameEn,
-					nameTc: d.nameTc,
-					nameSc: d.nameSc,
-					region: getRegion(d.code),
-					hasData: false, // Unknown while loading
-					totalSessions: 0,
-					availableSessions: 0,
-				}));
-			}
-
-			return {
-				venues,
-				pagination: paginationData,
-				districts: districtsList,
-				centers: centersList,
-				lastUpdate:
-					lastUpdateData.success && lastUpdateData.data
-						? lastUpdateData.data.lastUpdate
-						: null,
-				metadata: (metadataData.success && metadataData.data
-					? metadataData.data
-					: {
-							districts: [],
-							facilityTypes: [],
-							facilityGroups: [],
-							centers: [],
-						}) as Metadata,
-			};
-		}, [bookingData, lastUpdateData, metadataData, userLocation]);
-
-	const dateAvailability = useMemo(() => {
-		return availabilityData?.success && availabilityData.data
-			? availabilityData.data
-			: {};
-	}, [availabilityData]);
-
 	const {
 		districts: searchDistricts,
 		center: searchCenter,
@@ -741,7 +595,6 @@ function BookingPageContent({
 	} = Route.useSearch();
 
 	// Type-safe price type parsing
-	// Type-safe price type parsing, fallback to loader provided default
 	const selectedPriceType = parsePriceType(
 		searchPriceType || currentPriceType,
 		"Paid",
@@ -765,7 +618,7 @@ function BookingPageContent({
 		handleSelectCenter,
 		handleSelectFacility,
 		handleResetFilters,
-		handleSearchChange, // Added this
+		handleSearchChange,
 	} = useBookingFilters({
 		initialDistricts: searchDistricts || ["All"],
 		initialCenter: searchCenter || "All",
@@ -795,6 +648,15 @@ function BookingPageContent({
 		selectedCenter !== deferredCenter ||
 		selectedFacilityCode !== deferredFacility ||
 		selectedPriceType !== deferredPriceType;
+
+	// Process raw data using custom hook
+	const { venues, districts, centers, pagination, lastUpdate, metadata } =
+		useBookingDataProcessor({
+			bookingData,
+			metadataData,
+			lastUpdateData,
+			userLocation,
+		});
 
 	// Pagination State
 	const currentPage = searchPage || 1;
@@ -827,17 +689,25 @@ function BookingPageContent({
 		userLocation: userLocation,
 	});
 
+	const dateAvailability = useMemo(() => {
+		return availabilityData?.success && availabilityData.data
+			? availabilityData.data
+			: {};
+	}, [availabilityData]);
+
 	// Date styles for calendar
 	const dateStyles = useMemo(() => {
 		const styles: Record<string, AvailabilityTheme> = {};
-		Object.keys(dateAvailability).forEach((date) => {
-			styles[date] = getAvailabilityColor(
-				dateAvailability[date].t,
-				dateAvailability[date].a,
-			);
+		Object.keys(dateAvailability || {}).forEach((date) => {
+			if (availabilityData?.success && availabilityData.data) {
+				styles[date] = getAvailabilityColor(
+					availabilityData.data[date].t,
+					availabilityData.data[date].a,
+				);
+			}
 		});
 		return styles;
-	}, [dateAvailability]);
+	}, [dateAvailability, availabilityData]);
 
 	// Current facility groups based on price type - from database
 	const currentFacilityGroups = useMemo(() => {
@@ -858,39 +728,51 @@ function BookingPageContent({
 			}));
 	}, [selectedPriceType, metadata.facilityGroups]);
 
-	// Modal state removed (lifted to parent)
+	// Generate future dates - Kept for reference but unused in UI
+	/*
+	const futureDates = useMemo(() => {
+		const dates: string[] = [];
+		const today = new Date();
+		for (let i = 9; i <= 36; i++) {
+			const d = new Date(today);
+			d.setDate(today.getDate() + i);
+			dates.push(d.toISOString().split("T")[0]);
+		}
+		return dates;
+	}, []);
+	*/
 
+	/*
+	const handleTabChange = (tab: "live" | "future") => {
+		setActiveTab(tab);
+		if (tab === "future") {
+			const today = new Date();
+			const futureStart = new Date(today);
+			futureStart.setDate(today.getDate() + 9);
+			navigate({
+				search: (prev) => ({
+					...prev,
+					date: format(futureStart, "yyyy-MM-dd"),
+				}),
+			})
+		} else {
+			navigate({
+				search: (prev) => ({ ...prev, date: format(new Date(), "yyyy-MM-dd") }),
+			})
+		}
+	}
+	*/
 	return (
 		<div className="min-h-screen bg-background/50 flex flex-col font-sans">
 			{/* Date Selector */}
 			<nav aria-label="Date navigation">
 				<DateSelector
-					dates={availableDates}
+					dates={availableDates.slice(0, 8)}
 					selectedDate={selectedDate}
 					onSelectDate={handleDateSelect}
 					dateStyles={dateStyles}
 				>
-					<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 mt-4">
-						<div>
-							<h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
-								{t("booking:page_title", "Book Hong Kong Sports Facilities")}
-								<Badge variant="primary" size="sm">
-									Beta
-								</Badge>
-							</h1>
-							<p className="text-muted-foreground mt-1 text-base md:text-lg">
-								{t(
-									"booking:page_description",
-									"Real-time availability for LCSD sports facilities including tennis, basketball, and badminton courts across Hong Kong",
-								)}
-							</p>
-						</div>
-						<Link to="/">
-							<Button variant="ghost" size="sm" className="gap-2 shrink-0">
-								<ArrowLeft size={16} /> {t("common:nav.home", "Home")}
-							</Button>
-						</Link>
-					</div>
+					<BookingHeader availableDatesCount={availableDates.length} />
 				</DateSelector>
 			</nav>
 
@@ -918,6 +800,7 @@ function BookingPageContent({
 						districtStyles={districtStyles}
 						centerStyles={centerStyles}
 						facilityStyles={facilityStyles}
+						isLoading={isLoading}
 						onResetFilters={() => {
 							handleResetFilters();
 							setUserLocation(null);
@@ -928,6 +811,15 @@ function BookingPageContent({
 						userLocation={userLocation}
 					/>
 				</aside>
+
+				{/* Tab Switcher - Removed */}
+				{/* 
+				<BookingTabSwitcher
+					activeTab={activeTab}
+					onTabChange={handleTabChange}
+				/> 
+				*/}
+
 				<style>{`
 					:root {
 						--color-primary: var(--color-pacific-blue-600);
@@ -936,175 +828,30 @@ function BookingPageContent({
 				`}</style>
 
 				{/* Results Info */}
-				<div className="flex flex-col gap-3 py-2">
-					<div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-						<div className="space-y-1">
-							<h2 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-								{t("booking:available_venues")}
-								<span className="text-sm font-bold text-pacific-blue-600 bg-pacific-blue-50 px-2.5 py-0.5 rounded-full border border-pacific-blue-100 uppercase tracking-widest cursor-default">
-									{pagination.totalVenues}
-								</span>
-							</h2>
-						</div>
-
-						{lastUpdate && (
-							<div className="flex items-center gap-3 text-[10px] sm:text-xs font-bold text-gray-500 bg-white px-4 py-2 rounded-2xl border border-gray-100 shadow-sm self-start sm:self-auto">
-								<div className="w-2 h-2 rounded-full bg-meadow-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
-								<time
-									dateTime={lastUpdate.toISOString()}
-									className="flex items-center gap-1.5 uppercase tracking-wider"
-								>
-									<span className="opacity-60">
-										{t("booking:last_updated")}
-									</span>
-									<span className="text-gray-900 whitespace-nowrap">
-										{new Date(lastUpdate)
-											.toLocaleString("en-GB", {
-												day: "2-digit",
-												month: "2-digit",
-												hour: "2-digit",
-												minute: "2-digit",
-												hour12: true,
-												timeZone: "Asia/Hong_Kong",
-											})
-											.toLowerCase()
-											.replace(",", "")}{" "}
-										HKT
-									</span>
-								</time>
-							</div>
-						)}
-					</div>
-				</div>
+				<BookingResultsInfo
+					totalVenues={pagination.totalVenues}
+					lastUpdate={lastUpdate}
+				/>
 
 				{/* Venues Grid */}
-				<div className="grid grid-cols-1 gap-6">
-					{isLoading || isFilteringPending ? (
-						<VenueListSkeleton />
-					) : venues.length > 0 ? (
-						venues.map((venue) => (
-							<VenueCard
-								key={venue.id}
-								venue={venue}
-								onSessionClick={onSessionClick}
-								onWatchClick={onWatchClick}
-								watchedSessionIds={watchedSessionIds}
-							/>
-						))
-					) : (
-						<div className="flex flex-col items-center justify-center py-20 text-gray-400">
-							<div className="mb-4 opacity-50">
-								<CalendarDays size={48} />
-							</div>
-							<p className="text-lg font-medium">{t("booking:no_venues")}</p>
-							<p className="text-sm">{t("booking:no_venues_hint")}</p>
-						</div>
-					)}
-				</div>
+				<VenueList
+					venues={venues}
+					isLoading={isLoading || isFilteringPending}
+					onSessionClick={onSessionClick}
+					onWatchClick={onWatchClick}
+					watchedSessionIds={watchedSessionIds}
+				/>
 
 				{/* Pagination Controls */}
-				{!isLoading && !isFilteringPending && totalPages > 1 && (
-					<Pagination className="mt-8">
-						<PaginationContent>
-							<PaginationItem>
-								<PaginationPrevious
-									onClick={() =>
-										navigate({
-											search: (prev) => ({
-												...prev,
-												page: Math.max(1, currentPage - 1),
-											}),
-										})
-									}
-									disabled={currentPage === 1}
-								/>
-							</PaginationItem>
-
-							{/* First Page */}
-							{currentPage > 2 && (
-								<PaginationItem>
-									<PaginationLink
-										onClick={() =>
-											navigate({ search: (prev) => ({ ...prev, page: 1 }) })
-										}
-										isActive={currentPage === 1}
-									>
-										1
-									</PaginationLink>
-								</PaginationItem>
-							)}
-
-							{/* Ellipsis Start */}
-							{currentPage > 3 && (
-								<PaginationItem>
-									<PaginationEllipsis />
-								</PaginationItem>
-							)}
-
-							{/* Current Range */}
-							{Array.from({ length: totalPages }, (_, i) => i + 1)
-								.filter(
-									(page) =>
-										page === currentPage ||
-										page === currentPage - 1 ||
-										page === currentPage + 1,
-								)
-								.map((page) => (
-									<PaginationItem key={page}>
-										<PaginationLink
-											onClick={() =>
-												navigate({ search: (prev) => ({ ...prev, page }) })
-											}
-											isActive={currentPage === page}
-										>
-											{page}
-										</PaginationLink>
-									</PaginationItem>
-								))}
-
-							{/* Ellipsis End */}
-							{currentPage < totalPages - 2 && (
-								<PaginationItem>
-									<PaginationEllipsis />
-								</PaginationItem>
-							)}
-
-							{/* Last Page */}
-							{/* Allow showing last page if it wasn't already shown in the range */}
-							{currentPage < totalPages - 1 && (
-								<PaginationItem>
-									<PaginationLink
-										onClick={() =>
-											navigate({
-												search: (prev) => ({ ...prev, page: totalPages }),
-											})
-										}
-										isActive={currentPage === totalPages}
-									>
-										{totalPages}
-									</PaginationLink>
-								</PaginationItem>
-							)}
-
-							<PaginationItem>
-								<PaginationNext
-									onClick={() =>
-										navigate({
-											search: (prev) => ({
-												...prev,
-												page: Math.min(totalPages, currentPage + 1),
-											}),
-										})
-									}
-									disabled={currentPage === totalPages}
-								/>
-							</PaginationItem>
-						</PaginationContent>
-					</Pagination>
-				)}
+				<BookingPagination
+					currentPage={currentPage}
+					totalPages={totalPages}
+					onPageChange={(page) =>
+						navigate({ search: (prev) => ({ ...prev, page }) })
+					}
+					isLoading={isLoading || isFilteringPending}
+				/>
 			</main>
-
-			{/* Modals and Toast moved to parent */}
 		</div>
 	);
 }

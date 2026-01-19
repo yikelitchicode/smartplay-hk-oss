@@ -94,6 +94,9 @@ export const VenueCard = memo(function VenueCard({
 												if (session.available) {
 													return "bg-white border-pacific-blue-200 text-pacific-blue-700 hover:bg-primary hover:text-white hover:border-primary shadow-sm";
 												}
+												if (session.isProjected) {
+													return "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300 border-dashed";
+												}
 												// Watched session styling - use orange to indicate monitoring (not available)
 												if (isWatched) {
 													return "bg-tangerine-dream-50 border-tangerine-dream-300 text-tangerine-dream-700 cursor-not-allowed";
@@ -105,8 +108,15 @@ export const VenueCard = memo(function VenueCard({
 												<div key={session.id} className="relative group">
 													<button
 														type="button"
-														disabled={!session.available || session.isPassed}
-														onClick={() => onSessionClick(venue, session)}
+														disabled={
+															(!session.available && !session.isProjected) ||
+															session.isPassed
+														}
+														onClick={() =>
+															session.isProjected
+																? onWatchClick(venue, session)
+																: onSessionClick(venue, session)
+														}
 														aria-label={`${session.startTime} - ${
 															session.available
 																? "Available"
@@ -137,7 +147,8 @@ export const VenueCard = memo(function VenueCard({
 														)}
 														{!session.available &&
 															!session.isPassed &&
-															!isWatched && (
+															!isWatched &&
+															!session.isProjected && (
 																<span className="absolute inset-0 flex items-center justify-center bg-porcelain-50/50 rounded-lg">
 																	<span className="sr-only">Fully Booked</span>
 																</span>

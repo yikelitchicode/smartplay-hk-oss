@@ -1,4 +1,10 @@
 {
+	"seo": {
+		"title": "LCSD Sports Facilities Availability | SmartPlay HK OSS",
+		"description": "Open-source availability checker for Hong Kong LCSD sports facilities. Check real-time availability for tennis, basketball, badminton courts across all Hong Kong districts. Booking must be completed on the official LCSD SmartPlay website.",
+		"ogTitle": "SmartPlay HK OSS - LCSD Facilities Availability Checker",
+		"ogDescription": "Open-source tool to check Hong Kong LCSD sports facility availability in real-time. Find available tennis, basketball, and badminton courts. Official booking via LCSD SmartPlay website."
+	},
 	"page_title": "LCSD Sports Facilities Availability",
 	"page_description": "Open-source availability checker for Hong Kong LCSD sports facilities including tennis, basketball, and badminton courts. Check real-time availability before booking on official LCSD SmartPlay website.",
 	"search_placeholder": "Search venues...",

@@ -86,6 +86,9 @@ interface FilterBarProps {
 	onLocate: () => void;
 	isLocating: boolean;
 	userLocation: DistrictCoords | null;
+
+	// Loading State
+	isLoading?: boolean;
 }
 
 const REGIONS: RegionType[] = [
@@ -116,6 +119,7 @@ export function FilterBar({
 	onLocate,
 	isLocating,
 	userLocation,
+	isLoading = false,
 }: FilterBarProps): JSX.Element {
 	const { t, i18n } = useTranslation(["booking"]);
 	const lang = i18n.language;
@@ -384,13 +388,17 @@ export function FilterBar({
 						onClick={onLocate}
 						disabled={isLocating}
 						className={`h-8 gap-2 border border-gray-200 ${userLocation ? "border-primary/50 text-primary bg-primary/5" : ""}`}
-						title={t("Locate nearby districts")}
+						title={t("booking:locate_nearby", "搜尋附近地區")}
 					>
 						<Target
 							className={`w-3.5 h-3.5 ${isLocating ? "animate-spin" : ""}`}
 						/>
 						<span className="text-xs">
-							{isLocating ? "Locating..." : userLocation ? "Nearby" : "GPS"}
+							{isLocating
+								? t("booking:gps_locating", "定位中...")
+								: userLocation
+									? t("booking:gps_nearby", "附近")
+									: "GPS"}
 						</span>
 					</Button>
 				</div>
@@ -432,8 +440,10 @@ export function FilterBar({
 									<button
 										key={dist.code}
 										type="button"
-										onClick={() => !isDisabled && onSelectDistrict(dist.code)}
-										disabled={isDisabled}
+										onClick={() =>
+											!isDisabled && !isLoading && onSelectDistrict(dist.code)
+										}
+										disabled={isDisabled || isLoading}
 										className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all border ${
 											selectedDistricts.includes(dist.code)
 												? "bg-primary border-primary text-white"

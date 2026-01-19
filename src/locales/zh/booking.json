@@ -1,4 +1,10 @@
 {
+	"seo": {
+		"title": "康文署體育設施可用位置查詢 | SmartPlay HK OSS",
+		"description": "香港康文署體育設施可用性查詢開源工具。實時查詢全港各地區網球場、籃球場、羽毛球場的可用情況。預訂程序必須在康文署 SmartPlay 官方網站完成。",
+		"ogTitle": "SmartPlay HK OSS - 康文署設施可用性查詢",
+		"ogDescription": "開源工具實時查詢香港康文署體育設施可用性。尋找可用的網球、籃球及羽毛球場。官方預訂請前往康文署 SmartPlay 網站。"
+	},
 	"page_title": "康文署體育場地查詢",
 	"page_description": "開源的香港康文署體育場地實時查詢工具。查看網球場、籃球場、羽毛球館等場地實時狀態，然後前往康文署官方SmartPlay網站進行預訂。",
 	"search_placeholder": "搜尋場地...",

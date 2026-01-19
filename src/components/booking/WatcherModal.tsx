@@ -157,7 +157,7 @@ export function WatcherModal({
 									</span>
 								)}
 								{(() => {
-									const facility = Object.values(venue.facilities).find(
+									const facility = Object.values(venue.facilities || {}).find(
 										(f) => f.code === session.facilityId,
 									);
 									return facility?.priceType ? (
@@ -182,7 +182,7 @@ export function WatcherModal({
 								</div>
 								<h2 className="text-2xl font-bold text-white tracking-tight leading-tight">
 									{(() => {
-										const facility = Object.values(venue.facilities).find(
+										const facility = Object.values(venue.facilities || {}).find(
 											(f) => f.code === session.facilityId,
 										);
 										return resolveLocalizedName(
@@ -232,7 +232,7 @@ export function WatcherModal({
 
 								{/* 1. Time - Most Prominent */}
 								<div className="flex flex-col items-center justify-center py-2 border-b border-porcelain-100 pb-8">
-									<div className="flex items-center gap-3 text-tangerine-dream-600 mb-1">
+									<div className="flex items-center gap-3 mb-1 text-tangerine-dream-600">
 										<Clock size={20} strokeWidth={2.5} />
 										<span className="text-sm font-black uppercase tracking-widest opacity-60">
 											{t("booking:session_time")}
@@ -240,12 +240,14 @@ export function WatcherModal({
 									</div>
 									<div className="text-5xl font-black text-gray-900 tracking-tighter tabular-nums flex items-center justify-center gap-1 w-full">
 										<span className="flex-1 text-right">
-											{session.startTime}
+											{session.startTime.split(":").slice(0, 2).join(":")}
 										</span>
 										<span className="text-3xl text-gray-200 font-light mx-4 italic flex items-center justify-center">
 											|
 										</span>
-										<span className="flex-1 text-left">{session.endTime}</span>
+										<span className="flex-1 text-left">
+											{session.endTime.split(":").slice(0, 2).join(":")}
+										</span>
 									</div>
 								</div>
 
@@ -262,16 +264,21 @@ export function WatcherModal({
 												{session.date}
 											</p>
 											<p className="text-xs font-medium text-gray-500">
-												{new Intl.DateTimeFormat(
-													i18n.language === "en"
-														? "en-US"
-														: i18n.language === "zh"
-															? "zh-HK"
-															: "zh-CN",
-													{
-														weekday: "long",
-													},
-												).format(new Date(session.date))}
+												{(() => {
+													const date = new Date(session.date);
+													return !Number.isNaN(date.getTime())
+														? new Intl.DateTimeFormat(
+																i18n.language === "en"
+																	? "en-US"
+																	: i18n.language === "zh"
+																		? "zh-HK"
+																		: "zh-CN",
+																{
+																	weekday: "long",
+																},
+															).format(date)
+														: "";
+												})()}
 											</p>
 										</div>
 									</div>
