@@ -219,6 +219,7 @@ model BrowserSession {
   expiresAt DateTime       // Cookie expiry (180 days default)
 
   watchers  Watcher[]
+  recurringWatchers RecurringWatcher[]
   settings  UserSettings?
 
   @@index([expiresAt])
@@ -309,6 +310,13 @@ model UserSettings {
 }
 
 enum WatchStatus {
+  ACTIVE
+  PAUSED
+  EXPIRED
+  DELETED
+}
+
+enum RecurringWatchStatus {
   ACTIVE
   PAUSED
   EXPIRED
