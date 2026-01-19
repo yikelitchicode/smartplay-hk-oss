@@ -6,7 +6,7 @@ export default function Footer() {
 	const { t } = useTranslation("common");
 
 	return (
-		<footer className="w-full py-12 border-t border-border/40 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+		<footer className="w-full py-12 border-t border-border/40 bg-footer/95 backdrop-blur supports-backdrop-filter:bg-footer/60">
 			<div className="container px-4 md:px-6 mx-auto">
 				<div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
 					<div className="col-span-1 md:col-span-2 space-y-4">

@@ -110,6 +110,10 @@
   /* Foreground: Pacific Blue 950 (Deep Teal/Black) */
   --color-foreground: var(--color-pacific-blue-950);
 
+  /* Footer: Porcelain 100 (Slightly darker than background) */
+  --color-footer: var(--color-porcelain-100);
+  --color-footer-foreground: var(--color-pacific-blue-950);
+
   /* Card: White (Clean containment) */
   --color-card: #ffffff;
   --color-card-foreground: var(--color-pacific-blue-950);
