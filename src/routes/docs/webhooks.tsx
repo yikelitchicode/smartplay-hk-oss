@@ -2,13 +2,95 @@ import { ApiReferenceReact } from "@scalar/api-reference-react";
 import { createFileRoute } from "@tanstack/react-router";
 import "@scalar/api-reference-react/style.css";
 import { useEffect } from "react";
+import i18n from "@/lib/i18n";
 import { Skeleton } from "../../components/ui/Skeleton";
 import spec from "../../docs/openapi.yaml?raw";
+
+/**
+ * Generate dynamic meta tags for the webhooks page
+ */
+function getWebhooksPageMeta() {
+	const baseUrl =
+		typeof window !== "undefined"
+			? `${window.location.protocol}//${window.location.host}`
+			: "https://smartplay.hk";
+	const canonical = `${baseUrl}/docs/webhooks`;
+
+	const title = i18n.t("common.seo.webhooks.title", {
+		ns: "common",
+		defaultValue: "Webhook 文檔 | SmartPlay HK OSS 開發者",
+	});
+	const description = i18n.t("common.seo.webhooks.description", {
+		ns: "common",
+		defaultValue:
+			"了解如何使用 Webhook 將 SmartPlay HK OSS 通知整合到您自己的應用程式中。詳細的 API 參考與數據格式文件。",
+	});
+	const ogTitle = i18n.t("common.seo.webhooks.ogTitle", {
+		ns: "common",
+		defaultValue: "開發者文檔 - SmartPlay HK OSS Webhooks",
+	});
+	const ogDescription = i18n.t("common.seo.webhooks.ogDescription", {
+		ns: "common",
+		defaultValue:
+			"使用 SmartPlay HK OSS Webhook API 構建您自己的體育設施通知系統。",
+	});
+
+	return {
+		title,
+		description,
+		ogTitle,
+		ogDescription,
+		ogImage: `${baseUrl}/og-image.jpg`,
+		twitterCard: "summary_large_image",
+		canonical,
+	};
+}
 
 export const Route = createFileRoute("/docs/webhooks")({
 	ssr: false,
 	component: WebhooksDocs,
 	pendingComponent: WebhooksDocsSkeleton,
+	head: () => {
+		const {
+			title,
+			description,
+			ogTitle,
+			ogDescription,
+			ogImage,
+			twitterCard,
+			canonical,
+		} = getWebhooksPageMeta();
+
+		return {
+			meta: [
+				{ title },
+				{ name: "description", content: description },
+				{ property: "og:title", content: ogTitle },
+				{ property: "og:description", content: ogDescription },
+				{ property: "og:type", content: "website" },
+				{ property: "og:image", content: ogImage },
+				{ property: "og:url", content: canonical },
+				{ name: "twitter:card", content: twitterCard },
+				{ name: "twitter:title", content: ogTitle },
+				{ name: "twitter:description", content: ogDescription },
+				{ name: "twitter:image", content: ogImage },
+				{ name: "twitter:url", content: canonical },
+				{ name: "robots", content: "index, follow" },
+			],
+			links: [
+				{ rel: "canonical", href: canonical },
+				{ rel: "alternate", hrefLang: "en", href: `${canonical}?lng=en` },
+				{ rel: "alternate", hrefLang: "zh-Hans", href: `${canonical}?lng=cn` },
+				{ rel: "alternate", hrefLang: "zh-Hant", href: `${canonical}?lng=zh` },
+				{ rel: "alternate", hrefLang: "zh-HK", href: canonical },
+				{
+					rel: "alternate",
+					hrefLang: "x-default",
+					href: `${canonical}?lng=en`,
+				},
+			],
+		};
+	},
 });
 
 function WebhooksDocsSkeleton() {
@@ -179,16 +261,27 @@ function WebhooksDocs() {
             --scalar-background-3: #eee8dd;
             --scalar-background-accent: rgba(16, 173, 188, 0.08);
             --scalar-border-color: rgba(136, 113, 68, 0.15);
+            
+            /* Ensure Scalar header sits below our main header */
+            --scalar-header-z-index: 30;
+          }
+          /* Fix mobile layout: disable sticky, correct z-index */
+          .scalar-api-reference-mobile-header,
+          .t-doc__header {
+            z-index: 30 !important;
+            position: relative !important;
+            top: 0 !important;
           }
         `}
 			</style>
 			{/* 
 				Subtract header height (var(--header-height)) to ensure Scalar fits in viewport.
 				Use min-h-0 to allow flex child to shrink if needed.
+                Add padding-top to ensure content clears the site header if layout overlaps.
 			*/}
 			<div
-				className="overflow-y-auto overscroll-contain"
-				style={{ height: "calc(100vh - var(--header-height, 70px))" }}
+				className="overflow-y-auto overscroll-contain pt-(--header-height)"
+				style={{ height: "100vh" }}
 			>
 				<ApiReferenceReact
 					configuration={{

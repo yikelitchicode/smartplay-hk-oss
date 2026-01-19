@@ -142,7 +142,7 @@ const config = defineConfig({
 		},
 	},
 	plugins: [
-		tanstackStart(),
+		!process.env.VITEST && tanstackStart(),
 		// Apply server-only stubs early but after tanstackStart
 		serverOnlyStubsPlugin(),
 		// devtools(),
@@ -165,6 +165,9 @@ const config = defineConfig({
 			"**/{karma,rollup,webpack,vite,vitest,jest,conf,config}.{js,ts}",
 			"src/e2e/**",
 		],
+		env: {
+			DATABASE_URL: process.env.DATABASE_URL,
+		},
 	},
 });
 

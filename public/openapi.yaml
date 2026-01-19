@@ -4,18 +4,85 @@ info:
   version: 1.0.0
   description: |
     Documentation for webhooks sent by the SmartPlay HK OSS automation system.
-    These webhooks notify external systems about session availability changes.
+
+    ### Trigger Test Webhook
+    You can use the `/api/watch/test-webhook` endpoint to trigger a mock event to your configured URL.
+
+    ### Supported Webhook Payloads
+    The system automatically detects the platform based on the webhook URL and sends the appropriate payload format:
+
+    - **Discord**: Formatted as a rich embed via `DiscordWebhookPayload`.
+    - **Slack**: Formatted with attachments and action buttons via `SlackWebhookPayload`.
+    - **Generic**: A raw JSON payload with full event details via `GenericWebhookPayload`.
+
+paths:
+  /api/watch/test-webhook:
+    post:
+      summary: Trigger Test Webhook
+      description: |
+        Sends a mock `session.available` notification to the specified URL to verify connectivity and payload handling.
+
+        The system will automatically detect the webhook type (Discord, Slack, or Generic) based on the URL and format the payload accordingly.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - webhookUrl
+              properties:
+                webhookUrl:
+                  type: string
+                  format: uri
+                  description: The target HTTPS URL to send the test notification to.
+                  example: "https://discord.com/api/webhooks/..."
+      responses:
+        '200':
+          description: Mock notification sent successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Test notification sent successfully"
+        '400':
+          description: Invalid URL or delivery failed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum: ['INVALID_REQUEST', 'INVALID_WEBHOOK_URL', 'DELIVERY_FAILED', 'INVALID_JSON']
+                      message:
+                        type: string
 
 webhooks:
   sessionUpdate:
     post:
       summary: Session Status Update
-      description: Triggered when a watched session becomes available or unavailable.
+      description: Triggered when a watched session becomes available or unavailable. The payload format depends on the destination URL.
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericWebhookPayload'
+              oneOf:
+                - $ref: '#/components/schemas/GenericWebhookPayload'
+                - $ref: '#/components/schemas/DiscordWebhookPayload'
+                - $ref: '#/components/schemas/SlackWebhookPayload'
       responses:
         '200':
           description: Webhook received successfully
@@ -24,6 +91,8 @@ components:
   schemas:
     GenericWebhookPayload:
       type: object
+      title: Generic Webhook Payload
+      description: The standard JSON payload sent to generic webhook endpoints.
       properties:
         version:
           type: string
@@ -93,3 +162,106 @@ components:
         - event
         - created_at
         - data
+
+    DiscordWebhookPayload:
+      type: object
+      title: Discord Webhook Payload
+      description: Payload formatted for Discord's Incoming Webhook API.
+      properties:
+        username:
+          type: string
+          description: Overrides the default username of the webhook.
+        avatar_url:
+          type: string
+          format: uri
+          description: Overrides the default avatar of the webhook.
+        embeds:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              color:
+                type: integer
+                description: Color code for the embed.
+              url:
+                type: string
+                format: uri
+              timestamp:
+                type: string
+                format: date-time
+              author:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  url:
+                    type: string
+                  icon_url:
+                    type: string
+              thumbnail:
+                type: object
+                properties:
+                  url:
+                    type: string
+              fields:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    value:
+                      type: string
+                    inline:
+                      type: boolean
+              footer:
+                type: object
+                properties:
+                  text:
+                    type: string
+
+    SlackWebhookPayload:
+      type: object
+      title: Slack Webhook Payload
+      description: Payload formatted for Slack's Incoming Webhooks.
+      properties:
+        text:
+          type: string
+          description: The main text of the notification.
+        attachments:
+          type: array
+          items:
+            type: object
+            properties:
+              color:
+                type: string
+                description: Hex color code (e.g. #2ECC71).
+              fields:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                    value:
+                      type: string
+                    short:
+                      type: boolean
+              actions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      enum: ['button']
+                    text:
+                      type: string
+                    url:
+                      type: string
+                      format: uri
+                    style:
+                      type: string
+                      enum: ['primary', 'danger']

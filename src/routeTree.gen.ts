@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SchedulerRouteImport } from './routes/scheduler'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as BookingRouteImport } from './routes/booking'
 import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as AboutRouteImport } from './routes/about'
@@ -17,9 +19,19 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DocsWebhooksRouteImport } from './routes/docs/webhooks'
 import { Route as ApiWatchTestWebhookRouteImport } from './routes/api/watch/test-webhook'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SchedulerRoute = SchedulerRouteImport.update({
   id: '/scheduler',
   path: '/scheduler',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BookingRoute = BookingRouteImport.update({
@@ -58,7 +70,9 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/activity': typeof ActivityRoute
   '/booking': typeof BookingRoute
+  '/privacy': typeof PrivacyRoute
   '/scheduler': typeof SchedulerRoute
+  '/terms': typeof TermsRoute
   '/docs/webhooks': typeof DocsWebhooksRoute
   '/api/watch/test-webhook': typeof ApiWatchTestWebhookRoute
 }
@@ -67,7 +81,9 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/activity': typeof ActivityRoute
   '/booking': typeof BookingRoute
+  '/privacy': typeof PrivacyRoute
   '/scheduler': typeof SchedulerRoute
+  '/terms': typeof TermsRoute
   '/docs/webhooks': typeof DocsWebhooksRoute
   '/api/watch/test-webhook': typeof ApiWatchTestWebhookRoute
 }
@@ -77,7 +93,9 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/activity': typeof ActivityRoute
   '/booking': typeof BookingRoute
+  '/privacy': typeof PrivacyRoute
   '/scheduler': typeof SchedulerRoute
+  '/terms': typeof TermsRoute
   '/docs/webhooks': typeof DocsWebhooksRoute
   '/api/watch/test-webhook': typeof ApiWatchTestWebhookRoute
 }
@@ -88,7 +106,9 @@ export interface FileRouteTypes {
     | '/about'
     | '/activity'
     | '/booking'
+    | '/privacy'
     | '/scheduler'
+    | '/terms'
     | '/docs/webhooks'
     | '/api/watch/test-webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -97,7 +117,9 @@ export interface FileRouteTypes {
     | '/about'
     | '/activity'
     | '/booking'
+    | '/privacy'
     | '/scheduler'
+    | '/terms'
     | '/docs/webhooks'
     | '/api/watch/test-webhook'
   id:
@@ -106,7 +128,9 @@ export interface FileRouteTypes {
     | '/about'
     | '/activity'
     | '/booking'
+    | '/privacy'
     | '/scheduler'
+    | '/terms'
     | '/docs/webhooks'
     | '/api/watch/test-webhook'
   fileRoutesById: FileRoutesById
@@ -116,18 +140,34 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   ActivityRoute: typeof ActivityRoute
   BookingRoute: typeof BookingRoute
+  PrivacyRoute: typeof PrivacyRoute
   SchedulerRoute: typeof SchedulerRoute
+  TermsRoute: typeof TermsRoute
   DocsWebhooksRoute: typeof DocsWebhooksRoute
   ApiWatchTestWebhookRoute: typeof ApiWatchTestWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/scheduler': {
       id: '/scheduler'
       path: '/scheduler'
       fullPath: '/scheduler'
       preLoaderRoute: typeof SchedulerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/booking': {
@@ -180,7 +220,9 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   ActivityRoute: ActivityRoute,
   BookingRoute: BookingRoute,
+  PrivacyRoute: PrivacyRoute,
   SchedulerRoute: SchedulerRoute,
+  TermsRoute: TermsRoute,
   DocsWebhooksRoute: DocsWebhooksRoute,
   ApiWatchTestWebhookRoute: ApiWatchTestWebhookRoute,
 }
