@@ -246,6 +246,8 @@ const _baseConfig: CrawlerConfig = {
 		timeout: 30000, // 30 seconds
 		retryAttempts: 3,
 		retryDelay: 1000,
+		concurrency: 3, // Limit concurrent connections to avoid blocking
+		minRequestInterval: 500, // Minimum delay between requests per queue
 	},
 	headers: {
 		"User-Agent":
@@ -406,6 +408,12 @@ export function validateConfig(config: CrawlerConfig): {
 	}
 	if (config.api.retryAttempts < 0) {
 		errors.push("Retry attempts cannot be negative");
+	}
+	if (config.api.concurrency < 1) {
+		errors.push("Concurrency must be at least 1");
+	}
+	if (config.api.minRequestInterval < 0) {
+		errors.push("Minimum request interval cannot be negative");
 	}
 
 	// Validate parameters

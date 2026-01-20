@@ -179,6 +179,8 @@ export interface CrawlerConfig {
 		timeout: number;
 		retryAttempts: number;
 		retryDelay: number;
+		concurrency: number;
+		minRequestInterval: number;
 	};
 	headers: {
 		"User-Agent": string;

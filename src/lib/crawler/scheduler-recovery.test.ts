@@ -9,6 +9,8 @@ const mockConfig: CrawlerConfig = {
 		timeout: 5000,
 		retryAttempts: 3,
 		retryDelay: 1000,
+		concurrency: 2,
+		minRequestInterval: 500,
 	},
 	headers: {
 		"User-Agent": "test",

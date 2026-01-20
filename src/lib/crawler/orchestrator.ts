@@ -40,9 +40,11 @@ export class CrawlerOrchestrator {
 		this.dlq = new DeadLetterQueue();
 
 		// Configure concurrency for parallel processing
-		// Max 10 parallel requests to avoid overwhelming the API
+		// Use config values to control load
 		this.queue = new PQueue({
-			concurrency: 10,
+			concurrency: config.api.concurrency,
+			interval: config.api.minRequestInterval,
+			intervalCap: config.api.concurrency, // Request limit per interval
 			autoStart: true,
 		});
 	}
@@ -106,7 +108,7 @@ export class CrawlerOrchestrator {
 
 		try {
 			console.log(
-				`Processing ${faCodes.length} facility codes with concurrency 5...`,
+				`Processing ${faCodes.length} facility codes with concurrency ${this.config.api.concurrency}...`,
 			);
 
 			// Process facilities in parallel with controlled concurrency
