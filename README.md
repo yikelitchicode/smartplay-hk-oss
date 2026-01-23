@@ -502,7 +502,7 @@ Please:
 
 ## License
 
-MIT
+CC-NC-SA-4.0
 
 ---
 

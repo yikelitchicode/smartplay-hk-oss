@@ -418,11 +418,8 @@ function BookingPage() {
 	const confirmBooking = useCallback(() => {
 		setBookingSession(null);
 		setBookingVenue(null);
-		setTitle(t("booking:booking_confirmed"));
-		setMessage(t("booking:booking_confirmed_msg"));
-		setShowToast(true);
-		setTimeout(() => setShowToast(false), 3000);
-	}, [t]);
+		// Toast removed as immediate popup now handles feedback
+	}, []);
 
 	// Handler for subscribing to a session
 	const handleSubscribe = useCallback(

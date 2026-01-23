@@ -34,6 +34,66 @@ export function BookingModal({
 	const handleConfirm = async () => {
 		if (session.isPassed) return;
 
+		// Open window immediately to avoid popup blockers on mobile
+		const popup = window.open("", "_blank");
+		if (popup) {
+			popup.document.write(`
+                <!DOCTYPE html>
+                <html lang="${i18n.language}">
+                    <head>
+                        <title>${t("booking:availability_check.checking", "Verifying availability...")}</title>
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <style>
+                            :root {
+                                --color-bg: #f6f4ee; /* Porcelain 50 */
+                                --color-text: #031e21; /* Pacific Blue 950 */
+                                --color-primary: #10adbc; /* Pacific Blue 600 */
+                                --color-muted: #665533; /* Porcelain 700 */
+                            }
+                            body {
+                                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                justify-content: center;
+                                height: 100vh;
+                                margin: 0;
+                                background-color: var(--color-bg);
+                                color: var(--color-text);
+                                -webkit-font-smoothing: antialiased;
+                            }
+                            .spinner {
+                                color: var(--color-primary);
+                                margin-bottom: 1.5rem;
+                            }
+                            h2 {
+                                font-size: 1.25rem;
+                                font-weight: 700;
+                                letter-spacing: -0.025em;
+                                margin: 0 0 0.5rem 0;
+                            }
+                            p {
+                                font-size: 0.875rem;
+                                color: var(--color-muted);
+                                margin: 0;
+                                font-weight: 500;
+                            }
+                            @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="spinner">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;">
+                                <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+                            </svg>
+                        </div>
+                        <h2>${t("booking:availability_check.checking", "Verifying availability...")}</h2>
+                        <p>${t("booking:please_wait", "Please wait while we secure your slot...")}</p>
+                    </body>
+                </html>
+            `);
+		}
+
 		setStatus("checking");
 		setErrorMessage(null);
 
@@ -54,7 +114,6 @@ export function BookingModal({
 			});
 
 			// Always invalidate router cache to refresh data, regardless of result
-			// This ensures database updates (e.g. marking as unavailable) are reflected in UI
 			await router.invalidate();
 
 			if (result.success && result.data?.isAvailable) {
@@ -62,36 +121,38 @@ export function BookingModal({
 
 				const details = result.data.details;
 
+				if (details) {
+					const redirectUrl = constructSmartPlayUrl({
+						venueId: details.venueId,
+						fatId: details.fatId,
+						fvrId: details.fvrId,
+						venueName: details.venueName,
+						playDate: session.date,
+						districtCode: venue.districtCode,
+						sportCode: details.faGroupCode,
+						typeCode: details.typeCode,
+						sessionIndex: details.sessionIndex,
+						dateIndex: details.dateIndex,
+						isFree: venue.facilities[session.facilityId]?.priceType === "Free",
+					});
+
+					if (popup) {
+						popup.location.href = redirectUrl;
+					} else {
+						// Fallback if popup blocked (unlikely with this flow) or window failed to open
+						window.open(redirectUrl, "_blank");
+					}
+				} else {
+					if (popup) popup.close();
+				}
+
 				// Proceed to booking after short delay to show success state
 				setTimeout(() => {
 					onConfirm(); // This shows the success toast in parent
-
-					// Perform redirection if details are available
-					if (details) {
-						const redirectUrl = constructSmartPlayUrl({
-							venueId: details.venueId,
-							fatId: details.fatId,
-							fvrId: details.fvrId,
-							venueName: details.venueName,
-							playDate: session.date,
-							districtCode: venue.districtCode,
-							sportCode: details.faGroupCode,
-							typeCode: details.typeCode,
-							sessionIndex: details.sessionIndex,
-							dateIndex: details.dateIndex,
-							isFree:
-								venue.facilities[session.facilityId]?.priceType === "Free",
-						});
-
-						// Open in new tab
-						window.open(redirectUrl, "_blank");
-						setStatus("idle");
-					} else {
-						// Fallback if no details (shouldn't happen with new backend)
-						setStatus("idle");
-					}
-				}, 1000); // Increased delay slightly to let user see "Available!" checkmark
+					setStatus("idle");
+				}, 1000);
 			} else {
+				if (popup) popup.close();
 				setStatus("unavailable");
 				setErrorMessage(
 					t(
@@ -101,6 +162,7 @@ export function BookingModal({
 				);
 			}
 		} catch (error) {
+			if (popup) popup.close();
 			setStatus("error");
 			setErrorMessage(
 				error instanceof Error
