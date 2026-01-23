@@ -21,6 +21,8 @@ jobs:
   test:
     name: Test & Quality Checks
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
@@ -124,6 +126,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
+    permissions:
+      contents: read
+      deployments: write
+      packages: read
     env:
       IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
 

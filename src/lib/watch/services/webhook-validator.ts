@@ -18,9 +18,20 @@ export async function verifyWebhookConnectivity(
 	url: string,
 ): Promise<WebhookVerificationResult> {
 	try {
+		// Validate URL structure before parsing
+		const parsedUrl = new URL(url);
+
+		// Safe domain extraction using parsed URL object
+		const hostname = parsedUrl.hostname.toLowerCase();
+
+		// Exact domain matching to prevent bypass attacks
+		// Prevents: evil-discord.com, discord.com.evil.com, etc.
 		const isDiscord =
-			url.includes("discord.com") || url.includes("discordapp.com");
-		const isSlack = url.includes("slack.com");
+			hostname === "discord.com" ||
+			hostname === "discordapp.com" ||
+			hostname.endsWith(".discord.com") ||
+			hostname.endsWith(".discordapp.com");
+		const isSlack = hostname === "slack.com" || hostname.endsWith(".slack.com");
 
 		if (isDiscord || isSlack) {
 			return await verifyPlatformWebhook(url, isDiscord ? "Discord" : "Slack");
@@ -28,11 +39,16 @@ export async function verifyWebhookConnectivity(
 
 		return await verifyAutomationWebhook(url);
 	} catch (error) {
+		// Catch URL parsing errors or network failures
+		const errorMessage =
+			error instanceof Error && error.name === "TypeError"
+				? "Invalid URL format. Please enter a valid webhook URL."
+				: "Connection failed. Please ensure the URL is correct and accessible.";
+
 		logger.error({ error, url }, "Webhook connectivity check failed");
 		return {
 			success: false,
-			error:
-				"Connection failed. Please ensure the URL is correct and accessible.",
+			error: errorMessage,
 		};
 	}
 }

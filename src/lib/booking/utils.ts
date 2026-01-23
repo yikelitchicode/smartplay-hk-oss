@@ -197,26 +197,79 @@ export const getFacilityDetails = (
 };
 
 /**
+ * Validates date string format (YYYY-MM-DD).
+ * @param dateStr - Date string to validate
+ * @returns true if valid format, false otherwise
+ */
+const isValidDateFormat = (dateStr: string): boolean => {
+	return /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
+};
+
+/**
+ * Validates time string format (HH:mm).
+ * @param timeStr - Time string to validate
+ * @returns true if valid format, false otherwise
+ */
+const isValidTimeFormat = (timeStr: string): boolean => {
+	return /^\d{2}:\d{2}$/.test(timeStr);
+};
+
+/**
  * Determines if a booking session has already occurred.
  *
  * @param dateStr - Date in YYYY-MM-DD format
  * @param timeStr - Time in HH:mm format (output from normalizeTime)
  * @returns true if session is in the past, false if current or future
+ * @returns false if input formats are invalid (fails safe)
  *
  * @remarks
  * - Timezone: Hong Kong (UTC+8)
  * - Uses server time for comparison
  * - Assumes session date/time are in Hong Kong timezone
+ * - Validates input formats before processing to prevent injection
  *
  * @example
  * ```typescript
  * isSessionPassed('2026-01-14', '10:00') // false (future)
  * isSessionPassed('2026-01-13', '10:00') // true (past)
+ * isSessionPassed('invalid', '10:00') // false (invalid input, fails safe)
  * ```
  */
 export const isSessionPassed = (dateStr: string, timeStr: string): boolean => {
+	// Validate input formats to prevent injection and parsing issues
+	if (!isValidDateFormat(dateStr) || !isValidTimeFormat(timeStr)) {
+		return false; // Fail safe - treat invalid as future sessions
+	}
+
 	// Create a Date object for the session in HK timezone (+08:00)
-	const sessionDate = new Date(`${dateStr}T${timeStr}:00+08:00`);
+	// Using individual components instead of string interpolation for safety
+	const [year, month, day] = dateStr.split("-").map(Number);
+	const [hours, minutes] = timeStr.split(":").map(Number);
+
+	// Validate numeric ranges
+	const isValidDate =
+		!Number.isNaN(year) &&
+		!Number.isNaN(month) &&
+		!Number.isNaN(day) &&
+		!Number.isNaN(hours) &&
+		!Number.isNaN(minutes) &&
+		month >= 1 &&
+		month <= 12 &&
+		day >= 1 &&
+		day <= 31 &&
+		hours >= 0 &&
+		hours <= 23 &&
+		minutes >= 0 &&
+		minutes <= 59;
+
+	if (!isValidDate) {
+		return false; // Fail safe - treat out-of-range as future
+	}
+
+	// Create date using UTC methods to avoid timezone ambiguity
+	const sessionDate = new Date(
+		Date.UTC(year, month - 1, day, hours - 8, minutes),
+	); // -8 for HK timezone offset
 	const now = new Date();
 
 	return now > sessionDate;

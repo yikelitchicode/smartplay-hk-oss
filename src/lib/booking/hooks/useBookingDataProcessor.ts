@@ -87,7 +87,11 @@ export function useBookingDataProcessor({
 							...facility,
 							sessions: facility.sessions.map((s) => ({
 								...s,
-								isPassed: isSessionPassed(s.date, s.startTime),
+								// Safely recalculate isPassed with input validation
+								isPassed:
+									typeof s.date === "string" && typeof s.startTime === "string"
+										? isSessionPassed(s.date, s.startTime)
+										: s.isPassed, // Preserve original value if data is invalid
 							})),
 						};
 						return acc;

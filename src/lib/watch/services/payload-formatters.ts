@@ -22,17 +22,24 @@ export enum WebhookType {
 
 /**
  * Detect webhook type from URL
+ * Uses strict hostname validation to prevent bypass attacks
  */
 export function detectWebhookType(url: string): WebhookType {
 	try {
-		const hostname = new URL(url).hostname;
+		const parsedUrl = new URL(url);
+		const hostname = parsedUrl.hostname.toLowerCase();
+
+		// Exact domain matching to prevent bypass attacks
+		// Prevents: evil-discord.com, discord.com.evil.com, etc.
 		if (
-			hostname.endsWith("discord.com") ||
-			hostname.endsWith("discordapp.com")
+			hostname === "discord.com" ||
+			hostname === "discordapp.com" ||
+			hostname.endsWith(".discord.com") ||
+			hostname.endsWith(".discordapp.com")
 		) {
 			return WebhookType.DISCORD;
 		}
-		if (hostname.endsWith("slack.com")) {
+		if (hostname === "slack.com" || hostname.endsWith(".slack.com")) {
 			return WebhookType.SLACK;
 		}
 		return WebhookType.GENERIC;
