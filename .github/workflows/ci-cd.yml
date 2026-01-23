@@ -65,7 +65,7 @@ jobs:
   # Build Job: Build and Push Docker Image (runs in PARALLEL with test)
   build:
     name: Build Docker Image
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       packages: write
@@ -101,7 +101,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -130,6 +129,21 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
+      - name: Verify Tailscale Connection
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          echo "🔍 Tailscale status:"
+          tailscale status || echo "❌ Tailscale not running"
+          echo ""
+          echo "🔍 Checking DNS resolution for SSH_HOST..."
+          if [ -z "$SSH_HOST" ]; then
+            echo "❌ SSH_HOST secret is empty or not set!"
+          else
+            echo "SSH_HOST is set (value hidden for security)"
+            nslookup "$SSH_HOST" || echo "❌ DNS lookup failed for SSH_HOST"
+          fi
+
       - name: Setup SSH and Deploy
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -143,18 +157,52 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_ACTOR: ${{ github.actor }}
         run: |
-          # Setup SSH
+          set -euo pipefail
+
+          echo "📁 Step 1: Setting up SSH directory..."
           mkdir -p ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+
+          # Debug: Verify key format
+          echo "  → Key file info:"
+          echo "    Lines: $(wc -l < ~/.ssh/id_rsa)"
+          echo "    First line: $(head -1 ~/.ssh/id_rsa)"
+          echo "    Last line: $(tail -1 ~/.ssh/id_rsa)"
+          echo "    Fingerprint: $(ssh-keygen -lf ~/.ssh/id_rsa 2>&1 || echo 'Failed to read key')"
+          echo "✅ SSH key written"
 
           if [ -z "$SSH_HOST" ]; then
             echo "❌ Error: SSH_HOST secret is not set"
             exit 1
           fi
-          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+          echo "✅ SSH_HOST is set"
 
-          # Parse DATABASE_URL to extract postgres credentials
+          echo "🔑 Step 2: Checking connectivity to SSH_HOST..."
+
+          # Check DNS resolution first
+          echo "  → Testing DNS resolution..."
+          if ! getent hosts "$SSH_HOST" 2>&1; then
+            echo "  → DNS via getent failed, trying nslookup..."
+            nslookup "$SSH_HOST" 2>&1 || true
+            echo "  → Checking Tailscale DNS..."
+            cat /etc/resolv.conf || true
+          fi
+
+          # Check if port 22 is reachable
+          echo "  → Testing TCP connection to port 22..."
+          timeout 10 bash -c "echo >/dev/tcp/$SSH_HOST/22" 2>&1 && echo "  ✅ Port 22 reachable" || echo "  ⚠️ Port 22 not reachable (may still work)"
+
+          # Run ssh-keyscan with verbose output
+          echo "  → Running ssh-keyscan..."
+          if ssh-keyscan -v -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>&1; then
+            echo "✅ Known hosts updated"
+          else
+            echo "❌ ssh-keyscan failed - output above shows the error"
+            exit 1
+          fi
+
+          echo "🔧 Step 3: Parsing DATABASE_URL..."
           POSTGRES_USER=$(echo "$DATABASE_URL" | sed -n 's|.*://\([^:]*\):.*|\1|p')
           POSTGRES_PASSWORD=$(echo "$DATABASE_URL" | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
           POSTGRES_DB=$(echo "$DATABASE_URL" | sed -n 's|.*/\([^?]*\).*|\1|p')
@@ -162,12 +210,16 @@ jobs:
           POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-smartplay_password}
           POSTGRES_DB=${POSTGRES_DB:-smartplay}
           INTERNAL_DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+          echo "✅ Database credentials parsed (user: $POSTGRES_USER, db: $POSTGRES_DB)"
 
-          # Combined: Create directory, env file, and docker-compose in one SSH session
-          ssh "$SSH_USER@$SSH_HOST" "mkdir -p ~/smartplay-hk-oss"
+          echo "📂 Step 4: Creating remote directory..."
+          ssh -v "$SSH_USER@$SSH_HOST" "mkdir -p ~/smartplay-hk-oss" 2>&1 || {
+            echo "❌ SSH connection or mkdir failed"
+            exit 1
+          }
+          echo "✅ Remote directory created"
 
-          # Create env file
-          # Create env file (use .env so docker compose picks it up automatically)
+          echo "📝 Step 5: Creating .env file on remote..."
           ssh "$SSH_USER@$SSH_HOST" "cat > ~/smartplay-hk-oss/.env << 'ENVEOF'
           DATABASE_URL=${INTERNAL_DATABASE_URL}
           POSTGRES_USER=${POSTGRES_USER}
@@ -178,17 +230,29 @@ jobs:
           VITE_CLOUDFLARE_TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY}
           CLOUDFLARE_TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY}
           CLOUDFLARE_TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
-          ENVEOF"
+          ENVEOF" || {
+            echo "❌ Failed to create .env file"
+            exit 1
+          }
+          echo "✅ .env file created"
 
-          # Copy docker-compose file
-          scp docker-compose.prod.yml "$SSH_USER@$SSH_HOST:~/smartplay-hk-oss/docker-compose.yml"
+          echo "📦 Step 6: Copying docker-compose.yml..."
+          scp docker-compose.prod.yml "$SSH_USER@$SSH_HOST:~/smartplay-hk-oss/docker-compose.yml" || {
+            echo "❌ SCP failed"
+            exit 1
+          }
+          echo "✅ docker-compose.yml copied"
 
-          # Deploy: login, pull, and start in one command
+          echo "🚀 Step 7: Deploying with Docker..."
           ssh "$SSH_USER@$SSH_HOST" "cd ~/smartplay-hk-oss && \
             echo '$GH_TOKEN' | docker login ghcr.io -u '$GH_ACTOR' --password-stdin && \
             docker compose pull && \
             docker compose up -d --remove-orphans --force-recreate && \
-            docker image prune -af --filter 'until=24h'"
+            docker image prune -af --filter 'until=24h'" || {
+            echo "❌ Docker deployment failed"
+            exit 1
+          }
+          echo "✅ Deployment complete!"
 
       - name: Health check
         env:
