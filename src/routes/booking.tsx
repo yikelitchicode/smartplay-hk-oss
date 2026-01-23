@@ -209,7 +209,10 @@ export const Route = createFileRoute("/booking")({
 		// Ensure translations are loaded before rendering
 		await initializeI18n();
 
-		const defaultDate = new Date().toISOString().split("T")[0];
+		// Use Hong Kong time for default date to avoid "yesterday" issues in early morning
+		const defaultDate = new Date().toLocaleDateString("en-CA", {
+			timeZone: "Asia/Hong_Kong",
+		});
 		const { date, districts, center, facility, priceType, page, query } = deps;
 
 		// 1. Start fetching data

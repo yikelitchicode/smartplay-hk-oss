@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { DISTRICT_COORDINATES, type DistrictCoords } from "@/data/districts";
 import type { NormalizedVenue, RegionType } from "@/lib/booking/types";
-import { getRegion } from "@/lib/booking/utils";
+import { getRegion, isSessionPassed } from "@/lib/booking/utils";
 import type {
 	ServerError,
 	ServerSuccess,
@@ -78,8 +78,26 @@ export function useBookingDataProcessor({
 						distance = getDistance(userLocation, dCoords);
 					}
 				}
+				// Recalculate isPassed on the client side for real-time accuracy
+				// The server might have cached data where isPassed is false, but it's now true
+
+				const facilities = Object.entries(v.facilities).reduce(
+					(acc, [key, facility]) => {
+						acc[key] = {
+							...facility,
+							sessions: facility.sessions.map((s) => ({
+								...s,
+								isPassed: isSessionPassed(s.date, s.startTime),
+							})),
+						};
+						return acc;
+					},
+					{} as typeof v.facilities,
+				);
+
 				return {
 					...v,
+					facilities,
 					distance,
 					imageUrl: v.imageUrl || "/placeholder-venue.jpg",
 					region: getRegion(v.districtCode),
