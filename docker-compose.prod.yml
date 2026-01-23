@@ -23,7 +23,7 @@ services:
 
   # Application (using pre-built image from GHCR)
   smartplay-hk-oss:
-    image: ghcr.io/lst97/smartplay-hk-oss:latest
+    image: ghcr.io/lst97/smartplay-hk-oss:${IMAGE_TAG:-latest}
     container_name: ${APP_CONTAINER_NAME:-smartplay-app}
     restart: unless-stopped
     ports:

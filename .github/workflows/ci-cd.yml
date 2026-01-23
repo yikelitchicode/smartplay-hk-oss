@@ -1,5 +1,9 @@
 name: CI/CD Pipeline
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [main]
@@ -98,6 +102,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
+        id: build-and-push
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -109,6 +114,8 @@ jobs:
           # Enable BuildKit inline cache for better cache hits
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
 
   # Deploy Job: Deploy to Remote Machine (waits for BOTH test and build)
   deploy:
@@ -117,6 +124,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
+    env:
+      IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
 
     steps:
       - name: Checkout code
@@ -230,6 +239,7 @@ jobs:
           VITE_CLOUDFLARE_TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY}
           CLOUDFLARE_TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY}
           CLOUDFLARE_TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+          IMAGE_TAG=${IMAGE_TAG}
           ENVEOF" || {
             echo "❌ Failed to create .env file"
             exit 1
@@ -247,6 +257,7 @@ jobs:
           ssh "$SSH_USER@$SSH_HOST" "cd ~/smartplay-hk-oss && \
             echo '$GH_TOKEN' | docker login ghcr.io -u '$GH_ACTOR' --password-stdin && \
             docker compose pull && \
+            # --force-recreate ensures the container is replaced with the newly pulled image even if config is unchanged
             docker compose up -d --remove-orphans --force-recreate && \
             docker image prune -af --filter 'until=24h'" || {
             echo "❌ Docker deployment failed"
