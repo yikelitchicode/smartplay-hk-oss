@@ -241,8 +241,12 @@ function RootDocument({
 						__html: `window.__INITIAL_LANG__ = "${detectedLang}";`,
 					}}
 				/>
-				{!isDocsPage && <TanStackRouterDevtoolsPanel />}
-				{!isDocsPage && <TanStackDevtools />}
+				{!isDocsPage && process.env.NODE_ENV === "development" && (
+					<>
+						<TanStackRouterDevtoolsPanel />
+						<TanStackDevtools />
+					</>
+				)}
 				<Scripts />
 			</body>
 		</html>
