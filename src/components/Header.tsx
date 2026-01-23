@@ -124,10 +124,7 @@ export default function Header(): React.ReactNode {
 
 	return (
 		<>
-			<header
-				className="h-[70px] px-4 flex items-center justify-between bg-card border-b border-border shadow-lg z-40 sticky top-0"
-				style={{ "--header-height": "70px" } as React.CSSProperties}
-			>
+			<header className="h-[70px] px-4 flex items-center justify-between bg-card border-b border-border shadow-lg z-40 sticky top-0">
 				<div className="flex items-center">
 					<Button
 						variant="ghost"

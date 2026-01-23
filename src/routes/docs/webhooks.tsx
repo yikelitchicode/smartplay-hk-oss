@@ -281,8 +281,8 @@ function WebhooksDocs() {
                 Add padding-top to ensure content clears the site header if layout overlaps.
 			*/}
 			<div
-				className="overflow-y-auto overscroll-contain pt-(--header-height)"
-				style={{ height: "100vh" }}
+				className="fixed inset-0 overflow-y-auto overscroll-contain"
+				style={{ top: "var(--header-height, 70px)" }}
 			>
 				<ApiReferenceReact
 					configuration={{
