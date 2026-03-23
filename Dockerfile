@@ -10,7 +10,7 @@ WORKDIR /app
 # Stage 2: Dependencies (cached layer - only rebuilds when lockfile changes)
 FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Stage 3: Build the application
 FROM base AS build
@@ -38,7 +38,7 @@ RUN apk add --no-cache wget netcat-openbsd && \
 COPY package.json pnpm-lock.yaml tsconfig.json ./
 
 # Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
 # Copy built application and required files
 COPY --from=build /app/.output ./.output
