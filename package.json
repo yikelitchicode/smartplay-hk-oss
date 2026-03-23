@@ -41,7 +41,8 @@
 		"db:seed": "dotenv -e .env.local -- prisma db seed",
 		"db:reset": "dotenv -e .env.local -- prisma db push --force-reset",
 		"db:validate": "dotenv -e .env.local -- prisma validate",
-		"db:format": "dotenv -e .env.local -- prisma format"
+		"db:format": "dotenv -e .env.local -- prisma format",
+		"postinstall": "prisma generate"
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.1.0",
