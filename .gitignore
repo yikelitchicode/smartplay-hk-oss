@@ -26,3 +26,4 @@ scripts/logs
 # Keep example env files for documentation
 !.env.example
 !.env.*.example
+.vercel
