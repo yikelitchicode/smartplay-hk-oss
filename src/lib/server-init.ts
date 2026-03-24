@@ -284,14 +284,27 @@ export function setupShutdownHandlers(): void {
 	serverLogger.info("✅ Shutdown handlers registered");
 }
 
+const isServerlessRuntime = Boolean(
+	process.env.VERCEL ||
+		process.env.AWS_LAMBDA_FUNCTION_NAME ||
+		process.env.NETLIFY ||
+		process.env.NOW_REGION,
+);
+
 // Auto-initialize on import (for server-side)
 // Note: This is fire-and-forget. For critical startup, await ensureSchedulerInitialized() explicitly
 if (typeof window === "undefined") {
-	ensureSchedulerInitialized().catch((error) => {
-		console.error("❌ Server initialization failed:", error); // Keep console.error here as last resort
-		process.exit(1);
-	});
+	if (isServerlessRuntime) {
+		serverLogger.info(
+			"⏭️ Serverless runtime detected; skipping auto scheduler bootstrap and shutdown handlers",
+		);
+	} else {
+		ensureSchedulerInitialized().catch((error) => {
+			console.error("❌ Server initialization failed:", error); // Keep console.error here as last resort
+			process.exit(1);
+		});
 
-	// Setup graceful shutdown handlers
-	setupShutdownHandlers();
+		// Setup graceful shutdown handlers
+		setupShutdownHandlers();
+	}
 }
